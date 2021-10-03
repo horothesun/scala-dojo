@@ -7,4 +7,7 @@ lazy val root = (project in file(".")).
     name := "scala-dojo"
   )
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "3.2.9" % Test,
+  "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
+)
