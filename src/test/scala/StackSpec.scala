@@ -1,13 +1,13 @@
 import Stack.{pop, push}
-import org.scalacheck.Gen.{posNum, listOf, listOfN}
+import org.scalacheck.Gen.{listOf, listOfN, negNum, oneOf, posNum}
 import org.scalacheck.Prop.{forAll, propBoolean}
-import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Gen, Properties}
+
 import scala.Function.uncurried
 
 object StackSpec extends Properties("Stack") {
 
-  val elementGen: Gen[Int] = arbitrary[Int] suchThat(_ => true)
+  val elementGen: Gen[Int] = oneOf(posNum[Int], negNum[Int])
   val elementsToPushGen: Gen[List[Int]] = posNum[Int].flatMap(listOfN(_, elementGen))
   val stackGen: Gen[Stack[Int]] = listOf(elementGen).map(StackDefault(_))
 
