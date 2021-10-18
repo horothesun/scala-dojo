@@ -1,6 +1,6 @@
 object Main extends App {
   println("Welcome to the Scala Dojo!")
-  println(Power.powerNonZeroBaseNaturalExp(-565765, 19889785))
+  println(Power.power(0, 0))
 }
 
 class Ciao {
