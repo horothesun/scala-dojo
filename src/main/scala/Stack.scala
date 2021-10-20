@@ -1,4 +1,5 @@
 import scala.annotation.tailrec
+
 // Model a purely functional Stack
 
 sealed trait Stack[T] {
