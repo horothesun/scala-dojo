@@ -1,6 +1,6 @@
 import Stack.{min, pop, push, safeMin}
 import org.scalacheck.Gen.{const, listOf, listOfN, negNum, oneOf, posNum}
-import org.scalacheck.Prop.{collect, forAll, propBoolean}
+import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Gen, Properties}
 
 object StackSpec extends Properties("Stack") {
