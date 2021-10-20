@@ -1,5 +1,5 @@
-import Stack.{pop, push}
-import org.scalacheck.Gen.{const, listOf, listOfN, lzy, negNum, oneOf, posNum}
+import Stack.{min, pop, push, safeMin}
+import org.scalacheck.Gen.{const, listOf, listOfN, negNum, oneOf, posNum}
 import org.scalacheck.Prop.{collect, forAll, propBoolean}
 import org.scalacheck.{Gen, Properties}
 
@@ -7,14 +7,13 @@ object StackSpec extends Properties("Stack") {
 
   val elementGen: Gen[Int] = oneOf(posNum[Int], negNum[Int])
   val elementListGen: Gen[List[Int]] = posNum[Int].flatMap(listOfN(_, elementGen))
+
   val emptyStackGen: Gen[EmptyStack[Int]] = const(EmptyStack())
 //  val nonEmptyStackGen: Gen[NonEmptyStack[Int]] =
 //    for { t <- elementGen; s <- stackGen } yield NonEmptyStack(t, s)
   val nonEmptyStackGen: Gen[NonEmptyStack[Int]] =
     elementGen.flatMap(e => stackGen.map(NonEmptyStack(e, _)))
 //  val stackGen: Gen[Stack[Int]] = lzy(oneOf(emptyStackGen, nonEmptyStackGen))
-  def stackFromList[T](ts: List[T]): Stack[T] =
-    ts.foldLeft(EmptyStack(): Stack[T])((s, t) => NonEmptyStack(t, s))
   val stackGen: Gen[Stack[Int]] = listOf(elementGen).map(stackFromList)
 
   property("n pushes followed by n pops leave the Stack unchanged") =
@@ -36,4 +35,16 @@ object StackSpec extends Properties("Stack") {
         })._1
       ts == poppedList
     }
+
+  property("list and stack with the same elements have the same min") =
+    forAll (elementListGen) { ts =>
+      val s = stackFromList(ts)
+      min(s) == ts.minOption
+    }
+
+  property("safeMin and min return the same result") =
+    forAll (stackGen) { s => safeMin(s) == min(s) }
+
+  def stackFromList[T](ts: List[T]): Stack[T] =
+    ts.foldLeft(EmptyStack(): Stack[T])((s, t) => NonEmptyStack(t, s))
 }
