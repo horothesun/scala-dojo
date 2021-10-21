@@ -1,6 +1,10 @@
 object Main extends App {
   println("Welcome to the Scala Dojo!")
   println(Power.power(0, 0))
+
+  val as = List[Int]()
+  val n = 1
+  println(s"${as.take(n)}, ${as.drop(n)}")
 }
 
 class Ciao {
