@@ -1,4 +1,4 @@
-import Stack.{min, pop, push, safeMin}
+import Stack.{foldMin, min, pop, push, safeMin}
 import org.scalacheck.Gen.{const, listOf, listOfN, negNum, oneOf, posNum}
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Gen, Properties}
@@ -44,6 +44,9 @@ object StackSpec extends Properties("Stack") {
 
   property("safeMin and min return the same result") =
     forAll (stackGen) { s => safeMin(s) == min(s) }
+
+  property("safeMin and foldMin return the same result") =
+    forAll (stackGen) { s => safeMin(s) == foldMin(s) }
 
   def stackFromList[T](ts: List[T]): Stack[T] =
     ts.foldLeft(EmptyStack(): Stack[T])((s, t) => NonEmptyStack(t, s))
