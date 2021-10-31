@@ -2,11 +2,19 @@ import scala.annotation.tailrec
 
 // Model a purely functional Stack
 
-sealed trait Stack[T] {
+sealed trait Stack[+T] {
 
-  def toList: List[T] = this match {
-    case EmptyStack() => List.empty
-    case NonEmptyStack(top, tail) => top :: tail.toList
+  def toList: List[T] = {
+
+    @tailrec
+    def toListAux(acc : List[T], s : Stack[T]) : List[T] =
+      s match {
+        case EmptyStack => acc
+        case NonEmptyStack(top, tail) => toListAux( top :: acc, tail)
+      }
+
+    toListAux(List.empty, this)
+
   }
 
   override def toString: String = {
@@ -15,40 +23,79 @@ sealed trait Stack[T] {
   }
 }
 
-case class EmptyStack[T]() extends Stack[T]
-case class NonEmptyStack[T](top: T, tail: Stack[T]) extends Stack[T]
+case object EmptyStack extends Stack[Nothing]
+case class NonEmptyStack[+T](top: T, tail: Stack[T]) extends Stack[T]
 
 object Stack {
 
-  def push[T]: T => Stack[T] => Stack[T] = t => {
-    case EmptyStack() => NonEmptyStack(t, EmptyStack())
-    case s@NonEmptyStack(_, _) => NonEmptyStack(t, s)
-  }
+  def push[T, V >: T]: V => Stack[T] => Stack[V] = v => s => NonEmptyStack(v, s)
 
   def pop[T]: Stack[T] => Option[(T, Stack[T])] = {
-    case EmptyStack() => None
+    case EmptyStack => None
     case NonEmptyStack(top, tail) => Some((top, tail))
   }
 
-  def min[T](s: Stack[T])(implicit ord: Ordering[T]): Option[T] =
-    s match {
-      case EmptyStack() => None
-      case NonEmptyStack(top, EmptyStack()) => Some(top)
-      case NonEmptyStack(top, NonEmptyStack(sndTop, tail)) =>
-        val topMin = ord.min(top, sndTop)
-        min(tail)(ord).map(ord.min(topMin, _)).orElse(Some(topMin))
+  // insert N elements starting from the leftmost
+  def pushBatch[T, V >: T]: List[V] => Stack[T] => Stack[V] = vs => stack =>
+    vs.foldLeft[Stack[V]](stack) ( (s, v) => push(v)(s) )
+
+  def popBatch[T]: Int => Stack[T] => (List[T], Stack[T]) = n => stack =>
+    List.fill(n)(()).foldLeft((List.empty[T], stack)) {
+      case ((ts, s), _) => pop(s).map { case (t, s1) => (ts :+ t, s1) }.getOrElse((ts, EmptyStack))
     }
 
-  def safeMin[T](s: Stack[T])(implicit ord: Ordering[T]): Option[T] = {
+  def min[T : Ordering](s : Stack[T]): Option[T] = s match {
+      case EmptyStack => None
+      case NonEmptyStack(top, EmptyStack) => Some(top)
+      case NonEmptyStack(top, NonEmptyStack(sndTop, tail)) =>
+        val topMin = Ordering[T].min(top, sndTop)
+        min(tail).map(Ordering[T].min(topMin, _)).orElse(Some(topMin))
+    }
+
+  def safeMin[T: Ordering](s : Stack[T]): Option[T] = {
     @tailrec
-    def aux(acc: Option[T], s: Stack[T]): Option[T] = {
+    def aux(acc: T, s: Stack[T]): T =
       s match {
-        case EmptyStack() => acc
+        case EmptyStack => acc
         case NonEmptyStack(top, tail) =>
-          val newAcc = acc.map(ord.min(_, top)).orElse(Some(top))
+          val newAcc = Ordering[T].min(acc, top)
           aux(newAcc, tail)
       }
+
+    s match {
+      case EmptyStack => None
+      case NonEmptyStack(top, tail) => Some(aux(top, tail))
     }
-    aux(None, s)
+
   }
+
+  def fold[T,V](s : Stack[T], v : V, combine : (V,T) => V) : V = {
+
+    @tailrec
+    def aux(acc: V, s: Stack[T]): V =
+      s match {
+        case EmptyStack => acc
+        case NonEmptyStack(top, tail) =>
+          aux(combine(acc, top), tail)
+      }
+
+    s match {
+      case EmptyStack => v
+      case NonEmptyStack(top, tail) => aux(combine(v,top), tail)
+    }
+  }
+
+  def foldMin[T: Ordering](s : Stack[T]): Option[T] = {
+    s match {
+      case EmptyStack => None
+      case NonEmptyStack(top, tail) =>  Some(fold(tail, top, Ordering[T].min[T]))
+    }
+  }
+
+  def size[T]: Stack[T] => Int = s => {
+    fold[T, Int](s, 0, {
+      case (n,_) => n +1
+    })
+  }
+
 }
