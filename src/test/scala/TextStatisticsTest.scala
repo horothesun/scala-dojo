@@ -12,7 +12,12 @@ class TextStatisticsTest extends AnyFunSuite {
   }
 
   test("produce list of 2 Sentences from double sentence String") {
-    assert(sentencesFromString("lorem ipsum.ciao") == List[Sentence](Sentence(List(Word("lorem"), Word("ipsum"))), Sentence(List(Word("ciao")))))
+    assert(
+      sentencesFromString("lorem ipsum.ciao") == List[Sentence](
+        Sentence(List(Word("lorem"), Word("ipsum"))),
+        Sentence(List(Word("ciao")))
+      )
+    )
   }
 
   test("wordCount of empty text is 0") {

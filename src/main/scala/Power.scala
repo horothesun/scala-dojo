@@ -12,14 +12,14 @@ object Power {
     b != 0, e < 0 := 1 / (b * ... * b, |e| times)
     b != 0, e = 0 := 1
     b != 0, e > 0 := b * ... * b, e times
-  */
+   */
   def power(b: Int, e: Int): Option[BigDecimal] =
     if (b == 0) if (e <= 0) None else Some(0.0)
     else Some(powerNonZeroBase(b, e))
 
   def powerNonZeroBase(b: Int, e: Int): BigDecimal = {
-      val bToAbsE = BigDecimal(powerNonZeroBaseNaturalExp(b, abs(e)).bigInteger)
-      if (e >= 0) bToAbsE else 1.0 / bToAbsE
+    val bToAbsE = BigDecimal(powerNonZeroBaseNaturalExp(b, abs(e)).bigInteger)
+    if (e >= 0) bToAbsE else 1.0 / bToAbsE
   }
 
   def powerNonZeroBaseNaturalExp(b: Int, e: Int): BigInt = {

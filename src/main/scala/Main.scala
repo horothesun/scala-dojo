@@ -3,7 +3,7 @@ object Main extends App {
   println(Power.power(0, 0))
 
   val as = List[Int]()
-  val n = 1
+  val n  = 1
   println(s"${as.take(n)}, ${as.drop(n)}")
 }
 
