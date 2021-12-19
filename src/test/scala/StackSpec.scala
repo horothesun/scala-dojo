@@ -5,13 +5,13 @@ import org.scalacheck.{Gen, Properties}
 
 object StackSpec extends Properties("Stack") {
 
-  val elementGen: Gen[Int]           = oneOf(posNum[Int], negNum[Int])
+  val elementGen: Gen[Int] = oneOf(posNum[Int], negNum[Int])
   val elementListGen: Gen[List[Int]] = listOf(elementGen)
 
   val stackGen: Gen[Stack[Int]] = elementListGen.map(stackFromList)
 
   property("n pushes followed by n pops leave any Stack unchanged") = forAll(elementListGen, stackGen) { (ts, stack) =>
-    val stackAfterPushes        = ts.foldLeft(stack)((s, t) => push(t)(s))
+    val stackAfterPushes = ts.foldLeft(stack)((s, t) => push(t)(s))
     val stackAfterPushesAndPops = ts.foldLeft(stackAfterPushes)((s, _) => pop(s).map(_._2).getOrElse(EmptyStack))
     stack == stackAfterPushesAndPops
   }
@@ -19,7 +19,7 @@ object StackSpec extends Properties("Stack") {
   property("pushing all elements of a list in a stack then popping them out produces the same list") =
     forAll(elementListGen, stackGen) { (ts, stack) =>
       val stackAfterPushes = ts.foldLeft(stack)((s, t) => push(t)(s))
-      val poppedList       = ts
+      val poppedList = ts
         .foldLeft((List[Int](), stackAfterPushes))((res, _) =>
           pop(res._2) match {
             case Some((top, tail)) => (top :: res._1, tail)

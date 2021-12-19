@@ -1,9 +1,9 @@
 sealed trait FizzBuzz
 
 object FizzBuzz {
-  case object Fizz         extends FizzBuzz
-  case object Buzz         extends FizzBuzz
-  case object FizzBuzz     extends FizzBuzz
+  case object Fizz extends FizzBuzz
+  case object Buzz extends FizzBuzz
+  case object FizzBuzz extends FizzBuzz
   case class Other(i: Int) extends FizzBuzz
 
   def fizzBuzz(i: Int): FizzBuzz =

@@ -7,10 +7,10 @@ sealed trait BinaryTree[+T] {
   def reversed[S >: T]: BinaryTree[T] = ???
 }
 
-object Nil                                                                extends BinaryTree[Nothing] {
+object Nil extends BinaryTree[Nothing] {
   override def toString: String = "Nil"
 }
-case class Node[T](element: T, left: BinaryTree[T], right: BinaryTree[T]) extends BinaryTree[T]       {
+case class Node[T](element: T, left: BinaryTree[T], right: BinaryTree[T]) extends BinaryTree[T] {
   override def toString: String = s"[$element | l: $left | r: $right]"
 }
 
