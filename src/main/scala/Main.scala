@@ -5,6 +5,7 @@ object Main extends App {
   val as = List[Int]()
   val n  = 1
   println(s"${as.take(n)}, ${as.drop(n)}")
+  println(s"Fibonacci numbers: ${(0 to 9).map(Fibonacci.fib).mkString(", ")}, ...")
 }
 
 class Ciao {
