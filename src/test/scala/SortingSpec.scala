@@ -12,4 +12,5 @@ object SortingSpec extends Properties("Sorting") {
 
   property("isSorted is true for sorted arrays") = forAll(sortedIntArrayGen)(isSorted(_, intLesserEq))
   property("isSorted is false for unsorted arrays") = forAll(unsortedIntArrayGen)(!isSorted(_, intLesserEq))
+
 }

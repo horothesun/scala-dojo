@@ -1,7 +1,7 @@
 import TextStatistics.{longestWordInSentence, sentencesFromString, wordCount}
 import org.scalatest.funsuite.AnyFunSuite
 
-class TextStatisticsTest extends AnyFunSuite {
+final class TextStatisticsTest extends AnyFunSuite {
 
   test("produce empty list of Sentences from empty String") {
     assert(sentencesFromString("") == List[Sentence]())
