@@ -8,7 +8,9 @@ lazy val root = (project in file(".")).settings(
   name := "scala-dojo"
 )
 
+val munitVersion = "0.7.29"
+
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.2.9" % Test,
-  "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
+  "org.scalameta" %% "munit" % munitVersion % Test,
+  "org.scalameta" %% "munit-scalacheck" % munitVersion % Test
 )

@@ -1,5 +1,3 @@
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
-
 sealed trait MyList[+A]
 case object MyNil extends MyList[Nothing]
 case class MyCons[+A](head: A, tail: MyList[A]) extends MyList[A]
@@ -21,8 +19,20 @@ object MyList {
     else MyCons(as.head, apply(as.tail: _*))
 
   def tail[A](as: MyList[A]): Option[MyList[A]] = as match {
-    case MyNil             => None
-    case MyCons(_, asTail) => Some(asTail)
+    case MyNil         => None
+    case MyCons(_, xs) => Some(xs)
   }
+
+  def length[A](as: MyList[A]): Int = {
+    @annotation.tailrec
+    def loop(acc: Int, as: MyList[A]): Int = as match {
+      case MyNil           => acc
+      case MyCons(_, tail) => loop(1 + acc, tail)
+    }
+    loop(0, as)
+  }
+
+  def setHead[A](newHead: A, as: MyList[A]): Option[MyList[A]] =
+    tail(as).map(MyCons(newHead, _))
 
 }
