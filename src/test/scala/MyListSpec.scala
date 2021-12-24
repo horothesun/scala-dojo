@@ -56,4 +56,11 @@ final class MyListSpec extends ScalaCheckSuite {
     forAll(listOf(intGen), intGen)((as, n) => drop(MyList(as: _*), n) == MyList(as.drop(n): _*))
   }
 
+  property("MyList dropWhile is same as List's") {
+    forAll(listOf(intGen)) { as =>
+      def isNonNegative(i: Int): Boolean = i >= 0
+      dropWhile(MyList(as: _*), isNonNegative) == MyList(as.dropWhile(isNonNegative): _*)
+    }
+  }
+
 }

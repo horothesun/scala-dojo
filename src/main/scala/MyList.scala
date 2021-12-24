@@ -44,4 +44,10 @@ object MyList {
         case MyCons(_, tail) => drop(tail, n - 1)
       }
 
+  @annotation.tailrec
+  def dropWhile[A](as: MyList[A], f: A => Boolean): MyList[A] = as match {
+    case MyNil              => as
+    case MyCons(head, tail) => if (f(head)) dropWhile(tail, f) else as
+  }
+
 }
