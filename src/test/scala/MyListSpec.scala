@@ -44,4 +44,16 @@ final class MyListSpec extends ScalaCheckSuite {
     }
   }
 
+  property("drop(MyNil, n) is MyNil for any n") {
+    forAll(intGen)(n => drop(MyNil, n) == MyNil)
+  }
+
+  property("drop(as, n) is 'as' for any negative n") {
+    forAll(myListGen, negNum[Int])((as, n) => drop(as, n) == as)
+  }
+
+  property("MyList drop is same as List's") {
+    forAll(listOf(intGen), intGen)((as, n) => drop(MyList(as: _*), n) == MyList(as.drop(n): _*))
+  }
+
 }

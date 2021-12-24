@@ -35,4 +35,13 @@ object MyList {
   def setHead[A](newHead: A, as: MyList[A]): Option[MyList[A]] =
     tail(as).map(MyCons(newHead, _))
 
+  @annotation.tailrec
+  def drop[A](as: MyList[A], n: Int): MyList[A] =
+    if (n <= 0) as
+    else
+      as match {
+        case MyNil           => MyNil
+        case MyCons(_, tail) => drop(tail, n - 1)
+      }
+
 }
