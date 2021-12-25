@@ -71,4 +71,14 @@ final class TreeSpec extends ScalaCheckSuite {
     forAll(treeGen)(depth(_) >= 0)
   }
 
+  property("map identity law") {
+    forAll(treeGen)(t => map(t)(i => i) == t)
+  }
+
+  property("map composition law") {
+    val addOne: Int => Int = _ + 1
+    val timesTwo: Int => Int = _ * 2
+    forAll(treeGen)(t => map(map(t)(addOne))(timesTwo) == map(t)(addOne andThen timesTwo))
+  }
+
 }
