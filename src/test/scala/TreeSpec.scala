@@ -7,9 +7,9 @@ import org.scalacheck.Prop.{forAll, propBoolean}
 final class TreeSpec extends ScalaCheckSuite {
 
   val intGen: Gen[Int] = oneOf(posNum[Int], negNum[Int])
-  val treeGen: Gen[Tree[Int]] = lzy(oneOf(leafGen, branchGen))
+  def treeGen(): Gen[Tree[Int]] = lzy(oneOf(leafGen, branchGen))
   val leafGen: Gen[Leaf[Int]] = intGen.map(Leaf.apply)
-  val branchGen: Gen[Branch[Int]] = for { l <- treeGen; r <- treeGen } yield Branch(l, r)
+  val branchGen: Gen[Branch[Int]] = for { l <- treeGen(); r <- treeGen() } yield Branch(l, r)
 
   def treeGenFromValue(value: Int): Gen[Tree[Int]] = lzy(oneOf(leafGenFromValue(value), branchGenFromValue(value)))
   def leafGenFromValue(value: Int): Gen[Leaf[Int]] = const(Leaf(value))
@@ -31,12 +31,12 @@ final class TreeSpec extends ScalaCheckSuite {
   }
 
   property("size is always > 0") {
-    forAll(treeGen)(size(_) > 0)
+    forAll(treeGen())(size(_) > 0)
   }
 
   property("size is always odd") {
     def isOdd(i: Int) = i % 2 != 0
-    forAll(treeGen)(t => isOdd(size(t)))
+    forAll(treeGen())(t => isOdd(size(t)))
   }
 
   test("maximum(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))) is 6") {
@@ -68,17 +68,19 @@ final class TreeSpec extends ScalaCheckSuite {
   }
 
   property("depth is always >= 0") {
-    forAll(treeGen)(depth(_) >= 0)
+    forAll(treeGen())(depth(_) >= 0)
   }
 
   property("map identity law") {
-    forAll(treeGen)(t => map(t)(i => i) == t)
+    forAll(treeGen())(t => map(t)(i => i) == t)
   }
 
   property("map composition law") {
     val addOne: Int => Int = _ + 1
-    val timesTwo: Int => Int = _ * 2
-    forAll(treeGen)(t => map(map(t)(addOne))(timesTwo) == map(t)(addOne andThen timesTwo))
+    val toString: Int => String = i => s"$i"
+    forAll(treeGen()) { t =>
+      map(map(t)(addOne))(toString) == map(t)(addOne andThen toString)
+    }
   }
 
 }
