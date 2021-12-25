@@ -59,4 +59,16 @@ final class TreeSpec extends ScalaCheckSuite {
     }
   }
 
+  property("depth of Leaf is 0") {
+    forAll(leafGen)(depth(_) == 0)
+  }
+
+  test("depth(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))) is 2") {
+    assertEquals(depth(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))), 2)
+  }
+
+  property("depth is always >= 0") {
+    forAll(treeGen)(depth(_) >= 0)
+  }
+
 }
