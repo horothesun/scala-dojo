@@ -50,4 +50,10 @@ object MyList {
     case MyCons(head, tail) => if (f(head)) dropWhile(tail, f) else as
   }
 
+  def init[A](as: MyList[A]): MyList[A] = as match {
+    case MyNil                    => MyNil
+    case MyCons(_, MyNil)         => MyNil
+    case MyCons(head, nonNilTail) => MyCons(head, init(nonNilTail))
+  }
+
 }

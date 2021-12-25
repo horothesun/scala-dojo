@@ -63,4 +63,8 @@ final class MyListSpec extends ScalaCheckSuite {
     }
   }
 
+  property("MyList 'init' is same as List's dropRight(1)") {
+    forAll(listOf(intGen))(as => init(MyList(as: _*)) == MyList(as.dropRight(1): _*))
+  }
+
 }
