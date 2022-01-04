@@ -1,6 +1,9 @@
 .DS_Store
 .idea
 .bsp
+**/.bloop/
+.metals/
+**/metals.sbt
 target/
 *.class
 *.log
