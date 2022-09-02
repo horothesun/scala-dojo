@@ -130,7 +130,7 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     assertEquals(s.magicConstant, Some(15))
   }
 
-  test("Square replace with no Replacements returns the same Square") {
+  test("replace with no Replacements returns the same Square") {
     val s = Square(
       size = 3,
       rows = Array(
@@ -140,15 +140,18 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
       )
     )
     val rs = List.empty[Replacement]
-    val expectedSquare = Square(
-      size = 3,
-      rows = Array(
-        Array(1, 2, 3),
-        Array(4, 5, 6),
-        Array(7, 8, 9)
+    val expectedResult = ReplaceResult(
+      List.empty,
+      Square(
+        size = 3,
+        rows = Array(
+          Array(1, 2, 3),
+          Array(4, 5, 6),
+          Array(7, 8, 9)
+        )
       )
     )
-    assertEquals(s.replace(rs), expectedSquare)
+    assertEquals(replace(s, rs), expectedResult)
   }
 
   test("Square replace with single Replacement is correct") {
@@ -160,16 +163,19 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
         Array(7, 8, 9)
       )
     )
-    val rs = List(Replacement(1, 1, 9))
-    val expectedSquare = Square(
-      size = 3,
-      rows = Array(
-        Array(1, 2, 3),
-        Array(4, 9, 6),
-        Array(7, 8, 9)
+    val rs = List(Replacement(Position(rowIndex = 1, columnIndex = 1), newValue = 9))
+    val expectedResult = ReplaceResult(
+      List(Cost(4)),
+      Square(
+        size = 3,
+        rows = Array(
+          Array(1, 2, 3),
+          Array(4, 9, 6),
+          Array(7, 8, 9)
+        )
       )
     )
-    assertEquals(s.replace(rs), expectedSquare)
+    assertEquals(replace(s, rs), expectedResult)
   }
 
   test("Square replace with 3 Replacements is correct") {
@@ -182,39 +188,42 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
       )
     )
     val rs = List(
-      Replacement(0, 0, 5),
-      Replacement(1, 2, 9),
-      Replacement(2, 1, 1)
+      Replacement(Position(rowIndex = 0, columnIndex = 0), newValue = 5),
+      Replacement(Position(rowIndex = 1, columnIndex = 2), newValue = 9),
+      Replacement(Position(rowIndex = 2, columnIndex = 1), newValue = 1)
     )
-    val expectedSquare = Square(
-      size = 3,
-      rows = Array(
-        Array(5, 2, 3),
-        Array(4, 5, 9),
-        Array(7, 1, 9)
+    val expectedResult = ReplaceResult(
+      List(Cost(4), Cost(3), Cost(7)),
+      Square(
+        size = 3,
+        rows = Array(
+          Array(5, 2, 3),
+          Array(4, 5, 9),
+          Array(7, 1, 9)
+        )
       )
     )
-    assertEquals(s.replace(rs), expectedSquare)
+    assertEquals(replace(s, rs), expectedResult)
   }
 
   test("allPossibleAscendingValues(size = 0) is empty") {
-    assertEquals(allPossibleAscendingValues(size = 0), List.empty)
+    assertEquals(allPossibleValues(size = 0), List.empty)
   }
 
   test("allPossibleAscendingValues(size = 3) is correct") {
-    assertEquals(allPossibleAscendingValues(size = 3), List(1, 2, 3, 4, 5, 6, 7, 8, 9))
+    assertEquals(allPossibleValues(size = 3), List(1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
 
   property("allPossibleAscendingValues returns ascending values") {
     forAll(Gen.posNum[Int]) { size =>
-      val vs = allPossibleAscendingValues(size)
+      val vs = allPossibleValues(size)
       assertEquals(vs, vs.sorted)
     }
   }
 
-  property("diff is commutative") {
+  property("cost is commutative") {
     forAll(Gen.posNum[Int], Gen.posNum[Int]) { (a, b) =>
-      assertEquals(diff(a, b), diff(b, a))
+      assertEquals(cost(a, b), cost(b, a))
     }
   }
 

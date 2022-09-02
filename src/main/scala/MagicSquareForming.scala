@@ -31,12 +31,6 @@ object MagicSquareForming {
     lazy val topRightBottomLeftDiagonal: Array[Int] =
       (0 until size).toArray.map(i => rows(i)(size - 1 - i))
 
-    def replace(rs: List[Replacement]): Square = {
-      val newRows = rows.map(_.clone)
-      rs.foreach(r => newRows(r.rowIndex)(r.columnIndex) = r.newValue)
-      Square(this.size, newRows)
-    }
-
     override def equals(that: Any): Boolean =
       that match {
         case that: Square =>
@@ -49,15 +43,37 @@ object MagicSquareForming {
     override def canEqual(a: Any): Boolean = a.isInstanceOf[Square]
   }
 
-  case class Replacement(
+  case class Position(
     rowIndex: Int,
-    columnIndex: Int,
+    columnIndex: Int
+  )
+
+  case class Replacement(
+    position: Position,
     newValue: Int
   )
 
-  def allPossibleAscendingValues(size: Int): List[Int] =
-    (1 to size * size).toList
+  case class Cost(value: Int)
 
-  def diff(a: Int, b: Int): Int = Math.abs(a - b)
+  case class ReplaceResult(
+    costs: List[Cost],
+    resultSquare: Square
+  )
+
+  def replace(s: Square, rs: List[Replacement]): ReplaceResult = {
+    val newRows = s.rows.map(_.clone)
+    var costs = Array.empty[Cost]
+    rs.foreach { r =>
+      val i = r.position.rowIndex
+      val j = r.position.columnIndex
+      newRows(i)(j) = r.newValue
+      costs = costs.appended(cost(r.newValue, s.rows(i)(j)))
+    }
+    ReplaceResult(costs.toList, Square(s.size, newRows))
+  }
+
+  def allPossibleValues(size: Int): List[Int] = (1 to size * size).toList
+
+  def cost(a: Int, b: Int): Cost = Cost(Math.abs(a - b))
 
 }
