@@ -1,4 +1,4 @@
-import java.awt.ContainerOrderFocusTraversalPolicy
+import scala.math.Ordering.Implicits._
 
 /*
   We define a magic square to be an `n x n` matrix of distinct positive integers from `1` to `n^2`
@@ -15,13 +15,20 @@ object MagicSquareForming {
     size: Int,
     rows: Array[Array[Int]]
   ) {
-    def isMagic: Boolean = {
+
+    lazy val flattenedValues: List[Int] = rows.toList.flatMap(_.toList)
+
+    lazy val isMagic: Boolean = {
       val topLeftBottomRightDiagonalSum = topLeftBottomRightDiagonal.sum
-      (columns.map(c => c.sum) ++ Array(topLeftBottomRightDiagonalSum, topRightBottomLeftDiagonal.sum))
-        .forall(_ == topLeftBottomRightDiagonalSum)
+      flattenedValues.sorted == allValues(size) &&
+      (
+        rows.map(r => r.sum) ++
+          columns.map(c => c.sum) ++
+          Array(topLeftBottomRightDiagonalSum, topRightBottomLeftDiagonal.sum)
+      ).forall(_ == topLeftBottomRightDiagonalSum)
     }
 
-    def magicConstant: Option[Int] =
+    lazy val magicConstant: Option[Int] =
       if (isMagic) Some(topLeftBottomRightDiagonal.sum) else None
 
     lazy val columns: Array[Array[Int]] =
@@ -38,7 +45,7 @@ object MagicSquareForming {
         case that: Square =>
           that.canEqual(this) &&
             this.size == that.size &&
-            this.rows.toList.map(_.toList) == that.rows.toList.map(_.toList)
+            this.flattenedValues == that.flattenedValues
         case _ => false
       }
 
@@ -56,7 +63,6 @@ object MagicSquareForming {
   )
 
   case class Cost(value: Int)
-
   object Cost {
     implicit val ordering: Ordering[Cost] = Ordering.by[Cost, Int](_.value)
   }
@@ -85,45 +91,48 @@ object MagicSquareForming {
     indexes.flatMap(i => indexes.map(j => Position(rowIndex = i, columnIndex = j)))
   }
 
-  def allReplacements(size: Int): List[Replacement] =
-    allValues(size).flatMap(v => allPositions(size).map(p => Replacement(newValue = v, position = p)))
+  def allReplacements(size: Int): List[Replacement] = {
+    val possibleValues = allValues(size)
+    allPositions(size).flatMap(p => possibleValues.map(v => Replacement(newValue = v, position = p)))
+  }
 
   def cost(a: Int, b: Int): Cost = Cost(Math.abs(a - b))
 
   def isNoOp(r: Replacement, s: Square): Boolean =
     r.newValue == s.rows(r.position.rowIndex)(r.position.columnIndex)
 
-  case class Result(
+  case class Candidate(
     replacements: List[Replacement],
     cost: Cost,
     square: Square
   )
 
-  def minCostReplacements(s: Square): Result = {
+  def minCostReplacements(s: Square): Candidate = {
     val possibleReplacements = allReplacements(s.size)
-    def extendedResults(previous: Result): List[Result] =
+    def extendedCandidates(start: Square, c: Candidate): List[Candidate] =
       possibleReplacements
-        .filterNot(r => isNoOp(r, previous.square))
+        .filterNot(r => isNoOp(r, c.square))
         .map { r =>
-          val replacements = previous.replacements.appended(r)
-          val replaceResult = replace(previous.square, replacements)
-          Result(
-            replacements,
-            replaceResult.totalCost,
-            square = replaceResult.square
-          )
+          val replacements = c.replacements.appended(r)
+          val replaceResult = replace(start, replacements)
+          Candidate(replacements, replaceResult.totalCost, replaceResult.square)
         }
 
-    val baseResult = Result(replacements = List.empty, Cost(0), s)
-    val resultsByLength: Map[Int, List[Result]] =
-      (1 to s.size * s.size).toList
-        .foldLeft(Map(0 -> List(baseResult))) { case (acc, length) =>
-          acc ++ acc(length - 1).map(res => (length, extendedResults(res))).toMap
-        }
+    val baseCandidate = Candidate(List.empty[Replacement], Cost(0), s)
+    val baseMinMagicCost: Option[Cost] = if (baseCandidate.square.isMagic) Some(baseCandidate.cost) else None
+    val (_, candidatesByLength) = (1 to s.size * s.size).toList
+      .foldLeft((baseMinMagicCost, Map(0 -> List(baseCandidate)))) { case ((accMagicMinCost, acc), length) =>
+        def isCandidateValid(c: Candidate): Boolean = accMagicMinCost.fold(true)(minCost => c.cost < minCost)
+        val newCandidates = acc(length - 1).filter(isCandidateValid).flatMap(c => extendedCandidates(s, c))
+        val newAcc = acc ++ Map(length -> newCandidates)
+        val newAccMagicMinCost = (
+          newCandidates.filter(_.square.isMagic).map(_.cost) ++ accMagicMinCost.toList
+        ).minOption
+        (newAccMagicMinCost, newAcc)
+      }
 
-    resultsByLength.toList.flatMap { case (_, results) => results }
-      .filter(result => result.square.isMagic)
-      .minBy(result => result.cost)
+    val magicCandidates = candidatesByLength.toList.flatMap { case (_, cs) => cs }.filter(_.square.isMagic)
+    magicCandidates.minBy(_.cost)
   }
 
   def formingMagicSquare(s: Array[Array[Int]]): Int =
