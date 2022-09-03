@@ -1,3 +1,5 @@
+import java.awt.ContainerOrderFocusTraversalPolicy
+
 /*
   We define a magic square to be an `n x n` matrix of distinct positive integers from `1` to `n^2`
   where the sum of any row, column, or diagonal of length `n` is always equal to the same number: the magic constant.
@@ -49,31 +51,82 @@ object MagicSquareForming {
   )
 
   case class Replacement(
-    position: Position,
-    newValue: Int
+    newValue: Int,
+    position: Position
   )
 
   case class Cost(value: Int)
 
+  object Cost {
+    implicit val ordering: Ordering[Cost] = Ordering.by[Cost, Int](_.value)
+  }
+
   case class ReplaceResult(
-    costs: List[Cost],
-    resultSquare: Square
+    totalCost: Cost,
+    square: Square
   )
 
   def replace(s: Square, rs: List[Replacement]): ReplaceResult = {
     val newRows = s.rows.map(_.clone)
-    var costs = Array.empty[Cost]
+    var totalCost = 0
     rs.foreach { r =>
       val i = r.position.rowIndex
       val j = r.position.columnIndex
       newRows(i)(j) = r.newValue
-      costs = costs.appended(cost(r.newValue, s.rows(i)(j)))
+      totalCost += cost(r.newValue, s.rows(i)(j)).value
     }
-    ReplaceResult(costs.toList, Square(s.size, newRows))
+    ReplaceResult(Cost(totalCost), Square(s.size, newRows))
   }
 
-  def allPossibleValues(size: Int): List[Int] = (1 to size * size).toList
+  def allValues(size: Int): List[Int] = (1 to size * size).toList
+
+  def allPositions(size: Int): List[Position] = {
+    val indexes = (0 until size).toList
+    indexes.flatMap(i => indexes.map(j => Position(rowIndex = i, columnIndex = j)))
+  }
+
+  def allReplacements(size: Int): List[Replacement] =
+    allValues(size).flatMap(v => allPositions(size).map(p => Replacement(newValue = v, position = p)))
 
   def cost(a: Int, b: Int): Cost = Cost(Math.abs(a - b))
+
+  def isNoOp(r: Replacement, s: Square): Boolean =
+    r.newValue == s.rows(r.position.rowIndex)(r.position.columnIndex)
+
+  case class Result(
+    replacements: List[Replacement],
+    cost: Cost,
+    square: Square
+  )
+
+  def minCostReplacements(s: Square): Result = {
+    val possibleReplacements = allReplacements(s.size)
+    def extendedResults(previous: Result): List[Result] =
+      possibleReplacements
+        .filterNot(r => isNoOp(r, previous.square))
+        .map { r =>
+          val replacements = previous.replacements.appended(r)
+          val replaceResult = replace(previous.square, replacements)
+          Result(
+            replacements,
+            replaceResult.totalCost,
+            square = replaceResult.square
+          )
+        }
+
+    val baseResult = Result(replacements = List.empty, Cost(0), s)
+    val resultsByLength: Map[Int, List[Result]] =
+      (1 to s.size * s.size).toList
+        .foldLeft(Map(0 -> List(baseResult))) { case (acc, length) =>
+          acc ++ acc(length - 1).map(res => (length, extendedResults(res))).toMap
+        }
+
+    resultsByLength.toList.flatMap { case (_, results) => results }
+      .filter(result => result.square.isMagic)
+      .minBy(result => result.cost)
+  }
+
+  def formingMagicSquare(s: Array[Array[Int]]): Int =
+    minCostReplacements(Square(size = s.length, rows = s)).cost.value
 
 }

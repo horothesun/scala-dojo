@@ -1,14 +1,10 @@
 import MagicSquareForming._
+import MagicSquareFormingSpec._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
-import org.scalacheck.Prop.forAll
+import org.scalacheck.Prop.{forAll, propBoolean}
 
 class MagicSquareFormingSpec extends ScalaCheckSuite {
-
-  val posSquareGen: Gen[Square] = for {
-    size <- Gen.chooseNum(0, 99)
-    rows <- Gen.listOfN(size, Gen.listOfN(size, Gen.posNum[Int])).map(_.toArray.map(_.toArray))
-  } yield Square(size, rows)
 
   test("Square columns is correct") {
     val s = Square(
@@ -141,7 +137,7 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     )
     val rs = List.empty[Replacement]
     val expectedResult = ReplaceResult(
-      List.empty,
+      Cost(0),
       Square(
         size = 3,
         rows = Array(
@@ -163,9 +159,9 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
         Array(7, 8, 9)
       )
     )
-    val rs = List(Replacement(Position(rowIndex = 1, columnIndex = 1), newValue = 9))
+    val rs = List(Replacement(newValue = 9, Position(rowIndex = 1, columnIndex = 1)))
     val expectedResult = ReplaceResult(
-      List(Cost(4)),
+      Cost(4),
       Square(
         size = 3,
         rows = Array(
@@ -188,12 +184,12 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
       )
     )
     val rs = List(
-      Replacement(Position(rowIndex = 0, columnIndex = 0), newValue = 5),
-      Replacement(Position(rowIndex = 1, columnIndex = 2), newValue = 9),
-      Replacement(Position(rowIndex = 2, columnIndex = 1), newValue = 1)
+      Replacement(newValue = 5, Position(rowIndex = 0, columnIndex = 0)),
+      Replacement(newValue = 9, Position(rowIndex = 1, columnIndex = 2)),
+      Replacement(newValue = 1, Position(rowIndex = 2, columnIndex = 1))
     )
     val expectedResult = ReplaceResult(
-      List(Cost(4), Cost(3), Cost(7)),
+      Cost(14),
       Square(
         size = 3,
         rows = Array(
@@ -206,18 +202,41 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     assertEquals(replace(s, rs), expectedResult)
   }
 
-  test("allPossibleAscendingValues(size = 0) is empty") {
-    assertEquals(allPossibleValues(size = 0), List.empty)
+  test("allValues(size = 0) is empty") {
+    assertEquals(allValues(size = 0), List.empty)
   }
 
-  test("allPossibleAscendingValues(size = 3) is correct") {
-    assertEquals(allPossibleValues(size = 3), List(1, 2, 3, 4, 5, 6, 7, 8, 9))
+  test("allValues(size = 3) is correct") {
+    assertEquals(allValues(size = 3), List(1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
 
-  property("allPossibleAscendingValues returns ascending values") {
+  property("allValues returns ascending values") {
     forAll(Gen.posNum[Int]) { size =>
-      val vs = allPossibleValues(size)
+      val vs = allValues(size)
       assertEquals(vs, vs.sorted)
+    }
+  }
+
+  test("allPositions(size = 3) is correct") {
+    assertEquals(
+      allPositions(size = 3),
+      List(
+        Position(rowIndex = 0, columnIndex = 0),
+        Position(rowIndex = 0, columnIndex = 1),
+        Position(rowIndex = 0, columnIndex = 2),
+        Position(rowIndex = 1, columnIndex = 0),
+        Position(rowIndex = 1, columnIndex = 1),
+        Position(rowIndex = 1, columnIndex = 2),
+        Position(rowIndex = 2, columnIndex = 0),
+        Position(rowIndex = 2, columnIndex = 1),
+        Position(rowIndex = 2, columnIndex = 2)
+      )
+    )
+  }
+
+  property("allPositions(size) returns a List of size^2 length") {
+    forAll(Gen.posNum[Int]) { size =>
+      assertEquals(allPositions(size).size, size * size)
     }
   }
 
@@ -226,5 +245,116 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
       assertEquals(cost(a, b), cost(b, a))
     }
   }
+
+  property("if isNoOp(r, s) then r preserves s") {
+    forAll(replacementAndNonEmptySquare) { case (r, s) =>
+      isNoOp(r, s) ==> (replace(s, List(r)).square == s)
+    }
+  }
+
+  property("if r preserves s then isNoOp(r, s)") {
+    forAll(replacementAndNonEmptySquare) { case (r, s) =>
+      (replace(s, List(r)).square == s) ==> isNoOp(r, s)
+    }
+  }
+
+  test("minCostReplacements is correct on sample 0") {
+    assertEquals(
+      minCostReplacements(square0),
+      Result(
+        replacements = List(Replacement(newValue = 6, Position(rowIndex = 2, columnIndex = 2))),
+        cost = Cost(1),
+        square = Square(
+          size = 3,
+          rows = Array(
+            Array(4, 9, 2),
+            Array(3, 5, 7),
+            Array(8, 1, 6)
+          )
+        )
+      )
+    )
+  }
+
+  test("minCostReplacements is correct on sample 1") {
+    assertEquals(
+      minCostReplacements(square1),
+      Result(
+        replacements = List(
+          Replacement(newValue = 9, Position(rowIndex = 0, columnIndex = 1)),
+          Replacement(newValue = 3, Position(rowIndex = 1, columnIndex = 0)),
+          Replacement(newValue = 8, Position(rowIndex = 2, columnIndex = 0))
+        ),
+        cost = Cost(4),
+        square = Square(
+          size = 3,
+          rows = Array(
+            Array(4, 9, 2),
+            Array(3, 5, 7),
+            Array(8, 1, 6)
+          )
+        )
+      )
+    )
+  }
+
+  test("formingMagicSquare is correct on sample 0") {
+    assertEquals(formingMagicSquare(square0.rows), 1)
+  }
+
+  test("formingMagicSquare is correct on sample 1") {
+    assertEquals(formingMagicSquare(square1.rows), 4)
+  }
+
+}
+
+object MagicSquareFormingSpec {
+
+  val square0: Square =
+    Square(
+      size = 3,
+      rows = Array(
+        Array(4, 9, 2),
+        Array(3, 5, 7),
+        Array(8, 1, 5)
+      )
+    )
+
+  val square1: Square =
+    Square(
+      size = 3,
+      rows = Array(
+        Array(4, 8, 2),
+        Array(4, 5, 7),
+        Array(6, 1, 6)
+      )
+    )
+
+  val posSquareGen: Gen[Square] =
+    Gen
+      .chooseNum(0, 99)
+      .flatMap(size => squareGen(size, elementGen = Gen.posNum[Int]))
+
+  def squareGen(size: Int, elementGen: Gen[Int]): Gen[Square] =
+    Gen
+      .listOfN(size, Gen.listOfN(size, elementGen))
+      .map(_.toArray.map(_.toArray))
+      .map(rows => Square(size, rows))
+
+  def positionGen(nonNegativeSize: Int): Gen[Position] = for {
+    rowIndex <- Gen.chooseNum(0, nonNegativeSize - 1)
+    columnIndex <- Gen.chooseNum(0, nonNegativeSize - 1)
+  } yield Position(rowIndex, columnIndex)
+
+  def replacementGen(nonNegativeSize: Int): Gen[Replacement] = for {
+    newValue <- Gen.chooseNum(1, nonNegativeSize * nonNegativeSize)
+    position <- positionGen(nonNegativeSize)
+  } yield Replacement(newValue, position)
+
+  def replacementAndNonEmptySquare: Gen[(Replacement, Square)] = for {
+    nonNegativeSize <- Gen.chooseNum(1, 32)
+    r <- replacementGen(nonNegativeSize)
+    s <- squareGen(nonNegativeSize, elementGen = Gen.chooseNum(1, 16))
+  } yield (r, s)
 
 }
