@@ -60,7 +60,10 @@ object MagicSquareForming {
   case class Replacement(
     newValue: Int,
     position: Position
-  )
+  ) {
+    def isNoOpFor(s: Square): Boolean =
+      this.newValue == s.rows(this.position.rowIndex)(this.position.columnIndex)
+  }
 
   case class Cost(value: Int)
   object Cost {
@@ -84,6 +87,8 @@ object MagicSquareForming {
     ReplaceResult(Cost(totalCost), Square(s.size, newRows))
   }
 
+  def cost(a: Int, b: Int): Cost = Cost(Math.abs(a - b))
+
   def allValues(size: Int): List[Int] = (1 to size * size).toList
 
   def allPositions(size: Int): List[Position] = {
@@ -96,22 +101,20 @@ object MagicSquareForming {
     allPositions(size).flatMap(p => possibleValues.map(v => Replacement(newValue = v, position = p)))
   }
 
-  def cost(a: Int, b: Int): Cost = Cost(Math.abs(a - b))
-
-  def isNoOp(r: Replacement, s: Square): Boolean =
-    r.newValue == s.rows(r.position.rowIndex)(r.position.columnIndex)
-
   case class Candidate(
     replacements: List[Replacement],
     cost: Cost,
     square: Square
-  )
+  ) {
+    def isReplacing(p: Position): Boolean =
+      this.replacements.map(_.position).contains(p)
+  }
 
   def minCostReplacements(s: Square): Candidate = {
     val possibleReplacements = allReplacements(s.size)
     def extendedCandidates(start: Square, c: Candidate): List[Candidate] =
       possibleReplacements
-        .filterNot(r => isNoOp(r, c.square))
+        .filterNot(r => r.isNoOpFor(c.square) || c.isReplacing(r.position))
         .map { r =>
           val replacements = c.replacements.appended(r)
           val replaceResult = replace(start, replacements)

@@ -202,6 +202,12 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     assertEquals(replace(s, rs), expectedResult)
   }
 
+  property("cost is commutative") {
+    forAll(Gen.posNum[Int], Gen.posNum[Int]) { (a, b) =>
+      assertEquals(cost(a, b), cost(b, a))
+    }
+  }
+
   test("allValues(size = 0) is empty") {
     assertEquals(allValues(size = 0), List.empty)
   }
@@ -270,21 +276,15 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     }
   }
 
-  property("cost is commutative") {
-    forAll(Gen.posNum[Int], Gen.posNum[Int]) { (a, b) =>
-      assertEquals(cost(a, b), cost(b, a))
+  property("if r.isNoOpFor(s) then r preserves s") {
+    forAll(replacementAndNonEmptySquare) { case (r, s) =>
+      r.isNoOpFor(s) ==> (replace(s, List(r)).square == s)
     }
   }
 
-  property("if isNoOp(r, s) then r preserves s") {
+  property("if r preserves s then r.isNoOpFor(s)") {
     forAll(replacementAndNonEmptySquare) { case (r, s) =>
-      isNoOp(r, s) ==> (replace(s, List(r)).square == s)
-    }
-  }
-
-  property("if r preserves s then isNoOp(r, s)") {
-    forAll(replacementAndNonEmptySquare) { case (r, s) =>
-      (replace(s, List(r)).square == s) ==> isNoOp(r, s)
+      (replace(s, List(r)).square == s) ==> r.isNoOpFor(s)
     }
   }
 
