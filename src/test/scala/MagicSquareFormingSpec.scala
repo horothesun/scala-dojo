@@ -344,6 +344,32 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     )
   }
 
+  test("minCostReplacements(square0) only replaces distinct positions") {
+    val square0 = Square(
+      size = 3,
+      rows = Array(
+        Array(4, 9, 2),
+        Array(3, 5, 7),
+        Array(8, 1, 5)
+      )
+    )
+    val replacedPositions = minCostReplacements(square0).replacements.map(_.position)
+    assertEquals(replacedPositions, replacedPositions.distinct)
+  }
+
+  test("minCostReplacements(square1) only replaces distinct positions") {
+    val square1 = Square(
+      size = 3,
+      rows = Array(
+        Array(4, 8, 2),
+        Array(4, 5, 7),
+        Array(6, 1, 6)
+      )
+    )
+    val replacedPositions = minCostReplacements(square1).replacements.map(_.position)
+    assertEquals(replacedPositions, replacedPositions.distinct)
+  }
+
   test("formingMagicSquare is correct on sample 0") {
     val sample0 = Array(
       Array(4, 9, 2),
