@@ -16,44 +16,38 @@ import scala.collection.immutable.TreeMap
  */
 object ClimbingTheLeaderboard {
 
-  case class Score(value: Int)
+  case class Score(value: Int) extends AnyVal
   object Score {
     implicit val ordering: Ordering[Score] = Ordering.by(_.value)
   }
 
-  case class Ranking(value: Int)
+  case class Ranking(value: Int) extends AnyVal
 
-  case class ScoreOccurrences(value: Int) {
-    def incremented: ScoreOccurrences = ScoreOccurrences(1 + value)
-  }
+  case class Leaderboard(scores: TreeMap[Score, Unit]) {
+    import Leaderboard.InsertionResult
 
-  case class InsertionResult(
-    ranking: Ranking,
-    newLeaderboard: Leaderboard
-  )
-
-  case class Leaderboard(scores: TreeMap[Score, ScoreOccurrences]) {
     def insert(score: Score): InsertionResult = {
-      val newScores = scores
-        .get(score)
-        .fold(scores + (score -> ScoreOccurrences(1)))(occurrences => scores + (score -> occurrences.incremented))
+      val newScores = scores + (score -> ())
       val ranking = Ranking(newScores.size - newScores.keysIterator.indexOf(score))
       InsertionResult(ranking, Leaderboard(newScores))
     }
   }
   object Leaderboard {
-    def from(ranked: Array[Int]): Leaderboard = {
-      val scores = TreeMap[Score, ScoreOccurrences]() ++
-        ranked.toList.groupMap(Score.apply)(identity).map { case (k, v) => (k, ScoreOccurrences(v.size)) }
-      Leaderboard(scores)
-    }
+    case class InsertionResult(
+      ranking: Ranking,
+      newLeaderboard: Leaderboard
+    )
+
+    def from(ranked: Array[Int]): Leaderboard = Leaderboard(
+      scores = ranked.groupBy(Score.apply).map { case (s, _) => (s, ()) }.to(TreeMap)
+    )
   }
 
   def climbingLeaderboard(ranked: Array[Int], player: Array[Int]): Array[Int] = {
-    val leaderboard = Leaderboard.from(ranked)
-    val playerScores = player.toList.map(Score.apply)
-    val (rankings, _) = playerScores.foldLeft((List.empty[Ranking], leaderboard)) { case ((rs, l), s) =>
-      val ir = l.insert(s)
+    val (rankings, _) = player.foldLeft(
+      (Vector.empty[Ranking], Leaderboard.from(ranked))
+    ) { case ((rs, l), s) =>
+      val ir = l.insert(Score(s))
       (rs :+ ir.ranking, ir.newLeaderboard)
     }
     rankings.map(_.value).toArray
