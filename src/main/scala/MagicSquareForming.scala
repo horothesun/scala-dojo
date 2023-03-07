@@ -44,8 +44,8 @@ object MagicSquareForming {
       that match {
         case that: Square =>
           that.canEqual(this) &&
-            this.size == that.size &&
-            this.flattenedValues == that.flattenedValues
+          this.size == that.size &&
+          this.flattenedValues == that.flattenedValues
         case _ => false
       }
 
