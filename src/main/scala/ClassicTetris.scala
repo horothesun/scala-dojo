@@ -26,15 +26,18 @@ object ClassicTetris {
   trait Shape[A] {
     val width: Width
     val height: Height
-    val rasterize: List[List[Option[A]]]
-
-    def transposed: Shape[A] = Shape.transposed(this)
+    val rasterized: List[List[Option[A]]]
 
     def rotatedCW: Shape[A] = Shape.rotatedCW(this)
     def rotatedCCW: Shape[A] = Shape.rotatedCCW(this)
 
+    def hRepeated(n: Int): Shape[A] = Shape.hRepeated(n, this)
+    def vRepeated(n: Int): Shape[A] = Shape.vRepeated(n, this)
+
+    def transposed: Shape[A] = Shape.transposed(this)
+
     def show(filled: A => String, hole: => String): String =
-      this.rasterize.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
+      this.rasterized.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
   }
   object Shape {
 
@@ -42,23 +45,23 @@ object ClassicTetris {
     def hole[A]: Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override lazy val rasterize: List[List[Option[A]]] = List(List(None))
+      override lazy val rasterized: List[List[Option[A]]] = List(List(None))
     }
     def filled[A](a: A): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override lazy val rasterize: List[List[Option[A]]] = List(List(Some(a)))
+      override lazy val rasterized: List[List[Option[A]]] = List(List(Some(a)))
     }
 
     def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize).map(_.reverse)
+      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized).map(_.reverse)
     }
     def rotatedCCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize).reverse
+      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized).reverse
     }
 
     def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = hStack(l :: rs.toList)
@@ -69,10 +72,13 @@ object ClassicTetris {
     def vStack[A](ss: List[Shape[A]]): Shape[A] = ss.fold(MonoidK[Shape].empty)(vStack(_: Shape[A], _: Shape[A]))
     def vStack[A](t: Shape[A], b: Shape[A]): Shape[A] = hStack(b.rotatedCW, t.rotatedCW).rotatedCCW
 
+    def hRepeated[A](n: Int, s: Shape[A]): Shape[A] = hStack(List.fill(n)(s))
+    def vRepeated[A](n: Int, s: Shape[A]): Shape[A] = vStack(List.fill(n)(s))
+
     def transposed[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize)
+      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized)
     }
 
     def transpose[A](rows: List[List[A]]): List[List[A]] = {
@@ -92,25 +98,25 @@ object ClassicTetris {
       override def empty[A]: Shape[A] = new Shape[A] {
         override lazy val width: Width = Width(0)
         override lazy val height: Height = Height(0)
-        override lazy val rasterize: List[List[Option[A]]] = List.empty
+        override lazy val rasterized: List[List[Option[A]]] = List.empty
       }
       override def combineK[A](x: Shape[A], y: Shape[A]): Shape[A] = new Shape[A] {
         override lazy val width: Width = x.width + y.width
         override lazy val height: Height = Height.max(x.height, y.height)
-        override lazy val rasterize: List[List[Option[A]]] = {
+        override lazy val rasterized: List[List[Option[A]]] = {
           val renderedX =
-            if (x.height >= y.height) x.rasterize
+            if (x.height >= y.height) x.rasterized
             else {
               val numbOfMissingRows = (y.height - x.height).value
               val missingRow = List.fill[Option[A]](x.width.value)(None)
-              x.rasterize ++ List.fill(numbOfMissingRows)(missingRow)
+              x.rasterized ++ List.fill(numbOfMissingRows)(missingRow)
             }
           val renderedY =
-            if (y.height >= x.height) y.rasterize
+            if (y.height >= x.height) y.rasterized
             else {
               val numbOfMissingRows = (x.height - y.height).value
               val missingRow = List.fill[Option[A]](y.width.value)(None)
-              y.rasterize ++ List.fill(numbOfMissingRows)(missingRow)
+              y.rasterized ++ List.fill(numbOfMissingRows)(missingRow)
             }
           renderedX.zip(renderedY).map { case (xRow, yRow) => xRow ++ yRow }
         }
@@ -127,26 +133,23 @@ object ClassicTetris {
   val h: Shape[Color] = hole
   val f: Shape[Color] = filled(Mono)
   val hf = hStack(h, f)
-  val fh = hStack(f, h)
-  val ff = hStack(f, f)
-  val fff = hStack(f, f, f)
+  val ff = f.hRepeated(2)
+  val fff = f.hRepeated(3)
   val fhf = hStack(f, h, f)
-  val hfh = hStack(h, f, h)
   val hff = hStack(h, f, f)
-  val ffh = hStack(List(f, f, h))
 
-  val i = vStack(f, f, f, f)
-  val o = vStack(ff, ff)
-  val t = vStack(fff, hfh)
-  val j = vStack(hf, hf, hf, ff)
-  val l = vStack(List(fh, fh, fh, ff))
-  val s = vStack(hff, ffh)
-  val z = vStack(ffh, hff)
+  val i = f.vRepeated(4)
+  val o = ff.vRepeated(2)
+  val t = vStack(fff, hf)
+  val j = vStack(hf.vRepeated(3), ff)
+  val l = vStack(f.vRepeated(3), ff)
+  val s = vStack(hff, ff)
+  val z = vStack(ff, hff)
   val allTetrominoes = NonEmptyList.of(i, o, t, j, l, s, z)
 
-  val plus = vStack(hfh, fff, hfh)
-  val times = vStack(fhf, hfh, fhf)
-  val diamond = vStack(hfh, fhf, hfh)
+  val plus = vStack(hf, fff, hf)
+  val times = vStack(fhf, hf, fhf)
+  val diamond = vStack(hf, fhf, hf)
   val squareBorder = vStack(fff, fhf, fff)
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
@@ -167,7 +170,7 @@ object ClassicTetris {
         .concat(List(plus, times, diamond, squareBorder))
         .toList
         .map(_.show(filled = _ => "🟩", hole = "⬜️"))
-        .mkString("\n", "\n\n---\n\n", "\n")
+        .mkString("\n", "\n\n", "\n")
     )
 
 }
