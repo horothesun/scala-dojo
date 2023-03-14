@@ -1,8 +1,8 @@
-import cats.MonoidK
+import cats.{Foldable, MonoidK}
 import cats.data.NonEmptyList
 import scala.annotation.tailrec
 import scala.collection.immutable.Nil
-import ClassicTetris.Color.Mono
+import ClassicTetris.Color._
 import ClassicTetris.Shape._
 
 object ClassicTetris {
@@ -26,10 +26,15 @@ object ClassicTetris {
   trait Shape[A] {
     val width: Width
     val height: Height
-    def render: List[List[Option[A]]]
+    val rasterize: List[List[Option[A]]]
+
+    def transposed: Shape[A] = Shape.transposed(this)
+
+    def rotatedCW: Shape[A] = Shape.rotatedCW(this)
+    def rotatedCCW: Shape[A] = Shape.rotatedCCW(this)
 
     def show(filled: A => String, hole: => String): String =
-      this.render.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
+      this.rasterize.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
   }
   object Shape {
 
@@ -37,28 +42,38 @@ object ClassicTetris {
     def hole[A]: Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override def render: List[List[Option[A]]] = List(List(None))
+      override lazy val rasterize: List[List[Option[A]]] = List(List(None))
     }
     def filled[A](a: A): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override def render: List[List[Option[A]]] = List(List(Some(a)))
+      override lazy val rasterize: List[List[Option[A]]] = List(List(Some(a)))
     }
 
     def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override def render: List[List[Option[A]]] = transpose(s.render).map(_.reverse).reverse
+      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize).map(_.reverse)
+    }
+    def rotatedCCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
+      override lazy val width: Width = Width(s.height.value)
+      override lazy val height: Height = Height(s.width.value)
+      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize).reverse
     }
 
-    def beside[A](l: Shape[A], r: Shape[A]): Shape[A] = MonoidK[Shape].combineK(l, r)
+    def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = hStack(l :: rs.toList)
+    def hStack[A](ss: List[Shape[A]]): Shape[A] = Foldable[List].foldK(ss)
+    def hStack[A](l: Shape[A], r: Shape[A]): Shape[A] = MonoidK[Shape].combineK(l, r)
 
-    def beside[A](l: Shape[A], rs: Shape[A]*): Shape[A] = if (rs.isEmpty) l else rs.fold(l)(beside)
+    def vStack[A](t: Shape[A], bs: Shape[A]*): Shape[A] = vStack(t :: bs.toList)
+    def vStack[A](ss: List[Shape[A]]): Shape[A] = ss.fold(MonoidK[Shape].empty)(vStack(_: Shape[A], _: Shape[A]))
+    def vStack[A](t: Shape[A], b: Shape[A]): Shape[A] = hStack(b.rotatedCW, t.rotatedCW).rotatedCCW
 
-    def topBottom[A](t: Shape[A], b: Shape[A]): Shape[A] =
-      rotatedCW(rotatedCW(rotatedCW(beside(rotatedCW(b), rotatedCW(t)))))
-
-    def topBottom[A](t: Shape[A], bs: Shape[A]*): Shape[A] = if (bs.isEmpty) t else bs.fold(t)(topBottom)
+    def transposed[A](s: Shape[A]): Shape[A] = new Shape[A] {
+      override lazy val width: Width = Width(s.height.value)
+      override lazy val height: Height = Height(s.width.value)
+      override lazy val rasterize: List[List[Option[A]]] = transpose(s.rasterize)
+    }
 
     def transpose[A](rows: List[List[A]]): List[List[A]] = {
       def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
@@ -66,12 +81,9 @@ object ClassicTetris {
       @tailrec
       def aux(acc: List[List[A]], rows: List[List[A]]): List[List[A]] =
         rows match {
-          case Nil => acc
-          case firstRow :: _ =>
-            firstRow match {
-              case Nil    => acc
-              case _ :: _ => aux(heads(rows) +: acc, tails(rows))
-            }
+          case Nil           => acc
+          case Nil :: _      => acc
+          case (_ :: _) :: _ => aux(acc :+ heads(rows), tails(rows))
         }
       aux(acc = List.empty, rows)
     }
@@ -80,25 +92,25 @@ object ClassicTetris {
       override def empty[A]: Shape[A] = new Shape[A] {
         override lazy val width: Width = Width(0)
         override lazy val height: Height = Height(0)
-        override def render: List[List[Option[A]]] = List.empty
+        override lazy val rasterize: List[List[Option[A]]] = List.empty
       }
       override def combineK[A](x: Shape[A], y: Shape[A]): Shape[A] = new Shape[A] {
         override lazy val width: Width = x.width + y.width
         override lazy val height: Height = Height.max(x.height, y.height)
-        override def render: List[List[Option[A]]] = {
+        override lazy val rasterize: List[List[Option[A]]] = {
           val renderedX =
-            if (x.height >= y.height) x.render
+            if (x.height >= y.height) x.rasterize
             else {
               val numbOfMissingRows = (y.height - x.height).value
               val missingRow = List.fill[Option[A]](x.width.value)(None)
-              x.render ++ List.fill(numbOfMissingRows)(missingRow)
+              x.rasterize ++ List.fill(numbOfMissingRows)(missingRow)
             }
           val renderedY =
-            if (y.height >= x.height) y.render
+            if (y.height >= x.height) y.rasterize
             else {
               val numbOfMissingRows = (x.height - y.height).value
               val missingRow = List.fill[Option[A]](y.width.value)(None)
-              y.render ++ List.fill(numbOfMissingRows)(missingRow)
+              y.rasterize ++ List.fill(numbOfMissingRows)(missingRow)
             }
           renderedX.zip(renderedY).map { case (xRow, yRow) => xRow ++ yRow }
         }
@@ -114,28 +126,28 @@ object ClassicTetris {
 
   val h: Shape[Color] = hole
   val f: Shape[Color] = filled(Mono)
-  val hf = beside(h, f)
-  val fh = beside(f, h)
-  val ff = beside(f, f)
-  val fff = beside(f, f, f)
-  val fhf = beside(f, h, f)
-  val hfh = beside(h, f, h)
-  val hff = beside(h, f, f)
-  val ffh = beside(f, f, h)
+  val hf = hStack(h, f)
+  val fh = hStack(f, h)
+  val ff = hStack(f, f)
+  val fff = hStack(f, f, f)
+  val fhf = hStack(f, h, f)
+  val hfh = hStack(h, f, h)
+  val hff = hStack(h, f, f)
+  val ffh = hStack(List(f, f, h))
 
-  val i = beside(f, f, f, f)
-  val o = topBottom(ff, ff)
-  val t = topBottom(fff, hfh)
-  val j = topBottom(hf, hf, hf, ff)
-  val l = topBottom(fh, fh, fh, ff)
-  val s = topBottom(hff, ffh)
-  val z = topBottom(ffh, hff)
+  val i = vStack(f, f, f, f)
+  val o = vStack(ff, ff)
+  val t = vStack(fff, hfh)
+  val j = vStack(hf, hf, hf, ff)
+  val l = vStack(List(fh, fh, fh, ff))
+  val s = vStack(hff, ffh)
+  val z = vStack(ffh, hff)
   val allTetrominoes = NonEmptyList.of(i, o, t, j, l, s, z)
 
-  val plus = topBottom(hfh, fff, hfh)
-  val times = topBottom(fhf, hfh, fhf)
-  val diamond = topBottom(hfh, fhf, hfh)
-  val emptySquare = topBottom(fff, fhf, fff)
+  val plus = vStack(hfh, fff, hfh)
+  val times = vStack(fhf, hfh, fhf)
+  val diamond = vStack(hfh, fhf, hfh)
+  val squareBorder = vStack(fff, fhf, fff)
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
     val leftBorder = "<!"
@@ -146,18 +158,16 @@ object ClassicTetris {
     (List.fill(height.value)(emptyRow) :+ bottomBorder).mkString("\n")
   }
 
-  def main(args: Array[String]): Unit = {
-    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
-
-    println("\n---")
-
+  def main(args: Array[String]): Unit =
+//    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
+//    println("\n---")
     println(
       allTetrominoes
-        .concat(List(plus, times, diamond, emptySquare))
+        .concatNel(allTetrominoes.map(_.transposed))
+        .concat(List(plus, times, diamond, squareBorder))
         .toList
         .map(_.show(filled = _ => "🟩", hole = "⬜️"))
         .mkString("\n", "\n\n---\n\n", "\n")
     )
-  }
 
 }
