@@ -1,8 +1,9 @@
 import cats.MonoidK
-import ClassicTetris.Color.Mono
-import ClassicTetris.Shape._
+import cats.data.NonEmptyList
 import scala.annotation.tailrec
 import scala.collection.immutable.Nil
+import ClassicTetris.Color.Mono
+import ClassicTetris.Shape._
 
 object ClassicTetris {
 
@@ -121,6 +122,7 @@ object ClassicTetris {
   val hfh = beside(h, f, h)
   val hff = beside(h, f, f)
   val ffh = beside(f, f, h)
+
   val i = beside(f, f, f, f)
   val o = topBottom(ff, ff)
   val t = topBottom(fff, hfh)
@@ -128,6 +130,8 @@ object ClassicTetris {
   val l = topBottom(fh, fh, fh, ff)
   val s = topBottom(hff, ffh)
   val z = topBottom(ffh, hff)
+  val allTetrominoes = NonEmptyList.of(i, o, t, j, l, s, z)
+
   val plus = topBottom(hfh, fff, hfh)
   val times = topBottom(fhf, hfh, fhf)
   val diamond = topBottom(hfh, fhf, hfh)
@@ -148,7 +152,9 @@ object ClassicTetris {
     println("\n---")
 
     println(
-      List(i, o, t, j, l, s, z, plus, times, diamond, emptySquare)
+      allTetrominoes
+        .concat(List(plus, times, diamond, emptySquare))
+        .toList
         .map(_.show(filled = _ => "🟩", hole = "⬜️"))
         .mkString("\n", "\n\n---\n\n", "\n")
     )
