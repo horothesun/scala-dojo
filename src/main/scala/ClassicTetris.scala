@@ -1,5 +1,6 @@
 import cats.{Foldable, MonoidK}
 import cats.data.NonEmptyList
+import cats.implicits._
 import scala.annotation.tailrec
 import scala.collection.immutable.Nil
 import ClassicTetris.Color._
@@ -7,14 +8,14 @@ import ClassicTetris.Shape._
 
 object ClassicTetris {
 
-  case class Width(value: Int) {
+  case class Width(value: Int) extends AnyVal {
     def `+`(that: Width): Width = Width(this.value + that.value)
   }
   object Width {
     def max(x: Width, y: Width): Width = if (x.value >= y.value) x else y
   }
 
-  case class Height(value: Int) {
+  case class Height(value: Int) extends AnyVal {
     def `+`(that: Height): Height = Height(this.value + that.value)
     def `-`(that: Height): Height = Height(this.value - that.value)
     def `>=`(that: Height): Boolean = this.value >= that.value
@@ -34,6 +35,8 @@ object ClassicTetris {
     def hRepeated(n: Int): Shape[A] = Shape.hRepeated(n, this)
     def vRepeated(n: Int): Shape[A] = Shape.vRepeated(n, this)
 
+    def splittedByFullRows: List[Shape[A]] = Shape.splittedByFullRows(this)
+
     def transposed: Shape[A] = Shape.transposed(this)
 
     def show(filled: A => String, hole: => String): String =
@@ -51,6 +54,14 @@ object ClassicTetris {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
       override lazy val rasterized: List[List[Option[A]]] = List(List(Some(a)))
+    }
+    def fromRaster[A](rows: List[List[Option[A]]]): Shape[A] = new Shape[A] {
+      override val width: Width = rows match {
+        case Nil    => Width(0)
+        case r :: _ => Width(r.length)
+      }
+      override val height: Height = Height(rows.length)
+      override val rasterized: List[List[Option[A]]] = rows
     }
 
     def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
@@ -93,6 +104,24 @@ object ClassicTetris {
         }
       aux(acc = List.empty, rows)
     }
+
+    def splittedByFullRows[A](s: Shape[A]): List[Shape[A]] =
+      s.rasterized
+        // TODO: optimise for `::`!!! 🔥🔥🔥
+        .foldLeft(List.empty[(Boolean, List[List[Option[A]]])]) { case (acc, r) =>
+          val rIsFull = isFullRow(r)
+          val newROnlyAcc = List((rIsFull, List(r)))
+          acc.toNel.fold(ifEmpty = newROnlyAcc) { accNel =>
+            val (lastIsFull, lastRows) = accNel.last
+            if (rIsFull == lastIsFull) acc.dropRight(1) :+ (lastIsFull, lastRows :+ r)
+            else acc ++ newROnlyAcc
+          }
+        }
+        .map { case (_, r) => r }
+        .map(fromRaster)
+
+    def isFullRow[A](r: List[Option[A]]): Boolean = validateFullRow(r).isDefined
+    def validateFullRow[A](r: List[Option[A]]): Option[List[Option[A]]] = r.sequence.as(r)
 
     implicit val horizontalMonoidK: MonoidK[Shape] = new MonoidK[Shape] {
       override def empty[A]: Shape[A] = new Shape[A] {
@@ -161,16 +190,33 @@ object ClassicTetris {
     (List.fill(height.value)(emptyRow) :+ bottomBorder).mkString("\n")
   }
 
-  def main(args: Array[String]): Unit =
+  def shapeToString[A](s: Shape[A]): String = s.show(filled = _ => "🟩", hole = "⬜️")
+
+  def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
 //    println("\n---")
-    println(
-      allTetrominoes
-        .concatNel(allTetrominoes.map(_.transposed))
-        .concat(List(plus, times, diamond, squareBorder))
-        .toList
-        .map(_.show(filled = _ => "🟩", hole = "⬜️"))
-        .mkString("\n", "\n\n", "\n")
+//    println(
+//      allTetrominoes
+//        .concatNel(allTetrominoes.map(_.transposed))
+//        .concat(List(plus, times, diamond, squareBorder))
+//        .toList
+//        .map(shapeToString)
+//        .mkString("\n", "\n\n", "\n")
+//    )
+//    println(s"validateFullRow(List.empty) = ${validateFullRow(List.empty)}")
+    val complex = vStack(
+      hStack(f.vRepeated(2), t),
+      i.rotatedCCW.vRepeated(3),
+      s,
+      i.rotatedCCW
     )
+    println(shapeToString(complex))
+    println("\n---\n")
+    println(
+      complex.splittedByFullRows
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+  }
 
 }
