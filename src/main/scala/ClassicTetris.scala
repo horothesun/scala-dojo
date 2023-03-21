@@ -1,4 +1,4 @@
-import cats.{Foldable, MonoidK}
+import cats._
 import cats.data.NonEmptyList
 import cats.implicits._
 import scala.annotation.tailrec
@@ -27,7 +27,7 @@ object ClassicTetris {
   trait Shape[A] {
     val width: Width
     val height: Height
-    val rasterized: List[List[Option[A]]]
+    val rasterized: List[Row[A]]
 
     def rotatedCW: Shape[A] = Shape.rotatedCW(this)
     def rotatedCCW: Shape[A] = Shape.rotatedCCW(this)
@@ -35,44 +35,64 @@ object ClassicTetris {
     def hRepeated(n: Int): Shape[A] = Shape.hRepeated(n, this)
     def vRepeated(n: Int): Shape[A] = Shape.vRepeated(n, this)
 
-    def splittedByFullRows: List[Shape[A]] = Shape.splittedByFullRows(this)
+    def leftFilledBorder(a: A): Shape[A] = Shape.leftFilledBorder(a, this)
+    def rightFilledBorder(a: A): Shape[A] = Shape.rightFilledBorder(a, this)
+    def topFilledBorder(a: A): Shape[A] = Shape.topFilledBorder(a, this)
+    def bottomFilledBorder(a: A): Shape[A] = Shape.bottomFilledBorder(a, this)
+    def filledBorder(a: A): Shape[A] = Shape.filledBorder(a, this)
 
-    def transposed: Shape[A] = Shape.transposed(this)
+    def leftHoleBorder: Shape[A] = Shape.leftHoleBorder(this)
+    def rightHoleBorder: Shape[A] = Shape.rightHoleBorder(this)
+    def topHoleBorder: Shape[A] = Shape.topHoleBorder(this)
+    def bottomHoleBorder: Shape[A] = Shape.bottomHoleBorder(this)
+    def holeBorder: Shape[A] = Shape.holeBorder(this)
+
+    def inverted(ifHole: A): Shape[A] = Shape.inverted(ifHole, this)
+
+    def splittedByFilledRows: List[Shape[A]] = Shape.splittedByFilledRows(this)
+    def splittedByHoleRows: List[Shape[A]] = Shape.splittedByHoleRows(this)
+
+    // TODO: implement!!! 🔥🔥🔥
+    def trimEmptyBorders: Shape[A] = ???
+
+    def map[B](f: A => B): Shape[B] = Functor[Shape].map(this)(f)
 
     def show(filled: A => String, hole: => String): String =
       this.rasterized.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
   }
   object Shape {
 
+    type Row[A] = List[Option[A]]
+
     def empty[A]: Shape[A] = MonoidK[Shape].empty
     def hole[A]: Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override lazy val rasterized: List[List[Option[A]]] = List(List(None))
+      override lazy val rasterized: List[Row[A]] = List(List(None))
     }
     def filled[A](a: A): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
-      override lazy val rasterized: List[List[Option[A]]] = List(List(Some(a)))
+      override lazy val rasterized: List[Row[A]] = List(List(Some(a)))
     }
-    def fromRaster[A](rows: List[List[Option[A]]]): Shape[A] = new Shape[A] {
+    def fromRaster[A](rows: List[Row[A]]): Shape[A] = new Shape[A] {
       override val width: Width = rows match {
         case Nil    => Width(0)
         case r :: _ => Width(r.length)
       }
       override val height: Height = Height(rows.length)
-      override val rasterized: List[List[Option[A]]] = rows
+      override val rasterized: List[Row[A]] = rows
     }
 
     def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized).map(_.reverse)
+      override lazy val rasterized: List[Row[A]] = transpose(s.rasterized).map(_.reverse)
     }
     def rotatedCCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized).reverse
+      override lazy val rasterized: List[Row[A]] = transpose(s.rasterized).reverse
     }
 
     def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = hStack(l :: rs.toList)
@@ -86,11 +106,24 @@ object ClassicTetris {
     def hRepeated[A](n: Int, s: Shape[A]): Shape[A] = hStack(List.fill(n)(s))
     def vRepeated[A](n: Int, s: Shape[A]): Shape[A] = vStack(List.fill(n)(s))
 
-    def transposed[A](s: Shape[A]): Shape[A] = new Shape[A] {
-      override lazy val width: Width = Width(s.height.value)
-      override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterized: List[List[Option[A]]] = transpose(s.rasterized)
-    }
+    def leftFilledBorder[A](a: A, s: Shape[A]): Shape[A] = hStack(filled(a).vRepeated(s.height.value), s)
+    def rightFilledBorder[A](a: A, s: Shape[A]): Shape[A] = hStack(s, filled(a).vRepeated(s.height.value))
+    def topFilledBorder[A](a: A, s: Shape[A]): Shape[A] = vStack(filled(a).hRepeated(s.width.value), s)
+    def bottomFilledBorder[A](a: A, s: Shape[A]): Shape[A] = vStack(s, filled(a).hRepeated(s.width.value))
+    def filledBorder[A](a: A, s: Shape[A]): Shape[A] =
+      if (s.width == Width(0) || s.height == Height(0)) hStack(filled(a).leftFilledBorder(a).topFilledBorder(a))
+      else s.leftFilledBorder(a).rightFilledBorder(a).topFilledBorder(a).bottomFilledBorder(a)
+
+    def leftHoleBorder[A](s: Shape[A]): Shape[A] = hStack(hole[A], s)
+    def rightHoleBorder[A](s: Shape[A]): Shape[A] = hStack(s, hole[A])
+    def topHoleBorder[A](s: Shape[A]): Shape[A] = vStack(hole[A], s)
+    def bottomHoleBorder[A](s: Shape[A]): Shape[A] = vStack(s, hole[A])
+    def holeBorder[A](s: Shape[A]): Shape[A] =
+      if (s.width == Width(0) || s.height == Height(0)) hStack(hole[A].leftHoleBorder.topHoleBorder)
+      else s.leftHoleBorder.rightHoleBorder.topHoleBorder.bottomHoleBorder
+
+    def inverted[A](ifHole: A, s: Shape[A]): Shape[A] =
+      fromRaster(s.rasterized.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
 
     def transpose[A](rows: List[List[A]]): List[List[A]] = {
       def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
@@ -105,34 +138,37 @@ object ClassicTetris {
       aux(acc = List.empty, rows)
     }
 
-    def splittedByFullRows[A](s: Shape[A]): List[Shape[A]] =
+    def splittedByFilledRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedFullRow, s)
+    def splittedByHoleRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedEmptyRow, s)
+
+    def validatedFullRow[A](r: Row[A]): Option[Row[A]] = (r: List[Option[A]]).sequence.as(r)
+    def validatedEmptyRow[A](r: Row[A]): Option[Row[A]] = Some(r).filter(_.forall(_.isEmpty)).as(r)
+
+    def splittedByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
       s.rasterized
         // TODO: optimise for `::`!!! 🔥🔥🔥
-        .foldLeft(List.empty[(Boolean, List[List[Option[A]]])]) { case (acc, r) =>
-          val rIsFull = isFullRow(r)
-          val newROnlyAcc = List((rIsFull, List(r)))
+        .foldLeft(List.empty[(Boolean, List[Row[A]])]) { case (acc, r) =>
+          val rIsValid = validatedRow(r).isDefined
+          val newROnlyAcc = List((rIsValid, List(r)))
           acc.toNel.fold(ifEmpty = newROnlyAcc) { accNel =>
-            val (lastIsFull, lastRows) = accNel.last
-            if (rIsFull == lastIsFull) acc.dropRight(1) :+ (lastIsFull, lastRows :+ r)
+            val (lastIsValid, lastRows) = accNel.last
+            if (rIsValid == lastIsValid) acc.dropRight(1) :+ (lastIsValid, lastRows :+ r)
             else acc ++ newROnlyAcc
           }
         }
         .map { case (_, r) => r }
         .map(fromRaster)
 
-    def isFullRow[A](r: List[Option[A]]): Boolean = validateFullRow(r).isDefined
-    def validateFullRow[A](r: List[Option[A]]): Option[List[Option[A]]] = r.sequence.as(r)
-
     implicit val horizontalMonoidK: MonoidK[Shape] = new MonoidK[Shape] {
       override def empty[A]: Shape[A] = new Shape[A] {
         override lazy val width: Width = Width(0)
         override lazy val height: Height = Height(0)
-        override lazy val rasterized: List[List[Option[A]]] = List.empty
+        override lazy val rasterized: List[Row[A]] = List.empty
       }
       override def combineK[A](x: Shape[A], y: Shape[A]): Shape[A] = new Shape[A] {
         override lazy val width: Width = x.width + y.width
         override lazy val height: Height = Height.max(x.height, y.height)
-        override lazy val rasterized: List[List[Option[A]]] = {
+        override lazy val rasterized: List[Row[A]] = {
           val renderedX =
             if (x.height >= y.height) x.rasterized
             else {
@@ -152,6 +188,20 @@ object ClassicTetris {
       }
     }
 
+    implicit val functor: Functor[Shape] = new Functor[Shape] {
+      override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
+        fromRaster(fa.rasterized.map(r => r.map(optA => optA.map(f))))
+    }
+
+    def pure[A](a: A): Shape[A] = filled(a)
+    def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] = Applicative[Shape].ap(ff)(fa)
+
+    implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
+      override def pure[A](x: A): Shape[A] = ???
+
+      override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] = ???
+    }
+
   }
 
   sealed trait Color
@@ -168,18 +218,18 @@ object ClassicTetris {
   val hff = hStack(h, f, f)
 
   val i = f.vRepeated(4)
-  val o = ff.vRepeated(2)
-  val t = vStack(fff, hf)
-  val j = vStack(hf.vRepeated(3), ff)
-  val l = vStack(f.vRepeated(3), ff)
+  val o = empty[Color].filledBorder(Mono)
+  val t = hStack(h, f, h).topFilledBorder(Mono)
+  val j = f.vRepeated(3).leftHoleBorder.bottomFilledBorder(Mono)
+  val l = f.vRepeated(3).rightHoleBorder.bottomFilledBorder(Mono)
   val s = vStack(hff, ff)
   val z = vStack(ff, hff)
-  val allTetrominoes = NonEmptyList.of(i, o, t, j, l, s, z)
+  val allTetrominoes: NonEmptyList[Shape[Color]] = NonEmptyList.of(i, o, t, j, l, s, z)
 
   val plus = vStack(hf, fff, hf)
   val times = vStack(fhf, hf, fhf)
-  val diamond = vStack(hf, fhf, hf)
-  val squareBorder = vStack(fff, fhf, fff)
+  val diamond = times.inverted(ifHole = Mono)
+  val squareBorder = h.filledBorder(Mono)
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
     val leftBorder = "<!"
@@ -195,25 +245,29 @@ object ClassicTetris {
   def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
 //    println("\n---")
-//    println(
-//      allTetrominoes
-//        .concatNel(allTetrominoes.map(_.transposed))
-//        .concat(List(plus, times, diamond, squareBorder))
-//        .toList
-//        .map(shapeToString)
-//        .mkString("\n", "\n\n", "\n")
-//    )
-//    println(s"validateFullRow(List.empty) = ${validateFullRow(List.empty)}")
-    val complex = vStack(
-      hStack(f.vRepeated(2), t),
-      i.rotatedCCW.vRepeated(3),
-      s,
-      i.rotatedCCW
+    println(
+      allTetrominoes
+        .concat(List(plus, times, diamond, squareBorder))
+        .toList
+        .map(shapeToString)
+        .mkString("\n", "\n\n", "\n")
     )
+    println("\n---\n")
+//    println(s"validatedFullRow(List.empty) = ${validatedFullRow(List.empty)}")
+    val complex = empty.filledBorder(Mono)
+//      hStack(
+//        vStack(
+//          hStack(f.vRepeated(2), t),
+//          i.rotatedCCW.vRepeated(3),
+//          s,
+//          i.rotatedCCW
+//        ),
+//        h
+//      )
     println(shapeToString(complex))
     println("\n---\n")
     println(
-      complex.splittedByFullRows
+      complex.splittedByFilledRows
         .map(shapeToString)
         .mkString("\n\n")
     )
