@@ -50,7 +50,10 @@ object ClassicTetris {
     def inverted(ifHole: A): Shape[A] = Shape.inverted(ifHole, this)
 
     def splittedByFilledRows: List[Shape[A]] = Shape.splittedByFilledRows(this)
+    def splittedByFilledColumns: List[Shape[A]] = Shape.splittedByFilledColumns(this)
+
     def splittedByHoleRows: List[Shape[A]] = Shape.splittedByHoleRows(this)
+    def splittedByHoleColumns: List[Shape[A]] = Shape.splittedByHoleColumns(this)
 
     // TODO: implement!!! 🔥🔥🔥
     def trimEmptyBorders: Shape[A] = ???
@@ -139,7 +142,12 @@ object ClassicTetris {
     }
 
     def splittedByFilledRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedFullRow, s)
+    // TODO: implement!!! 🔥🔥🔥
+    def splittedByFilledColumns[A](s: Shape[A]): List[Shape[A]] = ???
+
     def splittedByHoleRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedEmptyRow, s)
+    // TODO: implement!!! 🔥🔥🔥
+    def splittedByHoleColumns[A](s: Shape[A]): List[Shape[A]] = ???
 
     def validatedFullRow[A](r: Row[A]): Option[Row[A]] = (r: List[Option[A]]).sequence.as(r)
     def validatedEmptyRow[A](r: Row[A]): Option[Row[A]] = Some(r).filter(_.forall(_.isEmpty)).as(r)
@@ -193,12 +201,10 @@ object ClassicTetris {
         fromRaster(fa.rasterized.map(r => r.map(optA => optA.map(f))))
     }
 
-    def pure[A](a: A): Shape[A] = filled(a)
-    def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] = Applicative[Shape].ap(ff)(fa)
-
     implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
-      override def pure[A](x: A): Shape[A] = ???
+      override def pure[A](x: A): Shape[A] = filled(x)
 
+      // TODO: implement!!! 🔥🔥🔥
       override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] = ???
     }
 
