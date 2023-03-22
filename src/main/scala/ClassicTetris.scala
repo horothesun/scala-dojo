@@ -78,14 +78,20 @@ object ClassicTetris {
       override lazy val height: Height = Height(1)
       override lazy val rasterized: List[Row[A]] = List(List(Some(a)))
     }
-    def fromRaster[A](rows: List[Row[A]]): Shape[A] = new Shape[A] {
-      override val width: Width = rows match {
-        case Nil    => Width(0)
-        case r :: _ => Width(r.length)
+    def fromRaster[A](rows: List[Row[A]]): Option[Shape[A]] =
+      rows match {
+        case r :: _ if rows.exists(_.length != r.length) => None
+        case _ =>
+          Some(new Shape[A] {
+            override val width: Width = rows match {
+              case Nil    => Width(0)
+              case r :: _ => Width(r.length)
+            }
+            override val height: Height = Height(rows.length)
+            override val rasterized: List[Row[A]] = rows
+          })
       }
-      override val height: Height = Height(rows.length)
-      override val rasterized: List[Row[A]] = rows
-    }
+    def fromRasterUnsafe[A](rows: List[Row[A]]): Shape[A] = fromRaster(rows).get
 
     def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
       override lazy val width: Width = Width(s.height.value)
@@ -126,7 +132,7 @@ object ClassicTetris {
       else s.leftHoleBorder.rightHoleBorder.topHoleBorder.bottomHoleBorder
 
     def inverted[A](ifHole: A, s: Shape[A]): Shape[A] =
-      fromRaster(s.rasterized.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
+      fromRasterUnsafe(s.rasterized.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
 
     def transpose[A](rows: List[List[A]]): List[List[A]] = {
       def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
@@ -165,7 +171,7 @@ object ClassicTetris {
           }
         }
         .map { case (_, r) => r }
-        .map(fromRaster)
+        .map(fromRasterUnsafe)
 
     implicit val horizontalMonoidK: MonoidK[Shape] = new MonoidK[Shape] {
       override def empty[A]: Shape[A] = new Shape[A] {
@@ -198,7 +204,7 @@ object ClassicTetris {
 
     implicit val functor: Functor[Shape] = new Functor[Shape] {
       override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
-        fromRaster(fa.rasterized.map(r => r.map(optA => optA.map(f))))
+        fromRasterUnsafe(fa.rasterized.map(r => r.map(optA => optA.map(f))))
     }
 
     implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
@@ -260,16 +266,13 @@ object ClassicTetris {
     )
     println("\n---\n")
 //    println(s"validatedFullRow(List.empty) = ${validatedFullRow(List.empty)}")
-    val complex = empty.filledBorder(Mono)
-//      hStack(
-//        vStack(
-//          hStack(f.vRepeated(2), t),
-//          i.rotatedCCW.vRepeated(3),
-//          s,
-//          i.rotatedCCW
-//        ),
-//        h
-//      )
+    val complex = // empty.filledBorder(Mono)
+      vStack(
+        hStack(f.vRepeated(2), t),
+        i.rotatedCCW.vRepeated(3),
+        s,
+        i.rotatedCCW
+      )
     println(shapeToString(complex))
     println("\n---\n")
     println(
