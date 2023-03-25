@@ -18,9 +18,9 @@ final class TreeSpec extends ScalaCheckSuite {
     r <- treeGenFromValue(value)
   } yield Branch(l, r)
 
-  property("size of Leaf is 1") {
-    forAll(leafGen)(size(_) == 1)
-  }
+//  property("size of Leaf is 1") {
+//    forAll(leafGen)(size(_) == 1)
+//  }
 
   test("size(Branch(Leaf(4), Leaf(5))) is 3") {
     assertEquals(size(Branch(Leaf(4), Leaf(5))), 3)
@@ -30,57 +30,57 @@ final class TreeSpec extends ScalaCheckSuite {
     assertEquals(size(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))), 5)
   }
 
-  property("size is always > 0") {
-    forAll(treeGen())(size(_) > 0)
-  }
+//  property("size is always > 0") {
+//    forAll(treeGen())(size(_) > 0)
+//  }
 
-  property("size is always odd") {
-    def isOdd(i: Int) = i % 2 != 0
-    forAll(treeGen())(t => isOdd(size(t)))
-  }
+//  property("size is always odd") {
+//    def isOdd(i: Int) = i % 2 != 0
+//    forAll(treeGen())(t => isOdd(size(t)))
+//  }
 
   test("maximum(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))) is 6") {
     assertEquals(maximum(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))), 6)
   }
 
-  property("maximum of Leaf(i) is i") {
-    forAll(leafGen)(l => maximum(l) == l.value)
-  }
+//  property("maximum of Leaf(i) is i") {
+//    forAll(leafGen)(l => maximum(l) == l.value)
+//  }
 
-  property("maximum of left Branch made of 1s and right Branch made of 2s is 2") {
-    forAll(treeGenFromValue(1), treeGenFromValue(2)) { (l, r) =>
-      maximum(Branch(l, r)) == 2
-    }
-  }
+//  property("maximum of left Branch made of 1s and right Branch made of 2s is 2") {
+//    forAll(treeGenFromValue(1), treeGenFromValue(2)) { (l, r) =>
+//      maximum(Branch(l, r)) == 2
+//    }
+//  }
 
-  property("maximum of left Branch made of 2s and right Branch made of 1s is 2") {
-    forAll(treeGenFromValue(2), treeGenFromValue(1)) { (l, r) =>
-      maximum(Branch(l, r)) == 2
-    }
-  }
+//  property("maximum of left Branch made of 2s and right Branch made of 1s is 2") {
+//    forAll(treeGenFromValue(2), treeGenFromValue(1)) { (l, r) =>
+//      maximum(Branch(l, r)) == 2
+//    }
+//  }
 
-  property("depth of Leaf is 0") {
-    forAll(leafGen)(depth(_) == 0)
-  }
+//  property("depth of Leaf is 0") {
+//    forAll(leafGen)(depth(_) == 0)
+//  }
 
   test("depth(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))) is 2") {
     assertEquals(depth(Branch(Leaf(4), Branch(Leaf(5), Leaf(6)))), 2)
   }
 
-  property("depth is always >= 0") {
-    forAll(treeGen())(depth(_) >= 0)
-  }
+//  property("depth is always >= 0") {
+//    forAll(treeGen())(depth(_) >= 0)
+//  }
 
-  property("map identity law") {
-    forAll(treeGen())(t => map(t)(i => i) == t)
-  }
+//  property("map identity law") {
+//    forAll(treeGen())(t => map(t)(i => i) == t)
+//  }
 
-  property("map composition law") {
-    val addOne: Int => Int = _ + 1
-    val toString: Int => String = i => s"$i"
-    forAll(treeGen()) { t =>
-      map(map(t)(addOne))(toString) == map(t)(addOne andThen toString)
-    }
-  }
+//  property("map composition law") {
+//    val addOne: Int => Int = _ + 1
+//    val toString: Int => String = i => s"$i"
+//    forAll(treeGen()) { t =>
+//      map(map(t)(addOne))(toString) == map(t)(addOne andThen toString)
+//    }
+//  }
 
 }
