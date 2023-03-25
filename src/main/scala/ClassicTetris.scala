@@ -29,6 +29,11 @@ object ClassicTetris {
     val height: Height
     val rasterized: List[Row[A]]
 
+    def hFlipped: Shape[A] = Shape.hFlipped(this)
+    def vFlipped: Shape[A] = Shape.vFlipped(this)
+
+    def transposed: Shape[A] = Shape.transposed(this)
+
     def rotatedCW: Shape[A] = Shape.rotatedCW(this)
     def rotatedCCW: Shape[A] = Shape.rotatedCCW(this)
 
@@ -57,9 +62,6 @@ object ClassicTetris {
 
     def validatedAllFilled: Option[Shape[A]] = Shape.validatedAllFilledShape(this)
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
-
-    // TODO: implement!!! 🔥🔥🔥
-    def trimmedAllHoleBorders: Shape[A] = ???
 
     def map[B](f: A => B): Shape[B] = Functor[Shape].map(this)(f)
 
@@ -97,16 +99,38 @@ object ClassicTetris {
           })
       }
 
-    def rotatedCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
-      override lazy val width: Width = Width(s.height.value)
-      override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterized: List[Row[A]] = transpose(s.rasterized).map(_.reverse)
+    def hFlipped[A](s: Shape[A]): Shape[A] = new Shape[A] {
+      override val width: Width = s.width
+      override val height: Height = s.height
+      override val rasterized: List[Row[A]] = s.rasterized.reverse
     }
-    def rotatedCCW[A](s: Shape[A]): Shape[A] = new Shape[A] {
-      override lazy val width: Width = Width(s.height.value)
-      override lazy val height: Height = Height(s.width.value)
-      override lazy val rasterized: List[Row[A]] = transpose(s.rasterized).reverse
+    def vFlipped[A](s: Shape[A]): Shape[A] = new Shape[A] {
+      override val width: Width = s.width
+      override val height: Height = s.height
+      override val rasterized: List[Row[A]] = s.rasterized.map(_.reverse)
     }
+
+    def transposed[A](s: Shape[A]): Shape[A] = new Shape[A] {
+      override val width: Width = Width(s.height.value)
+      override val height: Height = Height(s.width.value)
+      override val rasterized: List[Row[A]] = transpose(s.rasterized)
+    }
+
+    def transpose[A](rows: List[List[A]]): List[List[A]] = {
+      def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
+      def tails(rows: List[List[A]]): List[List[A]] = rows.map(_.tail)
+      @tailrec
+      def aux(acc: List[List[A]], rows: List[List[A]]): List[List[A]] =
+        rows match {
+          case Nil           => acc
+          case Nil :: _      => acc
+          case (_ :: _) :: _ => aux(acc :+ heads(rows), tails(rows))
+        }
+      aux(acc = List.empty, rows)
+    }
+
+    def rotatedCW[A](s: Shape[A]): Shape[A] = s.transposed.vFlipped
+    def rotatedCCW[A](s: Shape[A]): Shape[A] = s.transposed.hFlipped
 
     def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = hStack(l :: rs.toList)
     def hStack[A](ss: List[Shape[A]]): Shape[A] = Foldable[List].foldK(ss)
@@ -137,19 +161,6 @@ object ClassicTetris {
 
     def inverted[A](ifHole: A, s: Shape[A]): Shape[A] =
       fromRasterUnsafe(s.rasterized.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
-
-    def transpose[A](rows: List[List[A]]): List[List[A]] = {
-      def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
-      def tails(rows: List[List[A]]): List[List[A]] = rows.map(_.tail)
-      @tailrec
-      def aux(acc: List[List[A]], rows: List[List[A]]): List[List[A]] =
-        rows match {
-          case Nil           => acc
-          case Nil :: _      => acc
-          case (_ :: _) :: _ => aux(acc :+ heads(rows), tails(rows))
-        }
-      aux(acc = List.empty, rows)
-    }
 
     def splittedByFilledRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedAllFilledRow, s)
     def splittedByFilledColumns[A](s: Shape[A]): List[Shape[A]] = splittedByFilledRows(s.rotatedCW).map(_.rotatedCCW)
@@ -226,8 +237,8 @@ object ClassicTetris {
     case object Mono extends Color
   }
 
-  val h: Shape[Color] = hole
-  val f: Shape[Color] = filled(Mono)
+  val h = hole[Color]
+  val f = filled[Color](Mono)
   val hf = hStack(h, f)
   val ff = f.hRepeated(2)
   val fff = f.hRepeated(3)
@@ -235,43 +246,49 @@ object ClassicTetris {
   val hff = hStack(h, f, f)
 
   val i = f.vRepeated(4)
-  val o = empty[Color].filledBordered(Mono)
+  val o = ff.vRepeated(2)
   val t = hStack(h, f, h).topFilledBordered(Mono)
   val j = f.vRepeated(3).leftHoleBordered.bottomFilledBordered(Mono)
-  val l = f.vRepeated(3).rightHoleBordered.bottomFilledBordered(Mono)
+  val l = j.vFlipped
   val s = vStack(hff, ff)
-  val z = vStack(ff, hff)
-  val allTetrominoes: NonEmptyList[Shape[Color]] = NonEmptyList.of(i, o, t, j, l, s, z)
+  val z = s.vFlipped
+  val allTetrominoes = NonEmptyList.of[Shape[Color]](i, o, t, j, l, s, z)
 
-  implicit val shapeColorEndoMonoid: Monoid[Shape[Color] => Shape[Color]] = new Monoid[Shape[Color] => Shape[Color]] {
-    override def empty: Shape[Color] => Shape[Color] = identity
-    override def combine(
-      f: Shape[Color] => Shape[Color],
-      g: Shape[Color] => Shape[Color]
-    ): Shape[Color] => Shape[Color] = f.compose(g)
+  type ShapeEndo[A] = Shape[A] => Shape[A]
+  implicit def shapeEndoMonoid[A]: Monoid[ShapeEndo[A]] = new Monoid[ShapeEndo[A]] {
+    override def empty: ShapeEndo[A] = identity
+    override def combine(f: ShapeEndo[A], g: ShapeEndo[A]): ShapeEndo[A] = f.compose(g)
   }
 
   val plus = vStack(hf, fff, hf)
   val times = vStack(fhf, hf, fhf)
   val diamond = times.inverted(ifHole = Mono)
   val squareBorder = h.filledBordered(Mono)
-  def squaredTarget(n: Int): Shape[Color] = {
-    val fs = List.fill[Shape[Color] => Shape[Color]](n)(_.holeBordered.filledBordered(Mono))
-    Foldable[List].fold(fs).apply(filled(Mono))
+  def squaredTarget[A](n: Int, a: A): Shape[A] = {
+    val fs = List.fill[ShapeEndo[A]](n)(_.holeBordered.filledBordered(a))
+    Foldable[List].fold(fs).apply(filled(a))
   }
-  def spiral(n: Int): Shape[Color] = {
-    val fs = List.fill[Shape[Color] => Shape[Color]](n)(
+  def spiral[A](n: Int, a: A): Shape[A] = {
+    val fs = List.fill[ShapeEndo[A]](n)(
       _.bottomHoleBordered
-        .rightFilledBordered(Mono)
+        .rightFilledBordered(a)
         .leftHoleBordered
-        .bottomFilledBordered(Mono)
+        .bottomFilledBordered(a)
         .topHoleBordered
-        .leftFilledBordered(Mono)
+        .leftFilledBordered(a)
         .rightHoleBordered
-        .topFilledBordered(Mono)
+        .topFilledBordered(a)
     )
-    Foldable[List].fold(fs).apply(filled(Mono))
+    Foldable[List].fold(fs).apply(filled(a))
   }
+  val allComplexShapes = NonEmptyList.of[Shape[Color]](
+    plus,
+    times,
+    diamond,
+    squareBorder,
+    squaredTarget[Color](2, Mono),
+    spiral[Color](2, Mono)
+  )
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
     val leftBorder = "<!"
@@ -289,13 +306,12 @@ object ClassicTetris {
 //    println("\n---")
     println(
       allTetrominoes
-        .concat(List(plus, times, diamond, squareBorder, squaredTarget(2), spiral(2)))
-        .toList
+        .concatNel(allComplexShapes)
         .map(shapeToString)
+        .toList
         .mkString("\n", "\n\n", "\n")
     )
     println("\n---\n")
-//    println(s"validatedFullRow(List.empty) = ${validatedFullRow(List.empty)}")
     val complex = // empty.filledBorder(Mono)
       vStack(
         hStack(t, f.vRepeated(2)),
