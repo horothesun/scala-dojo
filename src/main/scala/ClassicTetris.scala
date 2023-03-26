@@ -26,6 +26,7 @@ object ClassicTetris {
 
   case class HTrimmed[A](left: Width, trimmed: Shape[A], right: Width)
   case class VTrimmed[A](top: Height, trimmed: Shape[A], bottom: Height)
+  case class Trimmed[A](top: Height, bottom: Height, left: Width, right: Width, trimmed: Shape[A])
 
   trait Shape[A] {
     val width: Width
@@ -65,6 +66,7 @@ object ClassicTetris {
 
     def hHoleTrimmed: HTrimmed[A] = Shape.hHoleTrimmed(this)
     def vHoleTrimmed: VTrimmed[A] = Shape.vHoleTrimmed(this)
+    def holeTrimmed: Trimmed[A] = Shape.holeTrimmed(this)
 
     def validatedAllFilled: Option[Shape[A]] = Shape.validatedAllFilledShape(this)
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
@@ -196,6 +198,11 @@ object ClassicTetris {
       val (trimmed, bottom) = bottomTrimmedAndHeight(tTrimmed)
       VTrimmed(top, vStack(trimmed), bottom)
     }
+    def holeTrimmed[A](s: Shape[A]): Trimmed[A] = {
+      val ht = s.hHoleTrimmed
+      val vt = ht.trimmed.vHoleTrimmed
+      Trimmed(top = vt.top, bottom = vt.bottom, left = ht.left, right = ht.right, trimmed = vt.trimmed)
+    }
 
     def validatedAllFilledShape[A](s: Shape[A]): Option[Shape[A]] = s.rasterized.traverse(validatedAllFilledRow).as(s)
     def validatedAllHoleShape[A](s: Shape[A]): Option[Shape[A]] = s.rasterized.traverse(validatedAllHoleRow).as(s)
@@ -250,13 +257,6 @@ object ClassicTetris {
     implicit val functor: Functor[Shape] = new Functor[Shape] {
       override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
         fromRasterUnsafe(fa.rasterized.map(r => r.map(optA => optA.map(f))))
-    }
-
-    implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
-      override def pure[A](a: A): Shape[A] = filled(a)
-
-      // TODO: implement!!! 🔥🔥🔥
-      override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] = ???
     }
 
   }
@@ -362,10 +362,16 @@ object ClassicTetris {
     println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
     println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
     println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
-    val hTrimmed01 = vTrimmed01.trimmed.hHoleTrimmed
+    val hTrimmed01 = myShape01.hHoleTrimmed
     println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
     println(s"hTrimmed01.right: ${hTrimmed01.right}")
     println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
+    val trimmed01 = myShape01.holeTrimmed
+    println(s"trimmed01.top: ${trimmed01.top}")
+    println(s"trimmed01.bottom: ${trimmed01.bottom}")
+    println(s"trimmed01.left: ${trimmed01.left}")
+    println(s"trimmed01.right: ${trimmed01.right}")
+    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
   }
 
 }
