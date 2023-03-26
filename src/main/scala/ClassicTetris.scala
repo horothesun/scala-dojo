@@ -24,6 +24,9 @@ object ClassicTetris {
     def max(x: Height, y: Height): Height = if (x.value >= y.value) x else y
   }
 
+  case class HTrimmed[A](left: Width, trimmed: Shape[A], right: Width)
+  case class VTrimmed[A](top: Height, trimmed: Shape[A], bottom: Height)
+
   trait Shape[A] {
     val width: Width
     val height: Height
@@ -59,6 +62,9 @@ object ClassicTetris {
 
     def splittedByHoleRows: List[Shape[A]] = Shape.splittedByHoleRows(this)
     def splittedByHoleColumns: List[Shape[A]] = Shape.splittedByHoleColumns(this)
+
+    def hHoleTrimmed: HTrimmed[A] = Shape.hHoleTrimmed(this)
+    def vHoleTrimmed: VTrimmed[A] = Shape.vHoleTrimmed(this)
 
     def validatedAllFilled: Option[Shape[A]] = Shape.validatedAllFilledShape(this)
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
@@ -167,6 +173,29 @@ object ClassicTetris {
 
     def splittedByHoleRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedAllHoleRow, s)
     def splittedByHoleColumns[A](s: Shape[A]): List[Shape[A]] = splittedByHoleRows(s.rotatedCW).map(_.rotatedCCW)
+
+    def hHoleTrimmed[A](s: Shape[A]): HTrimmed[A] = {
+      def lWidthAndLTrimmed(colSplit: List[Shape[A]]): (Width, List[Shape[A]]) =
+        colSplit match {
+          case Nil      => (Width(0), Nil)
+          case ls :: ss => ls.validatedAllHole.fold(ifEmpty = (Width(0), colSplit))(_ => (ls.width, ss))
+        }
+      def rTrimmedAndRWidth(colSplit: List[Shape[A]]): (List[Shape[A]], Width) = {
+        val (right, rTrimmedReversed) = lWidthAndLTrimmed(colSplit.reverse)
+        (rTrimmedReversed.reverse, right)
+      }
+      val (left, lTrimmed) = lWidthAndLTrimmed(splittedByHoleColumns(s))
+      val (trimmed, right) = rTrimmedAndRWidth(lTrimmed)
+      HTrimmed(left, hStack(trimmed), right)
+    }
+    def vHoleTrimmed[A](s: Shape[A]): VTrimmed[A] = {
+      val hTrimmed = hHoleTrimmed(s.rotatedCCW)
+      VTrimmed(
+        top = Height(hTrimmed.left.value),
+        trimmed = hTrimmed.trimmed.rotatedCW,
+        bottom = Height(hTrimmed.right.value)
+      )
+    }
 
     def validatedAllFilledShape[A](s: Shape[A]): Option[Shape[A]] = s.rasterized.traverse(validatedAllFilledRow).as(s)
     def validatedAllHoleShape[A](s: Shape[A]): Option[Shape[A]] = s.rasterized.traverse(validatedAllHoleRow).as(s)
@@ -326,6 +355,14 @@ object ClassicTetris {
         .map(shapeToString)
         .mkString("\n\n")
     )
+//    println("\n---\n")
+//    val myShape01 =
+//      diamond.leftHoleBordered.holeBordered.bottomFilledBordered(Mono).bottomHoleBordered.bottomHoleBordered
+//    println(shapeToString(myShape01))
+//    val vTrimmed01 = myShape01.vHoleTrimmed
+//    println(s"vTrimmed01.top: ${vTrimmed01.top}")
+//    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
+//    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
   }
 
 }
