@@ -174,28 +174,27 @@ object ClassicTetris {
     def splittedByHoleRows[A](s: Shape[A]): List[Shape[A]] = splittedByValidRows(validatedAllHoleRow, s)
     def splittedByHoleColumns[A](s: Shape[A]): List[Shape[A]] = splittedByHoleRows(s.rotatedCW).map(_.rotatedCCW)
 
-    // TODO: define hHoleTrimmed in terms of vHoleTrimmed!!! 🔥🔥🔥
     def hHoleTrimmed[A](s: Shape[A]): HTrimmed[A] = {
-      def leftWidthAndTrimmed(colSplit: List[Shape[A]]): (Width, List[Shape[A]]) =
-        colSplit match {
-          case Nil      => (Width(0), Nil)
-          case ls :: ss => ls.validatedAllHole.fold(ifEmpty = (Width(0), colSplit))(_ => (ls.width, ss))
-        }
-      def rightTrimmedAndWidth(colSplit: List[Shape[A]]): (List[Shape[A]], Width) = {
-        val (right, rTrimmedReversed) = leftWidthAndTrimmed(colSplit.reverse)
-        (rTrimmedReversed.reverse, right)
-      }
-      val (left, lTrimmed) = leftWidthAndTrimmed(splittedByHoleColumns(s))
-      val (trimmed, right) = rightTrimmedAndWidth(lTrimmed)
-      HTrimmed(left, hStack(trimmed), right)
+      val vTrimmed = vHoleTrimmed(s.rotatedCW)
+      HTrimmed(
+        left = Width(vTrimmed.top.value),
+        trimmed = vTrimmed.trimmed.rotatedCCW,
+        right = Width(vTrimmed.bottom.value)
+      )
     }
     def vHoleTrimmed[A](s: Shape[A]): VTrimmed[A] = {
-      val hTrimmed = hHoleTrimmed(s.rotatedCCW)
-      VTrimmed(
-        top = Height(hTrimmed.left.value),
-        trimmed = hTrimmed.trimmed.rotatedCW,
-        bottom = Height(hTrimmed.right.value)
-      )
+      def topHeightAndTrimmed(rowSplit: List[Shape[A]]): (Height, List[Shape[A]]) =
+        rowSplit match {
+          case Nil      => (Height(0), Nil)
+          case ts :: ss => ts.validatedAllHole.fold(ifEmpty = (Height(0), rowSplit))(_ => (ts.height, ss))
+        }
+      def bottomTrimmedAndHeight(rowSplit: List[Shape[A]]): (List[Shape[A]], Height) = {
+        val (bottom, bTrimmedReversed) = topHeightAndTrimmed(rowSplit.reverse)
+        (bTrimmedReversed.reverse, bottom)
+      }
+      val (top, tTrimmed) = topHeightAndTrimmed(splittedByHoleRows(s))
+      val (trimmed, bottom) = bottomTrimmedAndHeight(tTrimmed)
+      VTrimmed(top, vStack(trimmed), bottom)
     }
 
     def validatedAllFilledShape[A](s: Shape[A]): Option[Shape[A]] = s.rasterized.traverse(validatedAllFilledRow).as(s)
