@@ -295,7 +295,9 @@ object ClassicTetris {
 
   def merge[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
     if (s1.isEmpty || s2.isEmpty) Some(empty[A])
-    else intersections(bottomLeft1, s1, bottomLeft2, s2).map { case (intersection1, intersection2) => ??? }
+    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap((mergeShapes[A] _).tupled)
+
+  def mergeShapes[A](s1: Shape[A], s2: Shape[A]): Option[Shape[A]] = ???
 
   // pre-condition: both Shapes are NOT empty
   def intersections[A](
@@ -309,7 +311,16 @@ object ClassicTetris {
       topRight1 = Coord(x = bottomLeft1.x + s1.width.value - 1, y = bottomLeft1.y + s1.height.value - 1),
       bottomLeft2,
       topRight2 = Coord(x = bottomLeft2.x + s2.width.value - 1, y = bottomLeft2.y + s2.height.value - 1)
-    ).map { case (intersectionBottomLeft, intersectionTopRight) => ??? }
+    ).map { case (intersectionBottomLeft, intersectionTopRight) =>
+      val intShape = intersectionShape[A](intersectionBottomLeft, intersectionTopRight) _
+      (intShape(bottomLeft1, s1), intShape(bottomLeft2, s2))
+    }
+
+  def intersectionShape[A](intersectionBottomLeft: Coord, intersectionTopRight: Coord)(
+    bottomLeft: Coord,
+    s: Shape[A]
+  ): Shape[A] =
+    ???
 
   // pre-condition: both Shapes are NOT empty
   def intersectionBottomLeftAndTopRightCoords(
