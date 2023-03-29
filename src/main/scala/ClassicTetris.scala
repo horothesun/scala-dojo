@@ -71,6 +71,8 @@ object ClassicTetris {
     def validatedAllFilled: Option[Shape[A]] = Shape.validatedAllFilledShape(this)
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
 
+    def isEmpty: Boolean = width.value < 1 || height.value < 1
+
     def map[B](f: A => B): Shape[B] = Functor[Shape].map(this)(f)
 
     def show(filled: A => String, hole: => String): String =
@@ -288,6 +290,58 @@ object ClassicTetris {
     override def empty: ShapeEndo[A] = identity
     override def combine(f: ShapeEndo[A], g: ShapeEndo[A]): ShapeEndo[A] = f.compose(g)
   }
+
+  case class Coord(x: Int, y: Int)
+
+  def merge[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
+    if (s1.isEmpty || s2.isEmpty) Some(empty[A])
+    else intersections(bottomLeft1, s1, bottomLeft2, s2).map { case (intersection1, intersection2) => ??? }
+
+  // pre-condition: both Shapes are NOT empty
+  def intersections[A](
+    bottomLeft1: Coord,
+    s1: Shape[A],
+    bottomLeft2: Coord,
+    s2: Shape[A]
+  ): Option[(Shape[A], Shape[A])] =
+    intersectionBottomLeftAndTopRightCoords(
+      bottomLeft1,
+      topRight1 = Coord(x = bottomLeft1.x + s1.width.value - 1, y = bottomLeft1.y + s1.height.value - 1),
+      bottomLeft2,
+      topRight2 = Coord(x = bottomLeft2.x + s2.width.value - 1, y = bottomLeft2.y + s2.height.value - 1)
+    ).map { case (intersectionBottomLeft, intersectionTopRight) => ??? }
+
+  // pre-condition: both Shapes are NOT empty
+  def intersectionBottomLeftAndTopRightCoords(
+    bottomLeft1: Coord,
+    topRight1: Coord,
+    bottomLeft2: Coord,
+    topRight2: Coord
+  ): Option[(Coord, Coord)] =
+    (
+      intersectionTop(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
+      intersectionBottom(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
+      intersectionLeft(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x),
+      intersectionRight(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x)
+    ).tupled.map { case (t, b, l, r) => (Coord(x = l, y = b), Coord(x = r, y = t)) }
+
+  // pre-condition: both Shapes are NOT empty
+  def intersectionTop(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
+    if (top1 < bottom2 || top2 < bottom1) None
+    else if (top1 <= top2) Some(top1)
+    else Some(top2)
+  def intersectionBottom(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
+    if (top1 < bottom2 || top2 < bottom1) None
+    else if (bottom1 <= bottom2) Some(bottom2)
+    else Some(bottom1)
+  def intersectionLeft(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
+    if (right1 < left2 || right2 < left1) None
+    else if (left1 <= left2) Some(left2)
+    else Some(left1)
+  def intersectionRight(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
+    if (right1 < left2 || right2 < left1) None
+    else if (right1 <= right2) Some(right1)
+    else Some(right2)
 
   val plus = vStack(hf, fff, hf)
   val times = vStack(fhf, hf, fhf)
