@@ -68,6 +68,8 @@ object ClassicTetris {
     def vHoleTrimmed: VTrimmed[A] = Shape.vHoleTrimmed(this)
     def holeTrimmed: Trimmed[A] = Shape.holeTrimmed(this)
 
+    def mergedWith(that: Shape[A]): Option[Shape[A]] = Shape.merged(this, that)
+
     def validatedAllFilled: Option[Shape[A]] = Shape.validatedAllFilledShape(this)
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
 
@@ -234,6 +236,23 @@ object ClassicTetris {
         .map { case (_, r) => r }
         .map(fromRasterUnsafe)
 
+    def merged[A](s1: Shape[A], s2: Shape[A]): Option[Shape[A]] =
+      Some((s1, s2)).filter { case (s1, s2) =>
+        s1.width == s2.width && s1.height == s2.height
+      }.mapFilter { case (s1, s2) =>
+        s1.rasterized
+          .zip(s2.rasterized)
+          .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
+      }.map(fromRasterUnsafe)
+
+    def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
+      (o1, o2) match {
+        case (None, None)       => Some(None)
+        case (Some(a1), None)   => Some(Some(a1))
+        case (None, Some(a2))   => Some(Some(a2))
+        case (Some(_), Some(_)) => None
+      }
+
     implicit val horizontalMonoidK: MonoidK[Shape] = new MonoidK[Shape] {
       override def empty[A]: Shape[A] = new Shape[A] {
         override lazy val width: Width = Width(0)
@@ -302,21 +321,7 @@ object ClassicTetris {
 
   def merged[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
     if (s1.isEmpty || s2.isEmpty) Some(empty[A])
-    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap((mergedShapes[A] _).tupled)
-
-  def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
-    (o1, o2) match {
-      case (None, None)       => Some(None)
-      case (Some(a1), None)   => Some(Some(a1))
-      case (None, Some(a2))   => Some(Some(a2))
-      case (Some(_), Some(_)) => None
-    }
-
-  def mergedShapes[A](s1: Shape[A], s2: Shape[A]): Option[Shape[A]] =
-    Some((s1, s2)).filter { case (s1, s2) => s1.width == s2.width && s1.height == s2.height }.mapFilter {
-      case (s1, s2) =>
-        s1.rasterized.zip(s2.rasterized).traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
-    }.map(fromRasterUnsafe)
+    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap { case (i1, i2) => i1.mergedWith(i2) }
 
   // pre-condition: both Shapes are NOT empty
   def intersections[A](
@@ -334,6 +339,20 @@ object ClassicTetris {
       val intShape = intersectionShape[A](intersectionBottomLeft, intersectionTopRight) _
       (intShape(bottomLeft1, s1), intShape(bottomLeft2, s2))
     }
+
+  // pre-condition: both Shapes are NOT empty
+  def intersectionBottomLeftAndTopRightCoords(
+    bottomLeft1: Coord,
+    topRight1: Coord,
+    bottomLeft2: Coord,
+    topRight2: Coord
+  ): Option[(Coord, Coord)] =
+    (
+      intersectionTop(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
+      intersectionBottom(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
+      intersectionLeft(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x),
+      intersectionRight(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x)
+    ).tupled.map { case (t, b, l, r) => (Coord(x = l, y = b), Coord(x = r, y = t)) }
 
   /*
    y
@@ -381,20 +400,6 @@ object ClassicTetris {
           .map(r => r.slice(localLeft, localLeft + localWidth))
     }
   }
-
-  // pre-condition: both Shapes are NOT empty
-  def intersectionBottomLeftAndTopRightCoords(
-    bottomLeft1: Coord,
-    topRight1: Coord,
-    bottomLeft2: Coord,
-    topRight2: Coord
-  ): Option[(Coord, Coord)] =
-    (
-      intersectionTop(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
-      intersectionBottom(top1 = topRight1.y, bottom1 = bottomLeft1.y, top2 = topRight2.y, bottom2 = bottomLeft2.y),
-      intersectionLeft(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x),
-      intersectionRight(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x)
-    ).tupled.map { case (t, b, l, r) => (Coord(x = l, y = b), Coord(x = r, y = t)) }
 
   // pre-condition: both Shapes are NOT empty
   def intersectionTop(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
@@ -512,13 +517,13 @@ object ClassicTetris {
     val slash = vStack(hStack(h, f), hStack(f, h))
     val backSlash = slash.vFlipped
     println(
-      List(slash, backSlash, mergedShapes(slash, backSlash).get)
+      List(slash, backSlash, slash.mergedWith(backSlash).get)
         .map(shapeToString)
         .mkString("\n\n")
     )
     println("\n---\n")
     println(
-      List(times, diamond, mergedShapes(times, diamond).get)
+      List(times, diamond, times.mergedWith(diamond).get)
         .map(shapeToString)
         .mkString("\n\n")
     )
