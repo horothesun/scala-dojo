@@ -243,7 +243,7 @@ object ClassicTetris {
         s1.rasterized
           .zip(s2.rasterized)
           .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
-      }.map(fromRasterUnsafe)
+      }.mapFilter(fromRaster)
 
     def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
       (o1, o2) match {
