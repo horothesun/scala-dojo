@@ -247,10 +247,9 @@ object ClassicTetris {
 
     def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
       (o1, o2) match {
-        case (None, None)       => Some(None)
-        case (Some(a1), None)   => Some(Some(a1))
-        case (None, Some(a2))   => Some(Some(a2))
-        case (Some(_), Some(_)) => None
+        case (Some(_), Some(_))             => None
+        case (None, Some(_))                => Some(o2)
+        case (Some(_), None) | (None, None) => Some(o1)
       }
 
     implicit val horizontalMonoidK: MonoidK[Shape] = new MonoidK[Shape] {
