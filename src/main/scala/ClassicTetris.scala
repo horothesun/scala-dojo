@@ -4,6 +4,7 @@ import cats.implicits._
 import scala.annotation.tailrec
 import scala.collection.immutable.Nil
 import ClassicTetris.Color._
+import ClassicTetris.MergedIntersection._
 import ClassicTetris.Shape._
 
 object ClassicTetris {
@@ -318,9 +319,26 @@ object ClassicTetris {
 
   case class Coord(x: Int, y: Int)
 
-  def merged[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
-    if (s1.isEmpty || s2.isEmpty) Some(empty[A])
-    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap { case (i1, i2) => i1.mergedWith(i2) }
+  sealed trait MergedIntersection[A] {
+    def show(filled: A => String, hole: => String): String = this match {
+      case NotIntersecting()             => "NotIntersecting"
+      case ValidIntersection(mi)         => s"ValidIntersection(\n${mi.show(filled, hole)}\n)"
+      case CollidingIntersection(i1, i2) => s"Colliding(\n${i1.show(filled, hole)}\n,\n${i2.show(filled, hole)}\n)"
+    }
+  }
+  object MergedIntersection {
+    case class NotIntersecting[A]() extends MergedIntersection[A]
+    case class ValidIntersection[A](mergedIntersection: Shape[A]) extends MergedIntersection[A]
+    case class CollidingIntersection[A](intersection1: Shape[A], intersection2: Shape[A]) extends MergedIntersection[A]
+  }
+
+  def mergedIntersection[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): MergedIntersection[A] =
+    if (s1.isEmpty || s2.isEmpty) ValidIntersection(empty[A])
+    else
+      intersections(bottomLeft1, s1, bottomLeft2, s2)
+        .fold[MergedIntersection[A]](ifEmpty = NotIntersecting[A]()) { case (i1, i2) =>
+          i1.mergedWith(i2).fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
+        }
 
   // pre-condition: both Shapes are NOT empty
   def intersections[A](
@@ -381,7 +399,7 @@ object ClassicTetris {
    intersectionBottomLeft(local) = col: 1, row: 2
    */
   def intersectionShape[A](intersectionBottomLeft: Coord, intersectionTopRight: Coord)(
-    bottomLeft: Coord,
+    bottomLeft: Coord, // x >= 0, y >= 0
     s: Shape[A]
   ): Shape[A] = {
     val localTop = (s.height.value - 1) - (intersectionTopRight.y - bottomLeft.y)
@@ -459,6 +477,9 @@ object ClassicTetris {
 
   def shapeToString(s: Shape[Color]): String = s.show(filled = { case Mono => "🟩" }, hole = "⬜️")
 
+  def mergedIntersectionToString(mi: MergedIntersection[Color]): String =
+    mi.show(filled = { case Mono => "🟩" }, hole = "⬜️")
+
   def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
 //    println("\n---")
@@ -484,34 +505,36 @@ object ClassicTetris {
         .map(shapeToString)
         .mkString("\n\n")
     )
-//    println("\n---\n")
-//    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
-//    println(shapeToString(myShape01))
-//    val vTrimmed01 = myShape01.vHoleTrimmed
-//    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
-//    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
-//    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
-//    val hTrimmed01 = myShape01.hHoleTrimmed
-//    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
-//    println(s"hTrimmed01.right: ${hTrimmed01.right}")
-//    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
-//    val trimmed01 = myShape01.holeTrimmed
-//    println(s"trimmed01.top: ${trimmed01.top}")
-//    println(s"trimmed01.bottom: ${trimmed01.bottom}")
-//    println(s"trimmed01.left: ${trimmed01.left}")
-//    println(s"trimmed01.right: ${trimmed01.right}")
-//    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
+    println("\n---\n")
+    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
+    println(shapeToString(myShape01))
+    val vTrimmed01 = myShape01.vHoleTrimmed
+    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
+    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
+    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
+    val hTrimmed01 = myShape01.hHoleTrimmed
+    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
+    println(s"hTrimmed01.right: ${hTrimmed01.right}")
+    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
+    val trimmed01 = myShape01.holeTrimmed
+    println(s"trimmed01.top: ${trimmed01.top}")
+    println(s"trimmed01.bottom: ${trimmed01.bottom}")
+    println(s"trimmed01.left: ${trimmed01.left}")
+    println(s"trimmed01.right: ${trimmed01.right}")
+    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
     println("\n---\n")
     val myShape02 =
       vStack(hStack(h, f), hStack(f, h)).leftHoleBordered.topHoleBordered.bottomHoleBordered.hRepeated(2).vRepeated(3)
-    println(shapeToString(myShape02))
     val cutMyShape02 =
       intersectionShape(intersectionBottomLeft = Coord(x = 6, y = 3), intersectionTopRight = Coord(x = 7, y = 4))(
         bottomLeft = Coord(x = 5, y = 2),
         myShape02
       )
-    println("")
-    println(shapeToString(cutMyShape02))
+    println(
+      List(myShape02, cutMyShape02)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
     println("\n---\n")
     val slash = vStack(hStack(h, f), hStack(f, h))
     val backSlash = slash.vFlipped
@@ -524,6 +547,24 @@ object ClassicTetris {
     println(
       List(times, diamond, times.mergedWith(diamond).get)
         .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    val myShape03 = vStack(f, h).leftHoleBordered.leftFilledBordered(Mono)
+    val myShape04 = j.rotatedCW
+    println(
+      List(myShape03, myShape04)
+        .map(shapeToString)
+        .appended(
+          mergedIntersectionToString(
+            mergedIntersection(
+              bottomLeft1 = Coord(x = 0, y = 0),
+              s1 = myShape03,
+              bottomLeft2 = Coord(x = 1, y = 0),
+              s2 = myShape04
+            )
+          )
+        )
         .mkString("\n\n")
     )
   }
