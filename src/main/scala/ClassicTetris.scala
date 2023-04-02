@@ -72,6 +72,13 @@ object ClassicTetris {
     def validatedAllHole: Option[Shape[A]] = Shape.validatedAllHoleShape(this)
 
     def isEmpty: Boolean = width.value < 1 || height.value < 1
+    def nonEmpty: Boolean = !isEmpty
+
+    override def equals(obj: Any): Boolean =
+      obj match {
+        case that: Shape[A] => width == that.width && height == that.height && rasterized == that.rasterized
+        case _              => false
+      }
 
     def map[B](f: A => B): Shape[B] = Functor[Shape].map(this)(f)
 
@@ -293,11 +300,23 @@ object ClassicTetris {
 
   case class Coord(x: Int, y: Int)
 
-  def merge[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
+  def merged[A](bottomLeft1: Coord, s1: Shape[A], bottomLeft2: Coord, s2: Shape[A]): Option[Shape[A]] =
     if (s1.isEmpty || s2.isEmpty) Some(empty[A])
-    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap((mergeShapes[A] _).tupled)
+    else intersections(bottomLeft1, s1, bottomLeft2, s2).flatMap((mergedShapes[A] _).tupled)
 
-  def mergeShapes[A](s1: Shape[A], s2: Shape[A]): Option[Shape[A]] = ???
+  def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
+    (o1, o2) match {
+      case (None, None)       => Some(None)
+      case (Some(a1), None)   => Some(Some(a1))
+      case (None, Some(a2))   => Some(Some(a2))
+      case (Some(_), Some(_)) => None
+    }
+
+  def mergedShapes[A](s1: Shape[A], s2: Shape[A]): Option[Shape[A]] =
+    Some((s1, s2)).filter { case (s1, s2) => s1.width == s2.width && s1.height == s2.height }.mapFilter {
+      case (s1, s2) =>
+        s1.rasterized.zip(s2.rasterized).traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
+    }.map(fromRasterUnsafe)
 
   // pre-condition: both Shapes are NOT empty
   def intersections[A](
@@ -316,11 +335,52 @@ object ClassicTetris {
       (intShape(bottomLeft1, s1), intShape(bottomLeft2, s2))
     }
 
+  /*
+   y
+   /\
+   |
+   |          0 | 1 | 2 |
+   |      0 |   |   |   |
+   |      1 |   | ® | ® |
+   |      2 |   | ® | ® |
+   2      3 |   |   |   |
+   |
+   -----------5----------------> x
+
+   intersectionTopRight   = Coord(x = 7, y = 4)
+   intersectionBottomLeft = Coord(x = 6, y = 3)
+   bottomLeft = Coord(x = 5, y = 2)
+   s.width = 3
+   s.height = 4
+
+   intersectionRight(local) = intersectionTopRight.x   - bottomLeft.x = 7 - 5 = 2
+   intersectionLeft(local)  = intersectionBottomLeft.x - bottomLeft.x = 6 - 5 = 1
+
+   intersectionTop(local)    = (s.height - 1) - (intersectionTopRight.y   - bottomLeft.y) = (4 - 1) - (4 - 2) = 3 - 2 = 1
+   intersectionBottom(local) = (s.height - 1) - (intersectionBottomLeft.y - bottomLeft.y) = (4 - 1) - (3 - 2) = 3 - 1 = 2
+
+   intersectionTopRight(local) = col: 2, row: 1
+   intersectionBottomLeft(local) = col: 1, row: 2
+   */
   def intersectionShape[A](intersectionBottomLeft: Coord, intersectionTopRight: Coord)(
     bottomLeft: Coord,
     s: Shape[A]
-  ): Shape[A] =
-    ???
+  ): Shape[A] = {
+    val localTop = (s.height.value - 1) - (intersectionTopRight.y - bottomLeft.y)
+    val localBottom = (s.height.value - 1) - (intersectionBottomLeft.y - bottomLeft.y)
+    val localRight = intersectionTopRight.x - bottomLeft.x
+    val localLeft = intersectionBottomLeft.x - bottomLeft.x
+    val localHeight = localBottom - localTop + 1
+    val localWidth = localRight - localLeft + 1
+    new Shape[A] {
+      override val width: Width = Width(localWidth)
+      override val height: Height = Height(localHeight)
+      override val rasterized: List[Row[A]] =
+        s.rasterized
+          .slice(localTop, localTop + localHeight)
+          .map(r => r.slice(localLeft, localLeft + localWidth))
+    }
+  }
 
   // pre-condition: both Shapes are NOT empty
   def intersectionBottomLeftAndTopRightCoords(
@@ -420,23 +480,48 @@ object ClassicTetris {
         .map(shapeToString)
         .mkString("\n\n")
     )
+//    println("\n---\n")
+//    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
+//    println(shapeToString(myShape01))
+//    val vTrimmed01 = myShape01.vHoleTrimmed
+//    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
+//    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
+//    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
+//    val hTrimmed01 = myShape01.hHoleTrimmed
+//    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
+//    println(s"hTrimmed01.right: ${hTrimmed01.right}")
+//    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
+//    val trimmed01 = myShape01.holeTrimmed
+//    println(s"trimmed01.top: ${trimmed01.top}")
+//    println(s"trimmed01.bottom: ${trimmed01.bottom}")
+//    println(s"trimmed01.left: ${trimmed01.left}")
+//    println(s"trimmed01.right: ${trimmed01.right}")
+//    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
     println("\n---\n")
-    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
-    println(shapeToString(myShape01))
-    val vTrimmed01 = myShape01.vHoleTrimmed
-    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
-    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
-    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
-    val hTrimmed01 = myShape01.hHoleTrimmed
-    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
-    println(s"hTrimmed01.right: ${hTrimmed01.right}")
-    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
-    val trimmed01 = myShape01.holeTrimmed
-    println(s"trimmed01.top: ${trimmed01.top}")
-    println(s"trimmed01.bottom: ${trimmed01.bottom}")
-    println(s"trimmed01.left: ${trimmed01.left}")
-    println(s"trimmed01.right: ${trimmed01.right}")
-    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
+    val myShape02 =
+      vStack(hStack(h, f), hStack(f, h)).leftHoleBordered.topHoleBordered.bottomHoleBordered.hRepeated(2).vRepeated(3)
+    println(shapeToString(myShape02))
+    val cutMyShape02 =
+      intersectionShape(intersectionBottomLeft = Coord(x = 6, y = 3), intersectionTopRight = Coord(x = 7, y = 4))(
+        bottomLeft = Coord(x = 5, y = 2),
+        myShape02
+      )
+    println("")
+    println(shapeToString(cutMyShape02))
+    println("\n---\n")
+    val slash = vStack(hStack(h, f), hStack(f, h))
+    val backSlash = slash.vFlipped
+    println(
+      List(slash, backSlash, mergedShapes(slash, backSlash).get)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    println(
+      List(times, diamond, mergedShapes(times, diamond).get)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
   }
 
 }
