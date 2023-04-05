@@ -127,6 +127,11 @@ object ClassicTetris {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
     }
+    // TODO: is this going to break the whole structure!?! 🔥🔥🔥
+    case class Custom[A](r: Raster[A]) extends Shape_[A] {
+      override lazy val width: Width = rasterWidth(r)
+      override lazy val height: Height = rasterHeight(r)
+    }
     object Custom {
       // TODO: make it private!!! 🔥🔥🔥
       private def apply[A](r: Raster[A]): Custom[A] = fromRaster(r).get
@@ -162,11 +167,6 @@ object ClassicTetris {
     case class Inverted[A](ifHole: A, s: Shape_[A]) extends Shape_[A] {
       override lazy val width: Width = s.width
       override lazy val height: Height = s.height
-    }
-    // TODO: is this going to break the whole structure!?! 🔥🔥🔥
-    case class Custom[A](r: Raster[A]) extends Shape_[A] {
-      override lazy val width: Width = rasterWidth(r)
-      override lazy val height: Height = rasterHeight(r)
     }
 
     def rasterized[A]: Shape_[A] => Raster[A] = {
