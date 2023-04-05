@@ -127,6 +127,17 @@ object ClassicTetris {
       override lazy val width: Width = Width(1)
       override lazy val height: Height = Height(1)
     }
+    object Custom {
+      // TODO: make it private!!! 🔥🔥🔥
+      private def apply[A](r: Raster[A]): Custom[A] = fromRaster(r).get
+
+      // TODO: implement!!! 🔥🔥🔥
+      def fromRaster[A](r: Raster[A]): Option[Custom[A]] =
+        r match {
+          case row :: _ if r.exists(_.length != row.length) => None
+          case _                                            => Some(new Custom(r))
+        }
+    }
     case class HFlipped[A](s: Shape_[A]) extends Shape_[A] {
       override lazy val width: Width = s.width
       override lazy val height: Height = s.height
@@ -156,29 +167,26 @@ object ClassicTetris {
     case class Custom[A](r: Raster[A]) extends Shape_[A] {
       override lazy val width: Width = rasterWidth(r)
       override lazy val height: Height = rasterHeight(r)
-
-      // TODO: make it private!!! 🔥🔥🔥
-      def apply(r: Raster[A]): Custom[A] = fromRaster(r).get
-
-      // TODO: implement!!! 🔥🔥🔥
-      def fromRaster(r: Raster[A]): Option[Custom[A]] = ???
     }
 
     def rasterized[A]: Shape_[A] => Raster[A] = {
       case Empty()             => List.empty
       case Hole()              => List(List(None))
       case Filled(a)           => List(List(Some(a)))
+      case Custom(r)           => r
       case HFlipped(s)         => rasterized(s).reverse
       case VFlipped(s)         => rasterized(s).map(_.reverse)
       case Transposed(s)       => transpose(rasterized(s))
       case HStack(ss)          => Foldable[List].foldK(ss.map(rasterized))
       case Inverted(ifHole, s) => rasterized(s).map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None)))
-      case Custom(r)           => r
     }
 
     def empty_[A]: Shape_[A] = Empty()
     def hole_[A]: Shape_[A] = Hole()
     def filled_[A](a: A): Shape_[A] = Filled(a)
+
+    def custom_[A](r: Raster[A]): Option[Shape_[A]] = Custom.fromRaster(r)
+    private def customUnsafe_[A](r: Raster[A]): Shape_[A] = custom_(r).get
 
     def hStack_[A](l: Shape_[A], rs: Shape_[A]*): Shape_[A] = HStack(l :: rs.toList)
     def hStack_[A](ss: List[Shape_[A]]): Shape_[A] = HStack(ss)
@@ -188,25 +196,18 @@ object ClassicTetris {
     def vStack_[A](ss: List[Shape_[A]]): Shape_[A] = ss.fold[Shape_[A]](Empty())(vStack_(_: Shape_[A], _: Shape_[A]))
     def vStack_[A](t: Shape_[A], b: Shape_[A]): Shape_[A] = hStack_(b.rotatedCW, t.rotatedCW).rotatedCCW
 
-    private def fromRasterUnsafe_[A](r: Raster[A]): Shape_[A] = fromRaster_(r).get
-    def fromRaster_[A](r: Raster[A]): Option[Shape_[A]] =
-      r match {
-        case row :: _ if r.exists(_.length != row.length) => None
-        case _                                            => Some(Custom(r))
-      }
-
     implicit val functor: Functor[Shape_] = new Functor[Shape_] {
       override def map[A, B](fa: Shape_[A])(f: A => B): Shape_[B] =
         fa match {
           case Empty()             => Empty[B]()
           case Hole()              => Hole[B]()
           case Filled(a)           => Filled(f(a))
+          case Custom(r)           => new Custom(Functor[Raster].map(r)(f))
           case HFlipped(s)         => HFlipped(map(s)(f))
           case VFlipped(s)         => VFlipped(map(s)(f))
           case Transposed(s)       => Transposed(map(s)(f))
           case HStack(ss)          => HStack(ss.map(s => map(s)(f)))
           case Inverted(ifHole, s) => Inverted(f(ifHole), map(s)(f))
-          case Custom(r)           => Custom(Functor[Raster].map(r)(f))
         }
     }
   }
