@@ -156,6 +156,12 @@ object ClassicTetris {
     case class Custom[A](r: Raster[A]) extends Shape_[A] {
       override lazy val width: Width = rasterWidth(r)
       override lazy val height: Height = rasterHeight(r)
+
+      // TODO: make it private!!! 🔥🔥🔥
+      def apply(r: Raster[A]): Custom[A] = fromRaster(r).get
+
+      // TODO: implement!!! 🔥🔥🔥
+      def fromRaster(r: Raster[A]): Option[Custom[A]] = ???
     }
 
     def rasterized[A]: Shape_[A] => Raster[A] = {
@@ -181,6 +187,13 @@ object ClassicTetris {
     def vStack_[A](t: Shape_[A], bs: Shape_[A]*): Shape_[A] = vStack_(t :: bs.toList)
     def vStack_[A](ss: List[Shape_[A]]): Shape_[A] = ss.fold[Shape_[A]](Empty())(vStack_(_: Shape_[A], _: Shape_[A]))
     def vStack_[A](t: Shape_[A], b: Shape_[A]): Shape_[A] = hStack_(b.rotatedCW, t.rotatedCW).rotatedCCW
+
+    private def fromRasterUnsafe_[A](r: Raster[A]): Shape_[A] = fromRaster_(r).get
+    def fromRaster_[A](r: Raster[A]): Option[Shape_[A]] =
+      r match {
+        case row :: _ if r.exists(_.length != row.length) => None
+        case _                                            => Some(Custom(r))
+      }
 
     implicit val functor: Functor[Shape_] = new Functor[Shape_] {
       override def map[A, B](fa: Shape_[A])(f: A => B): Shape_[B] =
