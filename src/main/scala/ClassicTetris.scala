@@ -6,27 +6,25 @@ import scala.collection.immutable.Nil
 import ClassicTetris.Color._
 import ClassicTetris.MergedIntersection._
 import ClassicTetris.Shape._
+import ClassicTetris.Shape_._
 
 object ClassicTetris {
 
   case class Width(value: Int) extends AnyVal {
     def `+`(that: Width): Width = Numeric[Width].plus(this, that)
-    def `*`(that: Width): Width = Numeric[Width].times(this, that)
   }
   object Width {
     implicit val ordering: Ordering[Width] = Ordering[Int].contramap(_.value)
-    implicit val numeric: Numeric[Width] = numericInstance[Width, Int](from = Width.apply, value = _.value)
+    implicit val numeric: Numeric[Width] = numericInstance[Width, Int](Width.apply, _.value)
   }
 
   case class Height(value: Int) extends AnyVal {
-    def `+`(that: Height): Height = Numeric[Height].plus(this, that)
     def `-`(that: Height): Height = Numeric[Height].minus(this, that)
-    def `*`(that: Height): Height = Numeric[Height].times(this, that)
     def `>=`(that: Height): Boolean = this.value >= that.value
   }
   object Height {
     implicit val ordering: Ordering[Height] = Ordering[Int].contramap(_.value)
-    implicit val numeric: Numeric[Height] = numericInstance[Height, Int](from = Height.apply, value = _.value)
+    implicit val numeric: Numeric[Height] = numericInstance[Height, Int](Height.apply, _.value)
   }
 
   def numericInstance[W, V](from: V => W, value: W => V)(implicit numeric: Numeric[V]): Numeric[W] = new Numeric[W] {
@@ -44,6 +42,39 @@ object ClassicTetris {
   }
 
   type Row[A] = List[Option[A]]
+  type Raster[A] = List[Row[A]]
+
+  def rasterWidth[A](r: Raster[A]): Width = r match {
+    case Nil     => Width(0)
+    case r1 :: _ => Width(r1.length)
+  }
+  def rasterHeight[A](r: Raster[A]): Height = Height(r.length)
+
+  implicit val rasterFunctor: Functor[Raster] = new Functor[Raster] {
+    override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = fa.map(_.map(_.map(f)))
+  }
+
+  implicit val rasterHorizontalMonoidK: MonoidK[Raster] = new MonoidK[Raster] {
+    override def empty[A]: Raster[A] = List.empty
+
+    override def combineK[A](x: Raster[A], y: Raster[A]): Raster[A] = {
+      val renderedX =
+        if (rasterHeight(x) >= rasterHeight(y)) x
+        else {
+          val numbOfMissingRows = (rasterHeight(y) - rasterHeight(x)).value
+          val missingRow = List.fill[Option[A]](rasterWidth(x).value)(None)
+          x ++ List.fill(numbOfMissingRows)(missingRow)
+        }
+      val renderedY =
+        if (rasterHeight(y) >= rasterHeight(x)) y
+        else {
+          val numbOfMissingRows = (rasterHeight(x) - rasterHeight(y)).value
+          val missingRow = List.fill[Option[A]](rasterWidth(y).value)(None)
+          y ++ List.fill(numbOfMissingRows)(missingRow)
+        }
+      renderedX.zip(renderedY).map { case (xRow, yRow) => xRow ++ yRow }
+    }
+  }
 
   case class HTrimmed[A](left: Width, trimmed: Shape[A], right: Width)
   case class VTrimmed[A](top: Height, trimmed: Shape[A], bottom: Height)
@@ -52,6 +83,36 @@ object ClassicTetris {
   sealed trait Shape_[A] {
     val width: Width
     val height: Height
+
+    def hFlipped: Shape_[A] = HFlipped(this)
+    def vFlipped: Shape_[A] = VFlipped(this)
+
+    def transposed: Shape_[A] = Transposed(this)
+
+    def rotatedCW: Shape_[A] = transposed.vFlipped
+    def rotatedCCW: Shape_[A] = transposed.hFlipped
+
+    def hRepeated(n: Int): Shape_[A] = hStack_(List.fill(n)(this))
+    def vRepeated(n: Int): Shape_[A] = vStack_(List.fill(n)(this))
+
+    def leftFilledBordered(a: A): Shape_[A] = hStack_(filled_(a).vRepeated(height.value), this)
+    def rightFilledBordered(a: A): Shape_[A] = hStack_(this, filled_(a).vRepeated(height.value))
+    def topFilledBordered(a: A): Shape_[A] = vStack_(filled_(a).hRepeated(width.value), this)
+    def bottomFilledBordered(a: A): Shape_[A] = vStack_(this, filled_(a).hRepeated(width.value))
+    def filledBordered(a: A): Shape_[A] =
+      if (isEmpty) filled_(a).hRepeated(2).vRepeated(2)
+      else leftFilledBordered(a).rightFilledBordered(a).topFilledBordered(a).bottomFilledBordered(a)
+
+    def leftHoleBordered: Shape_[A] = hStack_(hole_[A], this)
+    def rightHoleBordered: Shape_[A] = hStack_(this, hole_[A])
+    def topHoleBordered: Shape_[A] = vStack_(hole_[A], this)
+    def bottomHoleBordered: Shape_[A] = vStack_(this, hole_[A])
+    def holeBordered: Shape_[A] =
+      if (isEmpty) hole_[A].hRepeated(2).vRepeated(2)
+      else leftHoleBordered.rightHoleBordered.topHoleBordered.bottomHoleBordered
+
+    def isEmpty: Boolean = width.value < 1 || height.value < 1
+    def nonEmpty: Boolean = !isEmpty
   }
   object Shape_ {
     case class Empty[A]() extends Shape_[A] {
@@ -74,133 +135,73 @@ object ClassicTetris {
       override lazy val width: Width = s.width
       override lazy val height: Height = s.height
     }
-
     case class Transposed[A](s: Shape_[A]) extends Shape_[A] {
       override lazy val width: Width = Width(s.height.value)
       override lazy val height: Height = Height(s.width.value)
     }
-
-    case class RotatedCW[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = Width(s.height.value)
-      override lazy val height: Height = Height(s.width.value)
-    }
-    case class RotatedCCW[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = Width(s.height.value)
-      override lazy val height: Height = Height(s.width.value)
-    }
-
     case class HStack[A](ss: List[Shape_[A]]) extends Shape_[A] {
       override lazy val width: Width = ss.map(_.width).sum
       override lazy val height: Height = ss.map(_.height).max
     }
-    case class VStack[A](ss: List[Shape_[A]]) extends Shape_[A] {
-      override lazy val width: Width = ss.map(_.width).max
-      override lazy val height: Height = ss.map(_.height).sum
-    }
-
-    case class HRepeated[A](n: Int, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width * Width(n)
-      override lazy val height: Height = s.height
-    }
-    case class VRepeated[A](n: Int, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width
-      override lazy val height: Height = s.height * Height(n)
-    }
-
+    // TODO: implement for performance reasons!!! 🔥🔥🔥
+//    case class VStack[A](ss: List[Shape_[A]]) extends Shape_[A] {
+//      override lazy val width: Width = ss.map(_.width).max
+//      override lazy val height: Height = ss.map(_.height).sum
+//    }
     case class Inverted[A](ifHole: A, s: Shape_[A]) extends Shape_[A] {
       override lazy val width: Width = s.width
       override lazy val height: Height = s.height
     }
-
-    case class LeftFilledBordered[A](a: A, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(1)
-      override lazy val height: Height = s.height
-    }
-    case class RightFilledBordered[A](a: A, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(1)
-      override lazy val height: Height = s.height
-    }
-    case class TopFilledBordered[A](a: A, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width
-      override lazy val height: Height = s.height + Height(1)
-    }
-    case class BottomFilledBordered[A](a: A, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width
-      override lazy val height: Height = s.height + Height(1)
-    }
-    case class FilledBordered[A](a: A, s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(2)
-      override lazy val height: Height = s.height + Height(2)
+    // TODO: is this going to break the whole structure!?! 🔥🔥🔥
+    case class Custom[A](r: Raster[A]) extends Shape_[A] {
+      override lazy val width: Width = rasterWidth(r)
+      override lazy val height: Height = rasterHeight(r)
     }
 
-    case class LeftHoleBordered[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(1)
-      override lazy val height: Height = s.height
-    }
-    case class RightHoleBordered[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(1)
-      override lazy val height: Height = s.height
-    }
-    case class TopHoleBordered[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width
-      override lazy val height: Height = s.height + Height(1)
-    }
-    case class BottomHoleBordered[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width
-      override lazy val height: Height = s.height + Height(1)
-    }
-    case class HoleBordered[A](s: Shape_[A]) extends Shape_[A] {
-      override lazy val width: Width = s.width + Width(2)
-      override lazy val height: Height = s.height + Height(2)
-    }
-
-    def rasterized[A]: Shape_[A] => List[Row[A]] = {
+    def rasterized[A]: Shape_[A] => Raster[A] = {
       case Empty()             => List.empty
       case Hole()              => List(List(None))
       case Filled(a)           => List(List(Some(a)))
       case HFlipped(s)         => rasterized(s).reverse
       case VFlipped(s)         => rasterized(s).map(_.reverse)
       case Transposed(s)       => transpose(rasterized(s))
-      case RotatedCW(s)        => rasterized(VFlipped(Transposed(s))) // TODO: remove from base algebra!!! 🔥🔥🔥
-      case RotatedCCW(s)       => rasterized(HFlipped(Transposed(s))) // TODO: remove from base algebra!!! 🔥🔥🔥
-      case HStack(ss)          => ??? // TODO: implement!!! 🔥🔥🔥
-      case VStack(ss)          => ??? // TODO: implement!!! 🔥🔥🔥
-      case HRepeated(n, s)     => rasterized(HStack(List.fill(n)(s))) // TODO: remove from base algebra!!! 🔥🔥🔥
-      case VRepeated(n, s)     => rasterized(VStack(List.fill(n)(s))) // TODO: remove from base algebra!!! 🔥🔥🔥
+      case HStack(ss)          => Foldable[List].foldK(ss.map(rasterized))
       case Inverted(ifHole, s) => rasterized(s).map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None)))
-      case LeftFilledBordered(a, s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(HStack(List(VRepeated(s.height.value, Filled(a)), s)))
-      case RightFilledBordered(a, s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(HStack(List(s, VRepeated(s.height.value, Filled(a)))))
-      case TopFilledBordered(a, s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(VStack(List(HRepeated(s.width.value, Filled(a)), s)))
-      case BottomFilledBordered(a, s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(VStack(List(s, HRepeated(s.width.value, Filled(a)))))
-      case FilledBordered(a, s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(
-          if (s.width == Width(0) || s.height == Height(0)) VRepeated(2, HRepeated(2, Filled(a)))
-          else BottomFilledBordered(a, TopFilledBordered(a, RightFilledBordered(a, LeftFilledBordered(a, s))))
-        )
-      case LeftHoleBordered(s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(HStack(List(VRepeated(s.height.value, Hole()), s)))
-      case RightHoleBordered(s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(HStack(List(s, VRepeated(s.height.value, Hole()))))
-      case TopHoleBordered(s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(VStack(List(HRepeated(s.width.value, Hole()), s)))
-      case BottomHoleBordered(s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(VStack(List(s, HRepeated(s.width.value, Hole()))))
-      case HoleBordered(s) => // TODO: remove from base algebra!!! 🔥🔥🔥
-        rasterized(
-          if (s.width == Width(0) || s.height == Height(0)) VRepeated(2, HRepeated(2, Hole()))
-          else BottomHoleBordered(TopHoleBordered(RightHoleBordered(LeftHoleBordered(s))))
-        )
+      case Custom(r)           => r
+    }
+
+    def empty_[A]: Shape_[A] = Empty()
+    def hole_[A]: Shape_[A] = Hole()
+    def filled_[A](a: A): Shape_[A] = Filled(a)
+
+    def hStack_[A](l: Shape_[A], rs: Shape_[A]*): Shape_[A] = HStack(l :: rs.toList)
+    def hStack_[A](ss: List[Shape_[A]]): Shape_[A] = HStack(ss)
+
+    // TODO: modify when VStack is implemented!!! 🔥🔥🔥
+    def vStack_[A](t: Shape_[A], bs: Shape_[A]*): Shape_[A] = vStack_(t :: bs.toList)
+    def vStack_[A](ss: List[Shape_[A]]): Shape_[A] = ss.fold[Shape_[A]](Empty())(vStack_(_: Shape_[A], _: Shape_[A]))
+    def vStack_[A](t: Shape_[A], b: Shape_[A]): Shape_[A] = hStack_(b.rotatedCW, t.rotatedCW).rotatedCCW
+
+    implicit val functor: Functor[Shape_] = new Functor[Shape_] {
+      override def map[A, B](fa: Shape_[A])(f: A => B): Shape_[B] =
+        fa match {
+          case Empty()             => Empty[B]()
+          case Hole()              => Hole[B]()
+          case Filled(a)           => Filled(f(a))
+          case HFlipped(s)         => HFlipped(map(s)(f))
+          case VFlipped(s)         => VFlipped(map(s)(f))
+          case Transposed(s)       => Transposed(map(s)(f))
+          case HStack(ss)          => HStack(ss.map(s => map(s)(f)))
+          case Inverted(ifHole, s) => Inverted(f(ifHole), map(s)(f))
+          case Custom(r)           => Custom(Functor[Raster].map(r)(f))
+        }
     }
   }
 
   trait Shape[A] {
     val width: Width
     val height: Height
-    val rasterized: List[Row[A]]
+    val rasterized: Raster[A]
 
     def hFlipped: Shape[A] = fromRasterUnsafe(rasterized.reverse)
     def vFlipped: Shape[A] = fromRasterUnsafe(rasterized.map(_.reverse))
@@ -218,7 +219,7 @@ object ClassicTetris {
     def topFilledBordered(a: A): Shape[A] = vStack(filled(a).hRepeated(width.value), this)
     def bottomFilledBordered(a: A): Shape[A] = vStack(this, filled(a).hRepeated(width.value))
     def filledBordered(a: A): Shape[A] =
-      if (width == Width(0) || height == Height(0)) filled(a).hRepeated(2).vRepeated(2)
+      if (isEmpty) filled(a).hRepeated(2).vRepeated(2)
       else leftFilledBordered(a).rightFilledBordered(a).topFilledBordered(a).bottomFilledBordered(a)
 
     def leftHoleBordered: Shape[A] = hStack(hole[A], this)
@@ -226,7 +227,7 @@ object ClassicTetris {
     def topHoleBordered: Shape[A] = vStack(hole[A], this)
     def bottomHoleBordered: Shape[A] = vStack(this, hole[A])
     def holeBordered: Shape[A] =
-      if (width == Width(0) || height == Height(0)) hole[A].hRepeated(2).vRepeated(2)
+      if (isEmpty) hole[A].hRepeated(2).vRepeated(2)
       else leftHoleBordered.rightHoleBordered.topHoleBordered.bottomHoleBordered
 
     def inverted(ifHole: A): Shape[A] =
@@ -275,8 +276,8 @@ object ClassicTetris {
           .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
       }.mapFilter(fromRaster)
 
-    def validatedAllFilled: Option[Shape[A]] = rasterized.traverse(validatedAllFilledRow).as(this)
-    def validatedAllHole: Option[Shape[A]] = rasterized.traverse(validatedAllHoleRow).as(this)
+    def validatedAllFilled: Option[Shape[A]] = (rasterized: List[Row[A]]).traverse(validatedAllFilledRow).as(this)
+    def validatedAllHole: Option[Shape[A]] = (rasterized: List[Row[A]]).traverse(validatedAllHoleRow).as(this)
 
     def isEmpty: Boolean = width.value < 1 || height.value < 1
     def nonEmpty: Boolean = !isEmpty
@@ -294,18 +295,18 @@ object ClassicTetris {
   }
   object Shape {
 
-    def fromRasterUnsafe[A](rows: List[Row[A]]): Shape[A] = fromRaster(rows).get
-    def fromRaster[A](rows: List[Row[A]]): Option[Shape[A]] =
-      rows match {
-        case r :: _ if rows.exists(_.length != r.length) => None
+    def fromRasterUnsafe[A](r: Raster[A]): Shape[A] = fromRaster(r).get
+    def fromRaster[A](r: Raster[A]): Option[Shape[A]] =
+      r match {
+        case row :: _ if r.exists(_.length != row.length) => None
         case _ =>
           Some(new Shape[A] {
-            override lazy val width: Width = rows match {
+            override lazy val width: Width = r match {
               case Nil    => Width(0)
               case r :: _ => Width(r.length)
             }
-            override lazy val height: Height = Height(rows.length)
-            override lazy val rasterized: List[Row[A]] = rows
+            override lazy val height: Height = Height(r.length)
+            override lazy val rasterized: Raster[A] = r
           })
       }
 
@@ -328,7 +329,6 @@ object ClassicTetris {
 
     def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = hStack(l :: rs.toList)
     def hStack[A](ss: List[Shape[A]]): Shape[A] = Foldable[List].foldK(ss)
-    def hStack[A](l: Shape[A], r: Shape[A]): Shape[A] = MonoidK[Shape].combineK(l, r)
 
     def vStack[A](t: Shape[A], bs: Shape[A]*): Shape[A] = vStack(t :: bs.toList)
     def vStack[A](ss: List[Shape[A]]): Shape[A] = ss.fold(MonoidK[Shape].empty)(vStack(_: Shape[A], _: Shape[A]))
@@ -340,7 +340,7 @@ object ClassicTetris {
     def splittedByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
       s.rasterized
         // TODO: optimise for `::`!!! 🔥🔥🔥
-        .foldLeft(List.empty[(Boolean, List[Row[A]])]) { case (acc, r) =>
+        .foldLeft(List.empty[(Boolean, Raster[A])]) { case (acc, r) =>
           val rIsValid = validatedRow(r).isDefined
           val newROnlyAcc = List((rIsValid, List(r)))
           acc.toNel.fold(ifEmpty = newROnlyAcc) { accNel =>
