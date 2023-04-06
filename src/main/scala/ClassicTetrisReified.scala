@@ -589,7 +589,6 @@ object ClassicTetrisReified {
         )
         .mkString("\n\n")
     )
-    val c = new Custom(Raster(List.empty[Row[Color]]))
   }
 
 }
