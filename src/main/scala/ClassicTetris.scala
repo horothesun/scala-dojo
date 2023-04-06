@@ -43,38 +43,6 @@ object ClassicTetris {
   type Row[A] = List[Option[A]]
   type Raster[A] = List[Row[A]]
 
-  def rasterWidth[A](r: Raster[A]): Width = r match {
-    case Nil     => Width(0)
-    case r1 :: _ => Width(r1.length)
-  }
-  def rasterHeight[A](r: Raster[A]): Height = Height(r.length)
-
-  implicit val rasterFunctor: Functor[Raster] = new Functor[Raster] {
-    override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = fa.map(_.map(_.map(f)))
-  }
-
-  implicit val rasterHorizontalMonoidK: MonoidK[Raster] = new MonoidK[Raster] {
-    override def empty[A]: Raster[A] = List.empty
-
-    override def combineK[A](x: Raster[A], y: Raster[A]): Raster[A] = {
-      val renderedX =
-        if (rasterHeight(x) >= rasterHeight(y)) x
-        else {
-          val numbOfMissingRows = (rasterHeight(y) - rasterHeight(x)).value
-          val missingRow = List.fill[Option[A]](rasterWidth(x).value)(None)
-          x ++ List.fill(numbOfMissingRows)(missingRow)
-        }
-      val renderedY =
-        if (rasterHeight(y) >= rasterHeight(x)) y
-        else {
-          val numbOfMissingRows = (rasterHeight(x) - rasterHeight(y)).value
-          val missingRow = List.fill[Option[A]](rasterWidth(y).value)(None)
-          y ++ List.fill(numbOfMissingRows)(missingRow)
-        }
-      renderedX.zip(renderedY).map { case (xRow, yRow) => xRow ++ yRow }
-    }
-  }
-
   case class HTrimmed[A](left: Width, trimmed: Shape[A], right: Width)
   case class VTrimmed[A](top: Height, trimmed: Shape[A], bottom: Height)
   case class Trimmed[A](top: Height, bottom: Height, left: Width, right: Width, trimmed: Shape[A])

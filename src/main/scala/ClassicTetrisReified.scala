@@ -41,37 +41,39 @@ object ClassicTetrisReified {
   }
 
   type Row[A] = List[Option[A]]
-  type Raster[A] = List[Row[A]]
 
-  def rasterWidth[A](r: Raster[A]): Width = r match {
-    case Nil     => Width(0)
-    case r1 :: _ => Width(r1.length)
+  case class Raster[A](value: List[Row[A]]) extends AnyVal {
+    def width: Width = value match {
+      case Nil     => Width(0)
+      case r1 :: _ => Width(r1.length)
+    }
+    def height: Height = Height(value.length)
   }
-  def rasterHeight[A](r: Raster[A]): Height = Height(r.length)
+  object Raster {
+    implicit val functor: Functor[Raster] = new Functor[Raster] {
+      override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = Raster(fa.value.map(_.map(_.map(f))))
+    }
 
-  implicit val rasterFunctor: Functor[Raster] = new Functor[Raster] {
-    override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = fa.map(_.map(_.map(f)))
-  }
+    implicit val horizontalMonoidK: MonoidK[Raster] = new MonoidK[Raster] {
+      override def empty[A]: Raster[A] = Raster(List.empty)
 
-  implicit val rasterHorizontalMonoidK: MonoidK[Raster] = new MonoidK[Raster] {
-    override def empty[A]: Raster[A] = List.empty
-
-    override def combineK[A](x: Raster[A], y: Raster[A]): Raster[A] = {
-      val renderedX =
-        if (rasterHeight(x) >= rasterHeight(y)) x
-        else {
-          val numbOfMissingRows = (rasterHeight(y) - rasterHeight(x)).value
-          val missingRow = List.fill[Option[A]](rasterWidth(x).value)(None)
-          x ++ List.fill(numbOfMissingRows)(missingRow)
-        }
-      val renderedY =
-        if (rasterHeight(y) >= rasterHeight(x)) y
-        else {
-          val numbOfMissingRows = (rasterHeight(x) - rasterHeight(y)).value
-          val missingRow = List.fill[Option[A]](rasterWidth(y).value)(None)
-          y ++ List.fill(numbOfMissingRows)(missingRow)
-        }
-      renderedX.zip(renderedY).map { case (xRow, yRow) => xRow ++ yRow }
+      override def combineK[A](x: Raster[A], y: Raster[A]): Raster[A] = {
+        val rasterizedX =
+          if (x.height >= y.height) x
+          else {
+            val numbOfMissingRows = (y.height - x.height).value
+            val missingRow = List.fill[Option[A]](x.width.value)(None)
+            Raster(x.value ++ List.fill(numbOfMissingRows)(missingRow))
+          }
+        val rasterizedY =
+          if (y.height >= x.height) y
+          else {
+            val numbOfMissingRows = (x.height - y.height).value
+            val missingRow = List.fill[Option[A]](y.width.value)(None)
+            Raster(y.value ++ List.fill(numbOfMissingRows)(missingRow))
+          }
+        Raster(rasterizedX.value.zip(rasterizedY.value).map { case (xRow, yRow) => xRow ++ yRow })
+      }
     }
   }
 
@@ -113,11 +115,58 @@ object ClassicTetrisReified {
 
     def inverted(ifHole: A): Shape[A] = Inverted(ifHole, this)
 
+    def splittedByFilledRows: List[Shape[A]] = splittedByValidRows(validatedAllFilledRow, this)
+    def splittedByFilledColumns: List[Shape[A]] = rotatedCW.splittedByFilledRows.map(_.rotatedCCW)
+
+    def splittedByHoleRows: List[Shape[A]] = splittedByValidRows(validatedAllHoleRow, this)
+    def splittedByHoleColumns: List[Shape[A]] = rotatedCW.splittedByHoleRows.map(_.rotatedCCW)
+
+    def hHoleTrimmed: HTrimmed[A] = {
+      val vTrimmed = rotatedCW.vHoleTrimmed
+      HTrimmed(
+        left = Width(vTrimmed.top.value),
+        trimmed = vTrimmed.trimmed.rotatedCCW,
+        right = Width(vTrimmed.bottom.value)
+      )
+    }
+    def vHoleTrimmed: VTrimmed[A] = {
+      def topHeightAndTrimmed(rowSplit: List[Shape[A]]): (Height, List[Shape[A]]) =
+        rowSplit match {
+          case Nil      => (Height(0), Nil)
+          case ts :: ss => ts.validatedAllHole.fold(ifEmpty = (Height(0), rowSplit))(_ => (ts.height, ss))
+        }
+      def bottomTrimmedAndHeight(rowSplit: List[Shape[A]]): (List[Shape[A]], Height) = {
+        val (bottom, bTrimmedReversed) = topHeightAndTrimmed(rowSplit.reverse)
+        (bTrimmedReversed.reverse, bottom)
+      }
+      val (top, tTrimmed) = topHeightAndTrimmed(splittedByHoleRows)
+      val (trimmed, bottom) = bottomTrimmedAndHeight(tTrimmed)
+      VTrimmed(top, vStack(trimmed), bottom)
+    }
+    def holeTrimmed: Trimmed[A] = {
+      val ht = hHoleTrimmed
+      val vt = ht.trimmed.vHoleTrimmed
+      Trimmed(top = vt.top, bottom = vt.bottom, left = ht.left, right = ht.right, trimmed = vt.trimmed)
+    }
+
+    def mergedWith(that: Shape[A]): Option[Shape[A]] =
+      Some((this, that)).filter { case (s1, s2) =>
+        s1.width == s2.width && s1.height == s2.height
+      }.mapFilter { case (s1, s2) =>
+        s1.rasterized.value
+          .zip(s2.rasterized.value)
+          .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
+          .map(Raster.apply)
+      }.mapFilter(Custom.fromRaster)
+
+    def validatedAllFilled: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllFilledRow).as(this)
+    def validatedAllHole: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllHoleRow).as(this)
+
     def isEmpty: Boolean = width.value < 1 || height.value < 1
     def nonEmpty: Boolean = !isEmpty
 
     def show(filled: A => String, hole: => String): String =
-      rasterized.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
+      rasterized.value.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
   }
   object Shape {
     case class Empty[A]() extends Shape[A] {
@@ -134,19 +183,19 @@ object ClassicTetrisReified {
     }
     // TODO: is this going to break the whole structure!?! 🔥🔥🔥
     case class Custom[A](r: Raster[A]) extends Shape[A] {
-      override lazy val width: Width = rasterWidth(r)
-      override lazy val height: Height = rasterHeight(r)
+      override lazy val width: Width = r.width
+      override lazy val height: Height = r.height
     }
     object Custom {
       private def apply[A](r: Raster[A]): Custom[A] = new Custom(r)
 
       def fromRaster[A](r: Raster[A]): Option[Shape[A]] =
-        r match {
-          case Nil                                          => Some(Empty())
-          case (None :: Nil) :: Nil                         => Some(Hole())
-          case (Some(a) :: Nil) :: Nil                      => Some(Filled(a))
-          case row :: _ if r.exists(_.length != row.length) => None
-          case _                                            => Some(new Custom(r))
+        r.value match {
+          case Nil                                                => Some(Empty())
+          case (None :: Nil) :: Nil                               => Some(Hole())
+          case (Some(a) :: Nil) :: Nil                            => Some(Filled(a))
+          case row :: _ if r.value.exists(_.length != row.length) => None
+          case _                                                  => Some(new Custom(r))
         }
     }
     case class HFlipped[A](s: Shape[A]) extends Shape[A] {
@@ -176,28 +225,16 @@ object ClassicTetrisReified {
     }
 
     def rasterized[A]: Shape[A] => Raster[A] = {
-      case Empty()             => List.empty
-      case Hole()              => List(List(None))
-      case Filled(a)           => List(List(Some(a)))
-      case Custom(r)           => r
-      case HFlipped(s)         => rasterized(s).reverse
-      case VFlipped(s)         => rasterized(s).map(_.reverse)
-      case Transposed(s)       => transpose(rasterized(s))
-      case HStack(ss)          => Foldable[List].foldK(ss.map(rasterized))
-      case Inverted(ifHole, s) => rasterized(s).map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None)))
-    }
-
-    def transpose[A](rows: List[List[A]]): List[List[A]] = {
-      def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
-      def tails(rows: List[List[A]]): List[List[A]] = rows.map(_.tail)
-      @tailrec
-      def aux(acc: List[List[A]], rows: List[List[A]]): List[List[A]] =
-        rows match {
-          case Nil           => acc
-          case Nil :: _      => acc
-          case (_ :: _) :: _ => aux(acc :+ heads(rows), tails(rows))
-        }
-      aux(acc = List.empty, rows)
+      case Empty()       => Raster(List.empty)
+      case Hole()        => Raster(List(List(None)))
+      case Filled(a)     => Raster(List(List(Some(a))))
+      case Custom(r)     => r
+      case HFlipped(s)   => Raster(rasterized(s).value.reverse)
+      case VFlipped(s)   => Raster(rasterized(s).value.map(_.reverse))
+      case Transposed(s) => Raster(transpose(rasterized(s).value))
+      case HStack(ss)    => Foldable[List].foldK(ss.map(rasterized))
+      case Inverted(ifHole, s) =>
+        Raster(rasterized(s).value.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
     }
 
     def empty[A]: Shape[A] = Empty()
@@ -214,6 +251,44 @@ object ClassicTetrisReified {
     def vStack[A](t: Shape[A], bs: Shape[A]*): Shape[A] = vStack(t :: bs.toList)
     def vStack[A](ss: List[Shape[A]]): Shape[A] = ss.fold[Shape[A]](Empty())(vStack(_: Shape[A], _: Shape[A]))
     def vStack[A](t: Shape[A], b: Shape[A]): Shape[A] = hStack(b.rotatedCW, t.rotatedCW).rotatedCCW
+
+    def transpose[A](rows: List[List[A]]): List[List[A]] = {
+      def heads(rows: List[List[A]]): List[A] = rows.map(_.head)
+      def tails(rows: List[List[A]]): List[List[A]] = rows.map(_.tail)
+      @tailrec
+      def aux(acc: List[List[A]], rows: List[List[A]]): List[List[A]] =
+        rows match {
+          case Nil           => acc
+          case Nil :: _      => acc
+          case (_ :: _) :: _ => aux(acc :+ heads(rows), tails(rows))
+        }
+      aux(acc = List.empty, rows)
+    }
+
+    def validatedAllFilledRow[A](r: Row[A]): Option[Row[A]] = (r: List[Option[A]]).sequence.as(r)
+    def validatedAllHoleRow[A](r: Row[A]): Option[Row[A]] = Some(r).filter(_.forall(_.isEmpty)).as(r)
+
+    def splittedByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
+      s.rasterized.value
+        // TODO: optimise for `::`!!! 🔥🔥🔥
+        .foldLeft(List.empty[(Boolean, Raster[A])]) { case (acc, r) =>
+          val rIsValid = validatedRow(r).isDefined
+          val newROnlyAcc = List((rIsValid, Raster(List(r))))
+          acc.toNel.fold(ifEmpty = newROnlyAcc) { accNel =>
+            val (lastIsValid, lastRows) = accNel.last
+            if (rIsValid == lastIsValid) acc.dropRight(1) :+ (lastIsValid, Raster(lastRows.value :+ r))
+            else acc ++ newROnlyAcc
+          }
+        }
+        .map { case (_, r) => r }
+        .map(new Custom(_))
+
+    def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
+      (o1, o2) match {
+        case (Some(_), Some(_))             => None
+        case (None, Some(_))                => Some(o2)
+        case (Some(_), None) | (None, None) => Some(o1)
+      }
 
     implicit val functor: Functor[Shape] = new Functor[Shape] {
       override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
@@ -285,8 +360,7 @@ object ClassicTetrisReified {
     else
       intersections(bottomLeft1, s1, bottomLeft2, s2)
         .fold[MergedIntersection[A]](ifEmpty = NotIntersecting[A]()) { case (i1, i2) =>
-          // TODO: implement mergeWith!!! 🔥🔥🔥
-          ??? // i1.mergedWith(i2).fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
+          i1.mergedWith(i2).fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
         }
 
   // pre-condition: both Shapes are NOT empty
@@ -358,9 +432,11 @@ object ClassicTetrisReified {
     val localHeight = localBottom - localTop + 1
     val localWidth = localRight - localLeft + 1
     new Custom(
-      s.rasterized
-        .slice(localTop, localTop + localHeight)
-        .map(r => r.slice(localLeft, localLeft + localWidth))
+      Raster(
+        s.rasterized.value
+          .slice(localTop, localTop + localHeight)
+          .map(r => r.slice(localLeft, localLeft + localWidth))
+      )
     )
   }
 
@@ -445,29 +521,29 @@ object ClassicTetrisReified {
         i.rotatedCCW
       )
     println(shapeToString(complex))
-//    println("\n---\n")
-//    println(
-//      complex.splittedByFilledRows
-//        .map(shapeToString)
-//        .mkString("\n\n")
-//    )
-//    println("\n---\n")
-//    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
-//    println(shapeToString(myShape01))
-//    val vTrimmed01 = myShape01.vHoleTrimmed
-//    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
-//    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
-//    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
-//    val hTrimmed01 = myShape01.hHoleTrimmed
-//    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
-//    println(s"hTrimmed01.right: ${hTrimmed01.right}")
-//    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
-//    val trimmed01 = myShape01.holeTrimmed
-//    println(s"trimmed01.top: ${trimmed01.top}")
-//    println(s"trimmed01.bottom: ${trimmed01.bottom}")
-//    println(s"trimmed01.left: ${trimmed01.left}")
-//    println(s"trimmed01.right: ${trimmed01.right}")
-//    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
+    println("\n---\n")
+    println(
+      complex.splittedByFilledRows
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
+    println(shapeToString(myShape01))
+    val vTrimmed01 = myShape01.vHoleTrimmed
+    println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
+    println(s"vTrimmed01.bottom: ${vTrimmed01.bottom}")
+    println(s"vTrimmed01.trimmed:\n${shapeToString(vTrimmed01.trimmed)}")
+    val hTrimmed01 = myShape01.hHoleTrimmed
+    println(s"\nhTrimmed01.left: ${hTrimmed01.left}")
+    println(s"hTrimmed01.right: ${hTrimmed01.right}")
+    println(s"hTrimmed01.trimmed:\n${shapeToString(hTrimmed01.trimmed)}")
+    val trimmed01 = myShape01.holeTrimmed
+    println(s"trimmed01.top: ${trimmed01.top}")
+    println(s"trimmed01.bottom: ${trimmed01.bottom}")
+    println(s"trimmed01.left: ${trimmed01.left}")
+    println(s"trimmed01.right: ${trimmed01.right}")
+    println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
     println("\n---\n")
     val myShape02 =
       vStack(hStack(h, f), hStack(f, h)).leftHoleBordered.topHoleBordered.bottomHoleBordered.hRepeated(2).vRepeated(3)
@@ -481,38 +557,39 @@ object ClassicTetrisReified {
         .map(shapeToString)
         .mkString("\n\n")
     )
-//    println("\n---\n")
-//    val slash = vStack(hStack(h, f), hStack(f, h))
-//    val backSlash = slash.vFlipped
-//    println(
-//      List(slash, backSlash, slash.mergedWith(backSlash).get)
-//        .map(shapeToString)
-//        .mkString("\n\n")
-//    )
-//    println("\n---\n")
-//    println(
-//      List(times, diamond, times.mergedWith(diamond).get)
-//        .map(shapeToString)
-//        .mkString("\n\n")
-//    )
-//    println("\n---\n")
-//    val myShape03 = vStack(f, h).leftHoleBordered.leftFilledBordered(Mono)
-//    val myShape04 = j.rotatedCW
-//    println(
-//      List(myShape03, myShape04)
-//        .map(shapeToString)
-//        .appended(
-//          mergedIntersectionToString(
-//            mergedIntersection(
-//              bottomLeft1 = Coord(x = 0, y = 0),
-//              s1 = myShape03,
-//              bottomLeft2 = Coord(x = 1, y = 0),
-//              s2 = myShape04
-//            )
-//          )
-//        )
-//        .mkString("\n\n")
-//    )
+    println("\n---\n")
+    val slash = vStack(hStack(h, f), hStack(f, h))
+    val backSlash = slash.vFlipped
+    println(
+      List(slash, backSlash, slash.mergedWith(backSlash).get)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    println(
+      List(times, diamond, times.mergedWith(diamond).get)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    val myShape03 = vStack(f, h).leftHoleBordered.leftFilledBordered(Mono)
+    val myShape04 = j.rotatedCW
+    println(
+      List(myShape03, myShape04)
+        .map(shapeToString)
+        .appended(
+          mergedIntersectionToString(
+            mergedIntersection(
+              bottomLeft1 = Coord(x = 0, y = 0),
+              s1 = myShape03,
+              bottomLeft2 = Coord(x = 1, y = 0),
+              s2 = myShape04
+            )
+          )
+        )
+        .mkString("\n\n")
+    )
+    val c = new Custom(Raster(List.empty[Row[Color]]))
   }
 
 }
