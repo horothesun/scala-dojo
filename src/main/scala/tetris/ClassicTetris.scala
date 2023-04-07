@@ -56,6 +56,24 @@ object ClassicTetris {
       intersectionRight(left1 = bottomLeft1.x, right1 = topRight1.x, left2 = bottomLeft2.x, right2 = topRight2.x)
     ).tupled.map { case (t, b, l, r) => (Coord(x = l, y = b), Coord(x = r, y = t)) }
 
+  // pre-condition: both Shapes are NOT empty
+  def intersectionTop(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
+    if (top1 < bottom2 || top2 < bottom1) None
+    else if (top1 <= top2) Some(top1)
+    else Some(top2)
+  def intersectionBottom(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
+    if (top1 < bottom2 || top2 < bottom1) None
+    else if (bottom1 <= bottom2) Some(bottom2)
+    else Some(bottom1)
+  def intersectionLeft(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
+    if (right1 < left2 || right2 < left1) None
+    else if (left1 <= left2) Some(left2)
+    else Some(left1)
+  def intersectionRight(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
+    if (right1 < left2 || right2 < left1) None
+    else if (right1 <= right2) Some(right1)
+    else Some(right2)
+
   /*
    y
    /\
@@ -104,24 +122,6 @@ object ClassicTetris {
       fromRaster(Raster(rows))
     }
 
-  // pre-condition: both Shapes are NOT empty
-  def intersectionTop(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
-    if (top1 < bottom2 || top2 < bottom1) None
-    else if (top1 <= top2) Some(top1)
-    else Some(top2)
-  def intersectionBottom(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
-    if (top1 < bottom2 || top2 < bottom1) None
-    else if (bottom1 <= bottom2) Some(bottom2)
-    else Some(bottom1)
-  def intersectionLeft(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
-    if (right1 < left2 || right2 < left1) None
-    else if (left1 <= left2) Some(left2)
-    else Some(left1)
-  def intersectionRight(left1: Int, right1: Int, left2: Int, right2: Int): Option[Int] =
-    if (right1 < left2 || right2 < left1) None
-    else if (right1 <= right2) Some(right1)
-    else Some(right2)
-
   val h = Hole[Color]()
   val f = Filled[Color](Mono)
   val hf = hStack(h, f)
@@ -146,23 +146,19 @@ object ClassicTetris {
   def squaredTarget[A](n: Int, a: A): Shape[A] =
     n match {
       case _ if n <= 0 => empty
-      case _ =>
-        val step = List.fill[ShapeEndo[A]](n - 1)(_.holeBordered.filledBordered(a))
-        Foldable[List].fold(step).apply(filled(a))
+      case _           => repeat[A](n - 1, _.holeBordered.filledBordered(a))(filled(a))
     }
   def spiral[A](n: Int, a: A): Shape[A] = {
-    def step(n: Int): List[ShapeEndo[A]] =
-      List.fill[ShapeEndo[A]](n)(
-        _.bottomHoleBordered
-          .rightFilledBordered(a)
-          .leftHoleBordered
-          .bottomFilledBordered(a)
-          .topHoleBordered
-          .leftFilledBordered(a)
-          .rightHoleBordered
-          .topFilledBordered(a)
-      )
-    def rightOpenSpiral(n: Int): Shape[A] = Foldable[List].fold(step(n)).apply(filled(a))
+    def step: ShapeEndo[A] =
+      _.bottomHoleBordered
+        .rightFilledBordered(a)
+        .leftHoleBordered
+        .bottomFilledBordered(a)
+        .topHoleBordered
+        .leftFilledBordered(a)
+        .rightHoleBordered
+        .topFilledBordered(a)
+    def rightOpenSpiral(n: Int): Shape[A] = repeat(n, step)(filled(a))
     n match {
       case _ if n < 0  => empty
       case _ if n == 0 => rightOpenSpiral(n)

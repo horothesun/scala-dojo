@@ -1,16 +1,9 @@
 package tetris
 
-import cats._
 import shape.Shape
 import Models.MergedIntersection._
 
 object Models {
-
-  type ShapeEndo[A] = Shape[A] => Shape[A]
-  implicit def shapeEndoMonoid[A]: Monoid[ShapeEndo[A]] = new Monoid[ShapeEndo[A]] {
-    override def empty: ShapeEndo[A] = identity
-    override def combine(f: ShapeEndo[A], g: ShapeEndo[A]): ShapeEndo[A] = f.compose(g)
-  }
 
   // global coordinates
   case class Coord(x: Int, y: Int)

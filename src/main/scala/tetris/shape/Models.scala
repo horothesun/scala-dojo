@@ -8,6 +8,8 @@ object Models {
 
   case class Width(value: Int) extends AnyVal {
     def `+`(that: Width): Width = Numeric[Width].plus(this, that)
+    def `-`(that: Width): Width = Numeric[Width].minus(this, that)
+    def `-` : Width = Numeric[Width].negate(this)
   }
   object Width {
     implicit val ordering: Ordering[Width] = Ordering[Int].contramap(_.value)
@@ -16,6 +18,7 @@ object Models {
 
   case class Height(value: Int) extends AnyVal {
     def `-`(that: Height): Height = Numeric[Height].minus(this, that)
+    def `-` : Height = Numeric[Height].negate(this)
     def `>=`(that: Height): Boolean = this.value >= that.value
   }
   object Height {

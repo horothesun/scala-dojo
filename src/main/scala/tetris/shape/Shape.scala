@@ -3,10 +3,13 @@ package tetris.shape
 import cats._
 import cats.implicits._
 import scala.annotation.tailrec
+import scala.math._
+import scala.math.Numeric.Implicits._
 import Models._
 import Shape._
 
 sealed trait Shape[A] {
+
   val width: Width
   val height: Height
   lazy val rasterized: Raster[A] = Shape.rasterized(this)
@@ -73,6 +76,20 @@ sealed trait Shape[A] {
     Trimmed(top = vt.top, bottom = vt.bottom, left = ht.left, right = ht.right, trimmed = vt.trimmed)
   }
 
+  def inFrontOf(that: Shape[A]): Shape[A] = {
+    def adjusted(r: Width, b: Height): ShapeEndo[A] =
+      repeat[A](max(0, r.value), _.bottomHoleBordered)
+        .compose(repeat(max(0, b.value), _.rightHoleBordered))
+    val rightFrontToBack = that.width - width
+    val bottomFrontToBack = that.height - height
+    val adjustedFront = adjusted(rightFrontToBack, bottomFrontToBack)(this)
+    val adjustedBack = adjusted(-rightFrontToBack, -bottomFrontToBack)(that)
+    val rows = adjustedFront.rasterized.value
+      .zip(adjustedBack.rasterized.value)
+      .map { case (fr, br) => fr.zip(br).map { case (f, b) => f.orElse(b) } }
+    fromRaster(Raster(rows))
+  }
+
   def mergedWith(that: Shape[A]): Option[Shape[A]] =
     Some((this, that)).filter { case (s1, s2) =>
       s1.width == s2.width && s1.height == s2.height
@@ -80,11 +97,10 @@ sealed trait Shape[A] {
       s1.rasterized.value
         .zip(s2.rasterized.value)
         .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
-        .map(Raster.apply)
-    }.map(fromRaster)
+    }.map(rows => fromRaster(Raster(rows)))
 
-  def validatedAllFilled: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllFilledRow).as(this)
-  def validatedAllHole: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllHoleRow).as(this)
+  def validatedAllFilled: Option[Shape[A]] = rasterized.value.traverse(validatedAllFilledRow).as(this)
+  def validatedAllHole: Option[Shape[A]] = rasterized.value.traverse(validatedAllHoleRow).as(this)
 
   def isEmpty: Boolean = width.value < 1 || height.value < 1
   def nonEmpty: Boolean = !isEmpty
@@ -93,6 +109,7 @@ sealed trait Shape[A] {
 
   def show(filled: A => String, hole: => String): String =
     rasterized.value.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
+
 }
 object Shape {
 
@@ -198,6 +215,14 @@ object Shape {
       case (Some(_), None) | (None, None) => Some(o1)
     }
 
+  type ShapeEndo[A] = Shape[A] => Shape[A]
+  implicit def shapeEndoMonoid[A]: Monoid[ShapeEndo[A]] = new Monoid[ShapeEndo[A]] {
+    override def empty: ShapeEndo[A] = identity
+    override def combine(f: ShapeEndo[A], g: ShapeEndo[A]): ShapeEndo[A] = f.compose(g)
+  }
+
+  def repeat[A](n: Int, se: ShapeEndo[A]): ShapeEndo[A] = Foldable[List].fold[ShapeEndo[A]](List.fill(n)(se))
+
   implicit val functor: Functor[Shape] = new Functor[Shape] {
     override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
       fa match {
@@ -212,6 +237,7 @@ object Shape {
       }
   }
 
+  // TODO: implement (if possible)!!! 🔥🔥🔥
   implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
     override def pure[A](x: A): Shape[A] = Filled(x)
     override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] =
