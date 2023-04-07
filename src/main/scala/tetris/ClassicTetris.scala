@@ -12,23 +12,6 @@ import shape.Shape._
 
 object ClassicTetris {
 
-  val h = Hole[Color]()
-  val f = Filled[Color](Mono)
-  val hf = hStack(h, f)
-  val ff = f.hRepeated(2)
-  val fff = f.hRepeated(3)
-  val fhf = hStack(f, h, f)
-  val hff = hStack(h, f, f)
-
-  val i = f.vRepeated(4)
-  val o = ff.vRepeated(2)
-  val t = hStack(h, f, h).topFilledBordered(Mono)
-  val j = f.vRepeated(3).leftHoleBordered.bottomFilledBordered(Mono)
-  val l = j.vFlipped
-  val s = vStack(hff, ff)
-  val z = s.vFlipped
-  val allTetrominoes = NonEmptyList.of[Shape[Color]](i, o, t, j, l, s, z)
-
   def mergedIntersection[A](
     bottomLeft1: Coord,
     s1: Shape[A],
@@ -139,34 +122,61 @@ object ClassicTetris {
     else if (right1 <= right2) Some(right1)
     else Some(right2)
 
+  val h = Hole[Color]()
+  val f = Filled[Color](Mono)
+  val hf = hStack(h, f)
+  val ff = f.hRepeated(2)
+  val fff = f.hRepeated(3)
+  val fhf = hStack(f, h, f)
+  val hff = hStack(h, f, f)
+
+  val i = f.vRepeated(4)
+  val o = ff.vRepeated(2)
+  val t = hStack(h, f, h).topFilledBordered(Mono)
+  val j = f.vRepeated(3).leftHoleBordered.bottomFilledBordered(Mono)
+  val l = j.vFlipped
+  val s = vStack(hff, ff)
+  val z = s.vFlipped
+  val allTetrominoes = NonEmptyList.of[Shape[Color]](i, o, t, j, l, s, z)
+
   val plus = vStack(hf, fff, hf)
   val times = vStack(fhf, hf, fhf)
   val diamond = times.inverted(ifHole = Mono)
   val squareBorder = h.filledBordered(Mono)
-  def squaredTarget[A](n: Int, a: A): Shape[A] = {
-    val fs = List.fill[ShapeEndo[A]](n)(_.holeBordered.filledBordered(a))
-    Foldable[List].fold(fs).apply(filled(a))
-  }
+  def squaredTarget[A](n: Int, a: A): Shape[A] =
+    n match {
+      case _ if n <= 0 => empty
+      case _ =>
+        val step = List.fill[ShapeEndo[A]](n - 1)(_.holeBordered.filledBordered(a))
+        Foldable[List].fold(step).apply(filled(a))
+    }
   def spiral[A](n: Int, a: A): Shape[A] = {
-    val fs = List.fill[ShapeEndo[A]](n)(
-      _.bottomHoleBordered
-        .rightFilledBordered(a)
-        .leftHoleBordered
-        .bottomFilledBordered(a)
-        .topHoleBordered
-        .leftFilledBordered(a)
-        .rightHoleBordered
-        .topFilledBordered(a)
-    )
-    Foldable[List].fold(fs).apply(filled(a))
+    def step(n: Int): List[ShapeEndo[A]] =
+      List.fill[ShapeEndo[A]](n)(
+        _.bottomHoleBordered
+          .rightFilledBordered(a)
+          .leftHoleBordered
+          .bottomFilledBordered(a)
+          .topHoleBordered
+          .leftFilledBordered(a)
+          .rightHoleBordered
+          .topFilledBordered(a)
+      )
+    def rightOpenSpiral(n: Int): Shape[A] = Foldable[List].fold(step(n)).apply(filled(a))
+    n match {
+      case _ if n < 0  => empty
+      case _ if n == 0 => rightOpenSpiral(n)
+      case _           => rightOpenSpiral(n).rightFilledBordered(a)
+    }
   }
+
   val allComplexShapes = NonEmptyList.of[Shape[Color]](
     plus,
     times,
     diamond,
     squareBorder,
-    squaredTarget[Color](2, Mono),
-    spiral[Color](2, Mono)
+    squaredTarget[Color](4, Mono),
+    spiral[Color](3, Mono)
   )
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
