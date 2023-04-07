@@ -81,7 +81,7 @@ sealed trait Shape[A] {
         .zip(s2.rasterized.value)
         .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
         .map(Raster.apply)
-    }.mapFilter(Custom.fromRaster)
+    }.map(fromRaster)
 
   def validatedAllFilled: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllFilledRow).as(this)
   def validatedAllHole: Option[Shape[A]] = (rasterized.value: List[Row[A]]).traverse(validatedAllHoleRow).as(this)
@@ -89,10 +89,13 @@ sealed trait Shape[A] {
   def isEmpty: Boolean = width.value < 1 || height.value < 1
   def nonEmpty: Boolean = !isEmpty
 
+  def map[B](f: A => B): Shape[B] = Functor[Shape].map(this)(f)
+
   def show(filled: A => String, hole: => String): String =
     rasterized.value.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
 }
 object Shape {
+
   case class Empty[A]() extends Shape[A] {
     override lazy val width: Width = Width(0)
     override lazy val height: Height = Height(0)
@@ -104,23 +107,6 @@ object Shape {
   case class Filled[A](a: A) extends Shape[A] {
     override lazy val width: Width = Width(1)
     override lazy val height: Height = Height(1)
-  }
-  // TODO: is this going to break the whole abstraction!?! 🔥🔥🔥
-  case class Custom[A](r: Raster[A]) extends Shape[A] {
-    override lazy val width: Width = r.width
-    override lazy val height: Height = r.height
-  }
-  object Custom {
-    private def apply[A](r: Raster[A]): Custom[A] = new Custom(r)
-
-    def fromRaster[A](r: Raster[A]): Option[Shape[A]] =
-      r.value match {
-        case Nil                                                => Some(Empty())
-        case (None :: Nil) :: Nil                               => Some(Hole())
-        case (Some(a) :: Nil) :: Nil                            => Some(Filled(a))
-        case row :: _ if r.value.exists(_.length != row.length) => None
-        case _                                                  => Some(new Custom(r))
-      }
   }
   case class HFlipped[A](s: Shape[A]) extends Shape[A] {
     override lazy val width: Width = s.width
@@ -152,7 +138,6 @@ object Shape {
     case Empty()       => Raster(List.empty)
     case Hole()        => Raster(List(List(None)))
     case Filled(a)     => Raster(List(List(Some(a))))
-    case Custom(r)     => r
     case HFlipped(s)   => Raster(rasterized(s).value.reverse)
     case VFlipped(s)   => Raster(rasterized(s).value.map(_.reverse))
     case Transposed(s) => Raster(transpose(rasterized(s).value))
@@ -165,8 +150,8 @@ object Shape {
   def hole[A]: Shape[A] = Hole()
   def filled[A](a: A): Shape[A] = Filled(a)
 
-  def fromRaster[A](r: Raster[A]): Option[Shape[A]] = Custom.fromRaster(r)
-  private def fromRasterUnsafe[A](r: Raster[A]): Shape[A] = fromRaster(r).get
+  def fromRaster[A](r: Raster[A]): Shape[A] =
+    vStack(r.value.map(row => hStack(row.map(oa => oa.fold[Shape[A]](ifEmpty = Hole())(Filled.apply)))))
 
   def hStack[A](l: Shape[A], rs: Shape[A]*): Shape[A] = HStack(l :: rs.toList)
   def hStack[A](ss: List[Shape[A]]): Shape[A] = HStack(ss)
@@ -195,17 +180,16 @@ object Shape {
   def splittedByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
     s.rasterized.value
       // TODO: optimise for `::`!!! 🔥🔥🔥
-      .foldLeft(List.empty[(Boolean, Raster[A])]) { case (acc, r) =>
-        val rIsValid = validatedRow(r).isDefined
-        val newROnlyAcc = List((rIsValid, Raster(List(r))))
-        acc.toNel.fold(ifEmpty = newROnlyAcc) { accNel =>
-          val (lastIsValid, lastRows) = accNel.last
-          if (rIsValid == lastIsValid) acc.dropRight(1) :+ (lastIsValid, Raster(lastRows.value :+ r))
-          else acc ++ newROnlyAcc
+      .foldLeft(List.empty[(Boolean, Raster[A])]) { case (acc, row) =>
+        val rowIsValid = validatedRow(row).isDefined
+        val newRowOnlyAcc = List((rowIsValid, Raster(List(row))))
+        acc.toNel.fold(ifEmpty = newRowOnlyAcc) { accNel =>
+          val (lastIsValid, lastRaster) = accNel.last
+          if (rowIsValid == lastIsValid) acc.dropRight(1) :+ (lastIsValid, lastRaster :+ row)
+          else acc ++ newRowOnlyAcc
         }
       }
-      .map { case (_, r) => r }
-      .map(fromRasterUnsafe)
+      .map { case (_, r) => fromRaster(r) }
 
   def atLeastOneNone[A](o1: Option[A], o2: Option[A]): Option[Option[A]] =
     (o1, o2) match {
@@ -220,7 +204,6 @@ object Shape {
         case Empty()             => Empty[B]()
         case Hole()              => Hole[B]()
         case Filled(a)           => Filled(f(a))
-        case Custom(r)           => fromRasterUnsafe(Functor[Raster].map(r)(f))
         case HFlipped(s)         => HFlipped(map(s)(f))
         case VFlipped(s)         => VFlipped(map(s)(f))
         case Transposed(s)       => Transposed(map(s)(f))
@@ -228,4 +211,20 @@ object Shape {
         case Inverted(ifHole, s) => Inverted(f(ifHole), map(s)(f))
       }
   }
+
+  implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
+    override def pure[A](x: A): Shape[A] = Filled(x)
+    override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] =
+      fa match {
+        case Empty()             => Empty[B]()
+        case Hole()              => Hole[B]()
+        case Filled(a)           => ???
+        case HFlipped(s)         => ???
+        case VFlipped(s)         => ???
+        case Transposed(s)       => ???
+        case HStack(ss)          => ???
+        case Inverted(ifHole, s) => ???
+      }
+  }
+
 }

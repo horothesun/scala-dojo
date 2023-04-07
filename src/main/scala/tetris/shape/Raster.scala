@@ -4,14 +4,18 @@ import cats._
 import Models._
 
 case class Raster[A](value: List[Row[A]]) extends AnyVal {
+
   def width: Width = value match {
     case Nil     => Width(0)
     case r1 :: _ => Width(r1.length)
   }
   def height: Height = Height(value.length)
+
+  def `:+`(row: Row[A]): Raster[A] = Raster(value :+ row)
 }
 
 object Raster {
+
   implicit val functor: Functor[Raster] = new Functor[Raster] {
     override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = Raster(fa.value.map(_.map(_.map(f))))
   }
@@ -40,4 +44,5 @@ object Raster {
       )
     }
   }
+
 }

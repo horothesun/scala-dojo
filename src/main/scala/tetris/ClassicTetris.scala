@@ -101,25 +101,25 @@ object ClassicTetris {
    windowBottomLeft(local) = col: 1, row: 2
    */
   def windowedShape[A](windowBottomLeft: Coord, windowTopRight: Coord)(
-    bottomLeft: Coord, // x >= 0, y >= 0
+    bottomLeft: Coord,
     s: Shape[A]
   ): Option[Shape[A]] =
-    Some(bottomLeft)
-      .filter(bl => bl.x >= 0 && bl.y >= 0)
-      .map { bl =>
-        val localTop = (s.height.value - 1) - (windowTopRight.y - bl.y)
-        val localBottom = (s.height.value - 1) - (windowBottomLeft.y - bl.y)
-        val localRight = windowTopRight.x - bl.x
-        val localLeft = windowBottomLeft.x - bl.x
-        val localHeight = localBottom - localTop + 1
-        val localWidth = localRight - localLeft + 1
-        Raster(
-          s.rasterized.value
-            .slice(localTop, localTop + localHeight)
-            .map(r => r.slice(localLeft, localLeft + localWidth))
-        )
-      }
-      .flatMap(fromRaster)
+    Some((windowBottomLeft, windowTopRight, bottomLeft)).filter { case (wbl, wtr, bl) =>
+      ((wbl.x == wtr.x && wbl.y == wtr.y) || (wbl.x < wtr.x && wbl.y < wtr.y)) &&
+      wbl.x >= bl.x && bl.x + s.width.value > wtr.x &&
+      wbl.y >= bl.y && bl.y + s.height.value > wtr.y
+    }.map { case (wbl, wtr, bl) =>
+      val localTop = (s.height.value - 1) - (wtr.y - bl.y)
+      val localBottom = (s.height.value - 1) - (wbl.y - bl.y)
+      val localRight = wtr.x - bl.x
+      val localLeft = wbl.x - bl.x
+      val localHeight = localBottom - localTop + 1
+      val localWidth = localRight - localLeft + 1
+      val rows = s.rasterized.value
+        .slice(localTop, localTop + localHeight)
+        .map(r => r.slice(localLeft, localLeft + localWidth))
+      fromRaster(Raster(rows))
+    }
 
   // pre-condition: both Shapes are NOT empty
   def intersectionTop(top1: Int, bottom1: Int, top2: Int, bottom2: Int): Option[Int] =
@@ -229,8 +229,8 @@ object ClassicTetris {
     val myShape02 =
       vStack(hStack(h, f), hStack(f, h)).leftHoleBordered.topHoleBordered.bottomHoleBordered.hRepeated(2).vRepeated(3)
     val cutMyShape02 =
-      windowedShape(windowBottomLeft = Coord(x = 6, y = 3), windowTopRight = Coord(x = 7, y = 4))(
-        bottomLeft = Coord(x = 5, y = 2),
+      windowedShape(windowBottomLeft = Coord(x = 0, y = 3), windowTopRight = Coord(x = 2, y = 4))(
+        bottomLeft = Coord(x = -2, y = 2),
         myShape02
       ).get
     println(
