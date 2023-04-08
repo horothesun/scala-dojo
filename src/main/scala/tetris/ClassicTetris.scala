@@ -134,7 +134,7 @@ object ClassicTetris {
   val i = f.vRepeated(4)
   val o = ff.vRepeated(2)
   val t = hStack(h, f, h).topFilledBordered(Mono)
-  val j = f.vRepeated(3).leftHoleBordered.bottomFilledBordered(Mono)
+  val j = f.vRepeated(3).leftHoleBordered().bottomFilledBordered(Mono)
   val l = j.vFlipped
   val s = vStack(hff, ff)
   val z = s.vFlipped
@@ -147,17 +147,17 @@ object ClassicTetris {
   def squaredTarget[A](n: Int, a: A): Shape[A] =
     n match {
       case _ if n <= 0 => empty
-      case _           => repeat[A](n - 1, _.holeBordered.filledBordered(a))(filled(a))
+      case _           => repeat[A](n - 1, _.holeBordered().filledBordered(a))(filled(a))
     }
   def spiral[A](n: Int, a: A): Shape[A] = {
-    def step: ShapeEndo[A] =
-      _.bottomHoleBordered
+    def step: Endo[Shape[A]] =
+      _.bottomHoleBordered()
         .rightFilledBordered(a)
-        .leftHoleBordered
+        .leftHoleBordered()
         .bottomFilledBordered(a)
-        .topHoleBordered
+        .topHoleBordered()
         .leftFilledBordered(a)
-        .rightHoleBordered
+        .rightHoleBordered()
         .topFilledBordered(a)
     def rightOpenSpiral(n: Int): Shape[A] = repeat(n, step)(filled(a))
     n match {
@@ -216,7 +216,10 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
-    val myShape01 = vStack(diamond.leftHoleBordered.holeBordered, hStack(h, h, f)).bottomHoleBordered.bottomHoleBordered
+    val myShape01 = vStack(
+      diamond.leftHoleBordered().holeBordered(),
+      hStack(h, h, f)
+    ).bottomHoleBordered().bottomHoleBordered()
     println(shapeToString(myShape01))
     val vTrimmed01 = myShape01.vHoleTrimmed
     println(s"\nvTrimmed01.top: ${vTrimmed01.top}")
@@ -234,7 +237,12 @@ object ClassicTetris {
     println(s"trimmed01.trimmed:\n${shapeToString(trimmed01.trimmed)}")
     println("\n---\n")
     val myShape02 =
-      vStack(hStack(h, f), hStack(f, h)).leftHoleBordered.topHoleBordered.bottomHoleBordered.hRepeated(2).vRepeated(3)
+      vStack(hStack(h, f), hStack(f, h))
+        .leftHoleBordered()
+        .topHoleBordered()
+        .bottomHoleBordered()
+        .hRepeated(2)
+        .vRepeated(3)
     val cutMyShape02 =
       windowedShape(windowBottomLeft = Coord(x = 0, y = 3), windowTopRight = Coord(x = 2, y = 4))(
         bottomLeft = Coord(x = -2, y = 2),
@@ -260,7 +268,7 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
-    val myShape03 = vStack(f, h).leftHoleBordered.leftFilledBordered(Mono)
+    val myShape03 = vStack(f, h).leftHoleBordered().leftFilledBordered(Mono)
     val myShape04 = j.rotatedCW
     println(
       List(myShape03, myShape04)
@@ -278,7 +286,7 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
-    val myShape05 = f.hRepeated(5).topHoleBordered
+    val myShape05 = f.hRepeated(5).topHoleBordered()
     val myShape06 = vStack(l.rotatedCCW, f.hRepeated(2))
     println(
       List(myShape05, myShape06, myShape05.above(myShape06), myShape05.below(myShape06))

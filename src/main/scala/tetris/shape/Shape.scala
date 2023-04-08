@@ -24,21 +24,23 @@ sealed trait Shape[A] {
   def hRepeated(n: Int): Shape[A] = hStack(List.fill(n)(this))
   def vRepeated(n: Int): Shape[A] = vStack(List.fill(n)(this))
 
-  def leftFilledBordered(a: A): Shape[A] = hStack(filled(a).vRepeated(height.value), this)
-  def rightFilledBordered(a: A): Shape[A] = hStack(this, filled(a).vRepeated(height.value))
-  def topFilledBordered(a: A): Shape[A] = vStack(filled(a).hRepeated(width.value), this)
-  def bottomFilledBordered(a: A): Shape[A] = vStack(this, filled(a).hRepeated(width.value))
-  def filledBordered(a: A): Shape[A] =
-    if (isEmpty) filled(a).hRepeated(2).vRepeated(2)
-    else leftFilledBordered(a).rightFilledBordered(a).topFilledBordered(a).bottomFilledBordered(a)
+  def leftFilledBordered(a: A, n: Int = 1): Shape[A] = hStack(List.fill(n)(filled(a).vRepeated(height.value)) :+ this)
+  def rightFilledBordered(a: A, n: Int = 1): Shape[A] = hStack(this :: List.fill(n)(filled(a).vRepeated(height.value)))
+  def topFilledBordered(a: A, n: Int = 1): Shape[A] = vStack(List.fill(n)(filled(a).hRepeated(width.value)) :+ this)
+  def bottomFilledBordered(a: A, n: Int = 1): Shape[A] = vStack(this :: List.fill(n)(filled(a).hRepeated(width.value)))
+  def filledBordered(a: A, n: Int = 1): Shape[A] = // TODO: test!!! 🔥🔥🔥
+    if (isEmpty)
+      if (n < 1) empty[A] else filled(a).hRepeated(2).vRepeated(2).filledBordered(a, n - 1)
+    else leftFilledBordered(a, n).rightFilledBordered(a, n).topFilledBordered(a, n).bottomFilledBordered(a, n)
 
-  def leftHoleBordered: Shape[A] = hStack(hole[A], this)
-  def rightHoleBordered: Shape[A] = hStack(this, hole[A])
-  def topHoleBordered: Shape[A] = vStack(hole[A], this)
-  def bottomHoleBordered: Shape[A] = vStack(this, hole[A])
-  def holeBordered: Shape[A] =
-    if (isEmpty) hole[A].hRepeated(2).vRepeated(2)
-    else leftHoleBordered.rightHoleBordered.topHoleBordered.bottomHoleBordered
+  def leftHoleBordered(n: Int = 1): Shape[A] = hStack(List.fill(n)(hole[A]) :+ this)
+  def rightHoleBordered(n: Int = 1): Shape[A] = hStack(this :: List.fill(n)(hole[A]))
+  def topHoleBordered(n: Int = 1): Shape[A] = vStack(List.fill(n)(hole[A]) :+ this)
+  def bottomHoleBordered(n: Int = 1): Shape[A] = vStack(this :: List.fill(n)(hole[A]))
+  def holeBordered(n: Int = 1): Shape[A] = // TODO: test!!! 🔥🔥🔥
+    if (isEmpty)
+      if (n < 1) empty[A] else hole[A].hRepeated(2).vRepeated(2).holeBordered(n - 1)
+    else leftHoleBordered(n).rightHoleBordered(n).topHoleBordered(n).bottomHoleBordered(n)
 
   def inverted(ifHole: A): Shape[A] = Inverted(ifHole, this)
 
@@ -77,13 +79,10 @@ sealed trait Shape[A] {
   }
 
   def above(that: Shape[A]): Shape[A] = {
-    def extend(right: Width, bottom: Height): ShapeEndo[A] =
-      repeat[A](max(0, bottom.value), _.bottomHoleBordered)
-        .compose(repeat(max(0, right.value), _.rightHoleBordered))
-    val rightFrontToBack = that.width - width
-    val bottomFrontToBack = that.height - height
-    val extendedFront = extend(rightFrontToBack, bottomFrontToBack)(this)
-    val extendedBack = extend(-rightFrontToBack, -bottomFrontToBack)(that)
+    val rightFrontToBack = (that.width - width).value
+    val bottomFrontToBack = (that.height - height).value
+    val extendedFront = this.rightHoleBordered(max(0, rightFrontToBack)).bottomHoleBordered(max(0, bottomFrontToBack))
+    val extendedBack = that.rightHoleBordered(max(0, -rightFrontToBack)).bottomHoleBordered(max(0, -bottomFrontToBack))
     val rows = extendedFront.rasterized.zip(extendedBack.rasterized).map(_.map { case (f, b) => f.orElse(b) })
     fromRaster(Raster(rows))
   }
@@ -212,13 +211,7 @@ object Shape {
       case (Some(_), None) | (None, None) => Some(o1)
     }
 
-  type ShapeEndo[A] = Shape[A] => Shape[A]
-  implicit def shapeEndoMonoid[A]: Monoid[ShapeEndo[A]] = new Monoid[ShapeEndo[A]] {
-    override def empty: ShapeEndo[A] = identity
-    override def combine(f: ShapeEndo[A], g: ShapeEndo[A]): ShapeEndo[A] = f.compose(g)
-  }
-
-  def repeat[A](n: Int, se: ShapeEndo[A]): ShapeEndo[A] = Foldable[List].fold[ShapeEndo[A]](List.fill(n)(se))
+  def repeat[A](n: Int, se: Endo[Shape[A]]): Endo[Shape[A]] = Foldable[List].foldK[Endo, Shape[A]](List.fill(n)(se))
 
   implicit val functor: Functor[Shape] = new Functor[Shape] {
     override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =
