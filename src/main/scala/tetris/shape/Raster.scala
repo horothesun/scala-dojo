@@ -12,6 +12,10 @@ case class Raster[A](value: List[Row[A]]) extends AnyVal {
   def height: Height = Height(value.length)
 
   def `:+`(row: Row[A]): Raster[A] = Raster(value :+ row)
+
+  def zip[B](that: Raster[B]): List[List[(Option[A], Option[B])]] =
+    value.zip(that.value).map { case (r1, r2) => r1.zip(r2) }
+
 }
 
 object Raster {
@@ -22,26 +26,22 @@ object Raster {
 
   implicit val horizontalMonoidK: MonoidK[Raster] = new MonoidK[Raster] {
     override def empty[A]: Raster[A] = Raster(List.empty)
-    override def combineK[A](x: Raster[A], y: Raster[A]): Raster[A] = {
-      val rasterizedX =
-        if (x.height >= y.height) x
+    override def combineK[A](r1: Raster[A], r2: Raster[A]): Raster[A] = {
+      val value1 =
+        if (r1.height >= r2.height) r1.value
         else {
-          val numbOfMissingRows = (y.height - x.height).value
-          val missingRow = List.fill[Option[A]](x.width.value)(None)
-          Raster(x.value ++ List.fill(numbOfMissingRows)(missingRow))
+          val numbOfMissingRows = (r2.height - r1.height).value
+          val missingRow = List.fill[Option[A]](r1.width.value)(None)
+          r1.value ++ List.fill(numbOfMissingRows)(missingRow)
         }
-      val rasterizedY =
-        if (y.height >= x.height) y
+      val value2 =
+        if (r2.height >= r1.height) r2.value
         else {
-          val numbOfMissingRows = (x.height - y.height).value
-          val missingRow = List.fill[Option[A]](y.width.value)(None)
-          Raster(y.value ++ List.fill(numbOfMissingRows)(missingRow))
+          val numbOfMissingRows = (r1.height - r2.height).value
+          val missingRow = List.fill[Option[A]](r2.width.value)(None)
+          r2.value ++ List.fill(numbOfMissingRows)(missingRow)
         }
-      Raster(
-        rasterizedX.value
-          .zip(rasterizedY.value)
-          .map { case (xRow, yRow) => xRow ++ yRow }
-      )
+      Raster(value1.zip(value2).map { case (row1, row2) => row1 ++ row2 })
     }
   }
 

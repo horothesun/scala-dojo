@@ -22,7 +22,8 @@ object ClassicTetris {
     else
       intersections(bottomLeft1, s1, bottomLeft2, s2)
         .fold[MergedIntersection[A]](ifEmpty = NotIntersecting[A]()) { case (i1, i2) =>
-          i1.mergedWith(i2).fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
+          i1.exclusivelyMergedWith(i2)
+            .fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
         }
 
   // pre-condition: both Shapes are NOT empty
@@ -248,13 +249,13 @@ object ClassicTetris {
     val slash = vStack(hStack(h, f), hStack(f, h))
     val backSlash = slash.vFlipped
     println(
-      List(slash, backSlash, slash.mergedWith(backSlash).get)
+      List(slash, backSlash, slash.exclusivelyMergedWith(backSlash).get)
         .map(shapeToString)
         .mkString("\n\n")
     )
     println("\n---\n")
     println(
-      List(times, diamond, times.mergedWith(diamond).get)
+      List(times, diamond, times.exclusivelyMergedWith(diamond).get)
         .map(shapeToString)
         .mkString("\n\n")
     )
@@ -274,6 +275,14 @@ object ClassicTetris {
             )
           )
         )
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    val myShape05 = f.hRepeated(5).topHoleBordered
+    val myShape06 = vStack(l.rotatedCCW, f.hRepeated(2))
+    println(
+      List(myShape05, myShape06, myShape05.above(myShape06), myShape05.below(myShape06))
+        .map(shapeToString)
         .mkString("\n\n")
     )
   }

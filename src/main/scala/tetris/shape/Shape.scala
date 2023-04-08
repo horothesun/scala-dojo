@@ -76,27 +76,24 @@ sealed trait Shape[A] {
     Trimmed(top = vt.top, bottom = vt.bottom, left = ht.left, right = ht.right, trimmed = vt.trimmed)
   }
 
-  def inFrontOf(that: Shape[A]): Shape[A] = {
-    def adjusted(r: Width, b: Height): ShapeEndo[A] =
-      repeat[A](max(0, r.value), _.bottomHoleBordered)
-        .compose(repeat(max(0, b.value), _.rightHoleBordered))
+  def above(that: Shape[A]): Shape[A] = {
+    def extend(right: Width, bottom: Height): ShapeEndo[A] =
+      repeat[A](max(0, bottom.value), _.bottomHoleBordered)
+        .compose(repeat(max(0, right.value), _.rightHoleBordered))
     val rightFrontToBack = that.width - width
     val bottomFrontToBack = that.height - height
-    val adjustedFront = adjusted(rightFrontToBack, bottomFrontToBack)(this)
-    val adjustedBack = adjusted(-rightFrontToBack, -bottomFrontToBack)(that)
-    val rows = adjustedFront.rasterized.value
-      .zip(adjustedBack.rasterized.value)
-      .map { case (fr, br) => fr.zip(br).map { case (f, b) => f.orElse(b) } }
+    val extendedFront = extend(rightFrontToBack, bottomFrontToBack)(this)
+    val extendedBack = extend(-rightFrontToBack, -bottomFrontToBack)(that)
+    val rows = extendedFront.rasterized.zip(extendedBack.rasterized).map(_.map { case (f, b) => f.orElse(b) })
     fromRaster(Raster(rows))
   }
+  def below(that: Shape[A]): Shape[A] = that.above(this)
 
-  def mergedWith(that: Shape[A]): Option[Shape[A]] =
+  def exclusivelyMergedWith(that: Shape[A]): Option[Shape[A]] =
     Some((this, that)).filter { case (s1, s2) =>
       s1.width == s2.width && s1.height == s2.height
     }.mapFilter { case (s1, s2) =>
-      s1.rasterized.value
-        .zip(s2.rasterized.value)
-        .traverse { case (r1, r2) => r1.zip(r2).traverse((atLeastOneNone[A] _).tupled) }
+      s1.rasterized.zip(s2.rasterized).traverse(_.traverse((atLeastOneNone[A] _).tupled))
     }.map(rows => fromRaster(Raster(rows)))
 
   def validatedAllFilled: Option[Shape[A]] = rasterized.value.traverse(validatedAllFilledRow).as(this)
