@@ -50,6 +50,10 @@ sealed trait Shape[A] {
   def splittedByHoleRows: List[Shape[A]] = splittedByValidRows(validatedAllHoleRow, this)
   def splittedByHoleColumns: List[Shape[A]] = rotatedCW.splittedByHoleRows.map(_.rotatedCCW)
 
+  def hSym: Shape[A] = hStack(this, vFlipped)
+  def vSym: Shape[A] = vStack(this, hFlipped)
+  def quarterSym: Shape[A] = hSym.vSym
+
   def hHoleTrimmed: HTrimmed[A] = {
     val vTrimmed = rotatedCW.vHoleTrimmed
     HTrimmed(

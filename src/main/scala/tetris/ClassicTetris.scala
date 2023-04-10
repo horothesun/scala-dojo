@@ -293,6 +293,12 @@ object ClassicTetris {
         .map(shapeToString)
         .mkString("\n\n")
     )
+    println("\n---\n")
+    println(
+      List(slash, slash.hSym, slash.vSym, slash.quarterSym)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
   }
 
 }
