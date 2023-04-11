@@ -4,7 +4,6 @@ import cats._
 import cats.implicits._
 import scala.annotation.tailrec
 import scala.math._
-import scala.math.Numeric.Implicits._
 import Models._
 import Shape._
 
@@ -228,22 +227,6 @@ object Shape {
         case Transposed(s)       => Transposed(map(s)(f))
         case HStack(ss)          => HStack(ss.map(s => map(s)(f)))
         case Inverted(ifHole, s) => Inverted(f(ifHole), map(s)(f))
-      }
-  }
-
-  // TODO: implement (if possible)!!! 🔥🔥🔥
-  implicit val applicative: Applicative[Shape] = new Applicative[Shape] {
-    override def pure[A](x: A): Shape[A] = Filled(x)
-    override def ap[A, B](ff: Shape[A => B])(fa: Shape[A]): Shape[B] =
-      fa match {
-        case Empty()             => Empty[B]()
-        case Hole()              => Hole[B]()
-        case Filled(a)           => ???
-        case HFlipped(s)         => ???
-        case VFlipped(s)         => ???
-        case Transposed(s)       => ???
-        case HStack(ss)          => ???
-        case Inverted(ifHole, s) => ???
       }
   }
 

@@ -1,11 +1,11 @@
 package tetris
 
-import cats._
 import cats.data.NonEmptyList
 import cats.implicits._
 import Models._
 import Models.Color._
 import Models.MergedIntersection._
+import scala.math.max
 import shape._
 import shape.Models._
 import shape.Shape._
@@ -123,6 +123,14 @@ object ClassicTetris {
       fromRaster(Raster(rows))
     }
 
+  def merge[A](bottomLeftFront: Coord, front: Shape[A], bottomLeftBack: Coord, back: Shape[A]): Shape[A] = {
+    val topFrontToBack = (bottomLeftBack.y + back.height.value) - (bottomLeftFront.y + front.height.value)
+    val leftFrontToBack = bottomLeftFront.x - bottomLeftBack.x
+    val extendedFront = front.leftHoleBordered(max(0, leftFrontToBack)).topHoleBordered(max(0, topFrontToBack))
+    val extendedBack = back.leftHoleBordered(max(0, -leftFrontToBack)).topHoleBordered(max(0, -topFrontToBack))
+    extendedFront.above(extendedBack)
+  }
+
   val h = Hole[Color]()
   val f = Filled[Color](Mono)
   val hf = hStack(h, f)
@@ -150,16 +158,18 @@ object ClassicTetris {
       case _           => repeat[A](n - 1, _.holeBordered().filledBordered(a))(filled(a))
     }
   def spiral[A](n: Int, a: A): Shape[A] = {
-    def step: Endo[Shape[A]] =
-      _.bottomHoleBordered()
-        .rightFilledBordered(a)
-        .leftHoleBordered()
-        .bottomFilledBordered(a)
-        .topHoleBordered()
-        .leftFilledBordered(a)
-        .rightHoleBordered()
-        .topFilledBordered(a)
-    def rightOpenSpiral(n: Int): Shape[A] = repeat(n, step)(filled(a))
+    def rightOpenSpiral(n: Int): Shape[A] =
+      repeat[A](
+        n,
+        _.bottomHoleBordered()
+          .rightFilledBordered(a)
+          .leftHoleBordered()
+          .bottomFilledBordered(a)
+          .topHoleBordered()
+          .leftFilledBordered(a)
+          .rightHoleBordered()
+          .topFilledBordered(a)
+      )(filled(a))
     n match {
       case _ if n < 0  => empty
       case _ if n == 0 => rightOpenSpiral(n)
@@ -296,6 +306,21 @@ object ClassicTetris {
     println("\n---\n")
     println(
       List(slash, slash.hSym, slash.vSym, slash.quarterSym)
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
+    println(
+      List(
+        s,
+        o,
+        merge[Color](
+          bottomLeftFront = Coord(x = 0, y = 0),
+          front = s,
+          bottomLeftBack = Coord(x = 2, y = 4),
+          back = o
+        )
+      )
         .map(shapeToString)
         .mkString("\n\n")
     )
