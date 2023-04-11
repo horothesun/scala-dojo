@@ -5,7 +5,7 @@ import cats.implicits._
 import Models._
 import Models.Color._
 import Models.MergedIntersection._
-import scala.math.max
+import scala.math._
 import shape._
 import shape.Models._
 import shape.Shape._
@@ -315,7 +315,7 @@ object ClassicTetris {
         s,
         o,
         merge[Color](
-          bottomLeftFront = Coord(x = 0, y = 0),
+          bottomLeftFront = Coord(x = -1, y = -1),
           front = s,
           bottomLeftBack = Coord(x = 2, y = 4),
           back = o
