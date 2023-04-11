@@ -123,12 +123,13 @@ object ClassicTetris {
       fromRaster(Raster(rows))
     }
 
-  def merge[A](bottomLeftFront: Coord, front: Shape[A], bottomLeftBack: Coord, back: Shape[A]): Shape[A] = {
+  def merge[A](bottomLeftFront: Coord, front: Shape[A], bottomLeftBack: Coord, back: Shape[A]): (Coord, Shape[A]) = {
     val topFrontToBack = (bottomLeftBack.y + back.height.value) - (bottomLeftFront.y + front.height.value)
     val leftFrontToBack = bottomLeftFront.x - bottomLeftBack.x
     val extendedFront = front.leftHoleBordered(max(0, leftFrontToBack)).topHoleBordered(max(0, topFrontToBack))
     val extendedBack = back.leftHoleBordered(max(0, -leftFrontToBack)).topHoleBordered(max(0, -topFrontToBack))
-    extendedFront.above(extendedBack)
+    val bottomLeft = Coord(x = min(bottomLeftFront.x, bottomLeftBack.x), y = min(bottomLeftFront.y, bottomLeftBack.y))
+    (bottomLeft, extendedFront.above(extendedBack))
   }
 
   val h = Hole[Color]()
@@ -310,18 +311,16 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
+    val (bottomLeft07, myShape07) = merge[Color](
+      bottomLeftFront = Coord(x = -1, y = -1),
+      front = o,
+      bottomLeftBack = Coord(x = 2, y = -4),
+      back = s
+    )
     println(
-      List(
-        s,
-        o,
-        merge[Color](
-          bottomLeftFront = Coord(x = -1, y = -1),
-          front = s,
-          bottomLeftBack = Coord(x = 2, y = 4),
-          back = o
-        )
-      )
+      List(s, o, myShape07)
         .map(shapeToString)
+        .appended(bottomLeft07.toString)
         .mkString("\n\n")
     )
   }
