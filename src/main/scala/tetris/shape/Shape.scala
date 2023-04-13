@@ -109,6 +109,12 @@ sealed trait Shape[A] {
   def show(filled: A => String, hole: => String): String =
     rasterized.value.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
 
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case that: Shape[_] => width == that.width && height == that.height && rasterized == that.rasterized
+      case _              => false
+    }
+
 }
 object Shape {
 
@@ -138,11 +144,11 @@ object Shape {
   }
   case class HStack[A](ss: List[Shape[A]]) extends Shape[A] {
     override lazy val width: Width = ss.map(_.width).sum
-    override lazy val height: Height = ss.map(_.height).max
+    override lazy val height: Height = ss.map(_.height).maxOption.getOrElse(Height(0))
   }
   // TODO: implement for performance reasons!!! 🔥🔥🔥
 //    case class VStack[A](ss: List[Shape[A]]) extends Shape[A] {
-//      override lazy val width: Width = ss.map(_.width).max
+//      override lazy val width: Width = ss.map(_.width).maxOption.getOrElse(Width(0))
 //      override lazy val height: Height = ss.map(_.height).sum
 //    }
   case class Inverted[A](ifHole: A, s: Shape[A]) extends Shape[A] {

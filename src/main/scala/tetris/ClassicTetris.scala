@@ -18,12 +18,12 @@ object ClassicTetris {
     bottomLeft2: Coord,
     s2: Shape[A]
   ): MergedIntersection[A] =
-    if (s1.isEmpty || s2.isEmpty) ValidIntersection(Empty[A]())
+    if (s1.isEmpty || s2.isEmpty) ValidIntersection(bottomLeft1, Empty[A]()) // TODO: check!!! 🔥🔥🔥
     else
       intersections(bottomLeft1, s1, bottomLeft2, s2)
-        .fold[MergedIntersection[A]](ifEmpty = NotIntersecting[A]()) { case (i1, i2) =>
+        .fold[MergedIntersection[A]](ifEmpty = NotIntersecting[A]()) { case (bl, i1, i2) =>
           i1.exclusivelyMergedWith(i2)
-            .fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(i1, i2))(ValidIntersection[A])
+            .fold[MergedIntersection[A]](ifEmpty = CollidingIntersection(bl, i1, i2))(ValidIntersection[A](bl, _))
         }
 
   // pre-condition: both Shapes are NOT empty
@@ -32,7 +32,7 @@ object ClassicTetris {
     s1: Shape[A],
     bottomLeft2: Coord,
     s2: Shape[A]
-  ): Option[(Shape[A], Shape[A])] =
+  ): Option[(Coord, Shape[A], Shape[A])] =
     intersectionBottomLeftAndTopRightCoords(
       bottomLeft1,
       topRight1 = Coord(x = bottomLeft1.x + s1.width.value - 1, y = bottomLeft1.y + s1.height.value - 1),
@@ -40,7 +40,7 @@ object ClassicTetris {
       topRight2 = Coord(x = bottomLeft2.x + s2.width.value - 1, y = bottomLeft2.y + s2.height.value - 1)
     ).flatMap { case (intersectionBottomLeft, intersectionTopRight) =>
       val windowed = windowedShape[A](intersectionBottomLeft, intersectionTopRight) _
-      (windowed(bottomLeft1, s1), windowed(bottomLeft2, s2)).tupled
+      (Some(intersectionBottomLeft), windowed(bottomLeft1, s1), windowed(bottomLeft2, s2)).tupled
     }
 
   // pre-condition: both Shapes are NOT empty
@@ -107,7 +107,8 @@ object ClassicTetris {
     s: Shape[A]
   ): Option[Shape[A]] =
     Some((windowBottomLeft, windowTopRight, bottomLeft)).filter { case (wbl, wtr, bl) =>
-      ((wbl.x == wtr.x && wbl.y == wtr.y) || (wbl.x < wtr.x && wbl.y < wtr.y)) &&
+      wbl.x <= wtr.x &&
+      wbl.y <= wtr.y &&
       wbl.x >= bl.x && bl.x + s.width.value > wtr.x &&
       wbl.y >= bl.y && bl.y + s.height.value > wtr.y
     }.map { case (wbl, wtr, bl) =>
@@ -227,6 +228,13 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
+    println("🔥🔥🔥")
+    println(
+      HFlipped(empty[Color]).splittedByFilledColumns
+        .map(shapeToString)
+        .mkString("\n\n")
+    )
+    println("\n---\n")
     val myShape01 = vStack(
       diamond.leftHoleBordered().holeBordered(),
       hStack(h, h, f)
@@ -289,7 +297,7 @@ object ClassicTetris {
             mergedIntersection(
               bottomLeft1 = Coord(x = 0, y = 0),
               s1 = myShape03,
-              bottomLeft2 = Coord(x = 1, y = 0),
+              bottomLeft2 = Coord(x = 2, y = 0),
               s2 = myShape04
             )
           )
