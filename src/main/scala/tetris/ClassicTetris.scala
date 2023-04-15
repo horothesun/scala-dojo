@@ -2,6 +2,7 @@ package tetris
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import EndoOps._
 import Models._
 import Models.Color._
 import Models.MergedIntersection._
@@ -157,12 +158,11 @@ object ClassicTetris {
   def squaredTarget[A](n: Int, a: A): Shape[A] =
     n match {
       case _ if n <= 0 => empty
-      case _           => repeat[A](n - 1, _.holeBordered().filledBordered(a))(filled(a))
+      case _           => repeat[Shape[A]](_.holeBordered().filledBordered(a), n - 1)(filled(a))
     }
   def spiral[A](n: Int, a: A): Shape[A] = {
     def rightOpenSpiral(n: Int): Shape[A] =
-      repeat[A](
-        n,
+      repeat[Shape[A]](
         _.bottomHoleBordered()
           .rightFilledBordered(a)
           .leftHoleBordered()
@@ -170,7 +170,8 @@ object ClassicTetris {
           .topHoleBordered()
           .leftFilledBordered(a)
           .rightHoleBordered()
-          .topFilledBordered(a)
+          .topFilledBordered(a),
+        n
       )(filled(a))
     n match {
       case _ if n < 0  => empty

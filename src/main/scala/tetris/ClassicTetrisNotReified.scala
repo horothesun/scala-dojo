@@ -105,7 +105,7 @@ object ClassicTetrisNotReified {
 
     override def equals(obj: Any): Boolean =
       obj match {
-        case that: Shape[A] => width == that.width && height == that.height && rasterized == that.rasterized
+        case that: Shape[_] => width == that.width && height == that.height && rasterized == that.rasterized
         case _              => false
       }
 

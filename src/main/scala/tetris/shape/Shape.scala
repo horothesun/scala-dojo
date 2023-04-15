@@ -109,12 +109,6 @@ sealed trait Shape[A] {
   def show(filled: A => String, hole: => String): String =
     rasterized.value.map(_.map(_.fold(ifEmpty = hole)(filled)).mkString("")).mkString("\n")
 
-  override def equals(obj: Any): Boolean =
-    obj match {
-      case that: Shape[_] => width == that.width && height == that.height && rasterized == that.rasterized
-      case _              => false
-    }
-
 }
 object Shape {
 
@@ -220,7 +214,7 @@ object Shape {
       case (Some(_), None) | (None, None) => Some(o1)
     }
 
-  def repeat[A](n: Int, se: Endo[Shape[A]]): Endo[Shape[A]] = Foldable[List].foldK[Endo, Shape[A]](List.fill(n)(se))
+  implicit def eq[A: Eq]: Eq[Shape[A]] = Eq.fromUniversalEquals
 
   implicit val functor: Functor[Shape] = new Functor[Shape] {
     override def map[A, B](fa: Shape[A])(f: A => B): Shape[B] =

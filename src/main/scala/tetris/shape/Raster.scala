@@ -20,6 +20,8 @@ case class Raster[A](value: List[Row[A]]) extends AnyVal {
 
 object Raster {
 
+  implicit def eq[A: Eq]: Eq[Raster[A]] = Eq.fromUniversalEquals
+
   implicit val functor: Functor[Raster] = new Functor[Raster] {
     override def map[A, B](fa: Raster[A])(f: A => B): Raster[B] = Raster(fa.value.map(_.map(_.map(f))))
   }
