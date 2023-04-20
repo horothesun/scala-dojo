@@ -229,13 +229,6 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
-    println("🔥🔥🔥")
-    println(
-      HFlipped(empty[Color]).splittedByFilledColumns
-        .map(shapeToString)
-        .mkString("\n\n")
-    )
-    println("\n---\n")
     val myShape01 = vStack(
       diamond.leftHoleBordered().holeBordered(),
       hStack(h, h, f)

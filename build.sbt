@@ -9,7 +9,7 @@ lazy val root = (project in file(".")).settings(
 )
 
 val catsVersion = "2.9.0"
-val catsEffectVersion = "3.4.8"
+val catsEffectVersion = "3.4.9"
 val betterMonadicForVersion = "0.3.1"
 val fs2Version = "3.6.1"
 val munitVersion = "0.7.29"
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "co.fs2" %% "fs2-core" % fs2Version,
   "org.typelevel" %% "cats-laws" % catsVersion % Test,
   "org.scalameta" %% "munit" % munitVersion % Test,
-  "org.typelevel" %% "discipline-munit" % disciplineMunitVersion % Test,
   "org.scalameta" %% "munit-scalacheck" % munitVersion % Test,
+  "org.typelevel" %% "discipline-munit" % disciplineMunitVersion % Test,
   "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
 )
