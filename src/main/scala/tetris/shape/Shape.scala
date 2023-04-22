@@ -13,6 +13,8 @@ sealed trait Shape[A] {
   val height: Height
   lazy val rasterized: Raster[A] = Shape.rasterized(this)
 
+  def canonicalized: Shape[A] = fromRaster(rasterized)
+
   def hFlipped: Shape[A] = HFlipped(this)
   def vFlipped: Shape[A] = VFlipped(this)
   def transposed: Shape[A] = Transposed(this)

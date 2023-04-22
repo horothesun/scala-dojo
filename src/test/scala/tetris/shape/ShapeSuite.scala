@@ -94,6 +94,12 @@ class ShapeSuite extends ScalaCheckSuite {
     }
   }
 
+  property("s.canonicalized preserves s rasterization and sizes") {
+    forAll(shapeGen(primaryColorGen)) { s =>
+      assertEquals(rasterAndSizes(s.canonicalized), rasterAndSizes(s))
+    }
+  }
+
 }
 
 object ShapeSuite {
