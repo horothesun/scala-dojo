@@ -16,6 +16,8 @@ case class Raster[A](value: List[Row[A]]) extends AnyVal {
   def zip[B](that: Raster[B]): List[List[(Option[A], Option[B])]] =
     value.zip(that.value).map { case (r1, r2) => r1.zip(r2) }
 
+  def map[B](f: A => B): Raster[B] = Functor[Raster].map(this)(f)
+
 }
 
 object Raster {
