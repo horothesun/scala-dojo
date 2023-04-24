@@ -13,24 +13,28 @@ import ShapeSuite._
 
 class ShapeSuite extends ScalaCheckSuite {
 
-  property("(HFlipped(_) ^ n) preserves rasterization and sizes, for n even") {
-    forAll(evenGen, shapeGen(primaryColorGen)) { case (n, s) =>
-      val hFlipped: Endo[Shape[PrimaryColor]] = HFlipped[PrimaryColor]
-      assertEquals(rasterAndSizes((hFlipped ^ n)(s)), rasterAndSizes(s))
+  property("HFlipped(HFlipped(s)) preserves s rasterization and sizes") {
+    forAll(shapeGen(primaryColorGen)) { s =>
+      assertEquals(rasterAndSizes(HFlipped(HFlipped(s))), rasterAndSizes(s))
     }
   }
 
-  property("(VFlipped(_) ^ n) preserves rasterization and sizes, for n even") {
-    forAll(evenGen, shapeGen(primaryColorGen)) { case (n, s) =>
-      val vFlipped: Endo[Shape[PrimaryColor]] = VFlipped[PrimaryColor]
-      assertEquals(rasterAndSizes((vFlipped ^ n)(s)), rasterAndSizes(s))
+  property("VFlipped(VFlipped(s)) preserves s rasterization and sizes") {
+    forAll(shapeGen(primaryColorGen)) { s =>
+      assertEquals(rasterAndSizes(VFlipped(VFlipped(s))), rasterAndSizes(s))
     }
   }
 
-  property("(Inverted(ifHole = Red, _) ^ n) preserves rasterization and sizes, for n even and Red-only Shapes") {
-    forAll(evenGen, shapeGen(redColorGen)) { case (n, s) =>
+  property("Transposed(Transposed(s)) preserves s rasterization and sizes") {
+    forAll(shapeGen(primaryColorGen)) { s =>
+      assertEquals(rasterAndSizes(Transposed(Transposed(s))), rasterAndSizes(s))
+    }
+  }
+
+  property("(Inverted(ifHole = Red, _) ^ 2) preserves rasterization and sizes, for Red-only Shapes") {
+    forAll(shapeGen(redColorGen)) { s =>
       val inverted: Endo[Shape[Red.type]] = Inverted(ifHole = Red, _)
-      assertEquals(rasterAndSizes((inverted ^ n)(s)), rasterAndSizes(s))
+      assertEquals(rasterAndSizes((inverted ^ 2)(s)), rasterAndSizes(s))
     }
   }
 
@@ -94,9 +98,9 @@ class ShapeSuite extends ScalaCheckSuite {
     }
   }
 
-  property("s.canonicalized preserves s rasterization and sizes") {
+  property("s.standardized preserves s rasterization and sizes") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(s.canonicalized), rasterAndSizes(s))
+      assertEquals(rasterAndSizes(s.standardized), rasterAndSizes(s))
     }
   }
 

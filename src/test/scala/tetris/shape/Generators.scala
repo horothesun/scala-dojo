@@ -11,8 +11,6 @@ object Generators {
 
   def rasterGen[A](aGen: Gen[A]): Gen[Raster[A]] = shapeGen(aGen).map(_.rasterized)
 
-  val evenGen: Gen[Int] = Gen.oneOf(Gen.const(0), Gen.posNum[Int].map(_ * 2))
-
   sealed trait PrimaryColor
   object PrimaryColor {
     case object Red extends PrimaryColor

@@ -13,7 +13,7 @@ sealed trait Shape[A] {
   val height: Height
   lazy val rasterized: Raster[A] = Shape.rasterized(this)
 
-  def canonicalized: Shape[A] = fromRaster(rasterized)
+  def standardized: Shape[A] = fromRaster(rasterized)
 
   def hFlipped: Shape[A] = HFlipped(this)
   def vFlipped: Shape[A] = VFlipped(this)
@@ -29,7 +29,7 @@ sealed trait Shape[A] {
   def rightFilledBordered(a: A, n: Int = 1): Shape[A] = hStack(this :: List.fill(n)(filled(a).vRepeated(height.value)))
   def topFilledBordered(a: A, n: Int = 1): Shape[A] = vStack(List.fill(n)(filled(a).hRepeated(width.value)) :+ this)
   def bottomFilledBordered(a: A, n: Int = 1): Shape[A] = vStack(this :: List.fill(n)(filled(a).hRepeated(width.value)))
-  def filledBordered(a: A, n: Int = 1): Shape[A] = // TODO: test!!! 🔥🔥🔥
+  def filledBordered(a: A, n: Int = 1): Shape[A] =
     if (isEmpty)
       if (n < 1) empty[A] else filled(a).hRepeated(2).vRepeated(2).filledBordered(a, n - 1)
     else leftFilledBordered(a, n).rightFilledBordered(a, n).topFilledBordered(a, n).bottomFilledBordered(a, n)
@@ -38,7 +38,7 @@ sealed trait Shape[A] {
   def rightHoleBordered(n: Int = 1): Shape[A] = hStack(this :: List.fill(n)(hole[A]))
   def topHoleBordered(n: Int = 1): Shape[A] = vStack(List.fill(n)(hole[A]) :+ this)
   def bottomHoleBordered(n: Int = 1): Shape[A] = vStack(this :: List.fill(n)(hole[A]))
-  def holeBordered(n: Int = 1): Shape[A] = // TODO: test!!! 🔥🔥🔥
+  def holeBordered(n: Int = 1): Shape[A] =
     if (isEmpty)
       if (n < 1) empty[A] else hole[A].hRepeated(2).vRepeated(2).holeBordered(n - 1)
     else leftHoleBordered(n).rightHoleBordered(n).topHoleBordered(n).bottomHoleBordered(n)
