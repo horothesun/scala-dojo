@@ -197,7 +197,7 @@ object ClassicTetris {
     println(shapeToString(complex))
     println("\n---\n")
     println(
-      complex.splittedByFilledRows
+      complex.splitByFilledRows
         .map(shapeToString)
         .mkString("\n\n")
     )

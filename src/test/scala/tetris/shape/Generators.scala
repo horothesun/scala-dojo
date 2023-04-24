@@ -88,8 +88,8 @@ object Generators {
     Gen.listOfN(halfHeight, filledGen(aGen)).map(fs => vStack(interleave(fs, hs).toList))
   }
 
-  def splittedByRowsShapesGen[A](focus: FilledState, width: Width, aGen: Gen[A]): Gen[List[Shape[A]]] =
-    splittedShapesGen(
+  def splitByRowsShapesGen[A](focus: FilledState, width: Width, aGen: Gen[A]): Gen[List[Shape[A]]] =
+    splitShapesGen(
       allHolesShapeGen = r => hAllHolesShapeGen[A](Width(r)),
       allFilledShapeGen = r => hAllFilledShapeGen[A](Width(r), aGen),
       interleavedShapeGen = r => hInterleavedShapeGen(Width(r), aGen),
@@ -97,8 +97,8 @@ object Generators {
       focus,
       fixedDimensionSize = width.value
     )
-  def splittedByColumnsShapesGen[A](focus: FilledState, height: Height, aGen: Gen[A]): Gen[List[Shape[A]]] =
-    splittedShapesGen(
+  def splitByColumnsShapesGen[A](focus: FilledState, height: Height, aGen: Gen[A]): Gen[List[Shape[A]]] =
+    splitShapesGen(
       allHolesShapeGen = r => vAllHolesShapeGen[A](Height(r)),
       allFilledShapeGen = r => vAllFilledShapeGen[A](Height(r), aGen),
       interleavedShapeGen = r => vInterleavedShapeGen(Height(r), aGen),
@@ -106,7 +106,7 @@ object Generators {
       focus,
       fixedDimensionSize = height.value
     )
-  def splittedShapesGen[A](
+  def splitShapesGen[A](
     allHolesShapeGen: Int => Gen[Shape[A]],
     allFilledShapeGen: Int => Gen[Shape[A]],
     interleavedShapeGen: Int => Gen[Shape[A]],

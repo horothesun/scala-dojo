@@ -12,6 +12,15 @@ import Shape._
 
 class ShapeSuite extends ScalaCheckSuite {
 
+  property("s.standardized preserves s rasterization and sizes") {
+    forAll(shapeGen(primaryColorGen)) { s =>
+      val std = s.standardized
+      assertEquals(std.rasterized, s.rasterized)
+      assertEquals(std.width, s.width)
+      assertEquals(std.height, s.height)
+    }
+  }
+
   property("HFlipped(HFlipped(s)).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
       assertEquals(HFlipped(HFlipped(s)).standardized, s.standardized)
@@ -44,72 +53,105 @@ class ShapeSuite extends ScalaCheckSuite {
     }
   }
 
-  property("HStack(s.splittedByFilledColumns).standardized = s.standardized") {
+  property("HStack(s.splitByFilledColumns).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(HStack(s.splittedByFilledColumns).standardized, s.standardized)
+      assertEquals(HStack(s.splitByFilledColumns).standardized, s.standardized)
     }
   }
 
-  property("HStack(splittedCols).splittedByFilledColumns.standardized = splittedCols.standardized") {
-    forAll(splittedByColumnsShapesGen(focus = AllFilled, Height(10), primaryColorGen)) { splittedCols =>
+  property("HStack(splitCols).splitByFilledColumns.standardized = splitCols.standardized") {
+    forAll(splitByColumnsShapesGen(focus = AllFilled, Height(10), primaryColorGen)) { splitCols =>
       assertEquals(
-        HStack(splittedCols).splittedByFilledColumns.map(_.standardized),
-        splittedCols.map(_.standardized)
+        HStack(splitCols).splitByFilledColumns.map(_.standardized),
+        splitCols.map(_.standardized)
       )
     }
   }
 
-  property("vStack(s.splittedByFilledRows).standardized = s.standardized") {
+  property("vStack(s.splitByFilledRows).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(vStack(s.splittedByFilledRows).standardized, s.standardized)
+      assertEquals(vStack(s.splitByFilledRows).standardized, s.standardized)
     }
   }
 
-  property("vStack(splittedRows).splittedByFilledRows.standardized = splittedRows.standardized") {
-    forAll(splittedByRowsShapesGen(focus = AllFilled, Width(10), primaryColorGen)) { splittedRows =>
+  property("vStack(splitRows).splitByFilledRows.standardized = splitRows.standardized") {
+    forAll(splitByRowsShapesGen(focus = AllFilled, Width(10), primaryColorGen)) { splitRows =>
       assertEquals(
-        vStack(splittedRows).splittedByFilledRows.map(_.standardized),
-        splittedRows.map(_.standardized)
+        vStack(splitRows).splitByFilledRows.map(_.standardized),
+        splitRows.map(_.standardized)
       )
     }
   }
 
-  property("HStack(s.splittedByHoleColumns).standardized = s.standardized") {
+  property("HStack(s.splitByHoleColumns).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(HStack(s.splittedByHoleColumns).standardized, s.standardized)
+      assertEquals(HStack(s.splitByHoleColumns).standardized, s.standardized)
     }
   }
 
-  property("HStack(splittedCols).splittedByHoleColumns.standardized = splittedCols.standardized") {
-    forAll(splittedByColumnsShapesGen(focus = AllHoles, Height(10), primaryColorGen)) { splittedCols =>
+  property("HStack(splitCols).splitByHoleColumns.standardized = splitCols.standardized") {
+    forAll(splitByColumnsShapesGen(focus = AllHoles, Height(10), primaryColorGen)) { splitCols =>
       assertEquals(
-        HStack(splittedCols).splittedByHoleColumns.map(_.standardized),
-        splittedCols.map(_.standardized)
+        HStack(splitCols).splitByHoleColumns.map(_.standardized),
+        splitCols.map(_.standardized)
       )
     }
   }
 
-  property("vStack(s.splittedByHoleRows).standardized = s.standardized") {
+  property("vStack(s.splitByHoleRows).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(vStack(s.splittedByHoleRows).standardized, s.standardized)
+      assertEquals(vStack(s.splitByHoleRows).standardized, s.standardized)
     }
   }
 
-  property("vStack(splittedRows).splittedByHoleRows.standardized = splittedRows.standardized") {
-    forAll(splittedByRowsShapesGen(focus = AllHoles, Width(10), primaryColorGen)) { splittedRows =>
+  property("vStack(splitRows).splitByHoleRows.standardized = splitRows.standardized") {
+    forAll(splitByRowsShapesGen(focus = AllHoles, Width(10), primaryColorGen)) { splitRows =>
       assertEquals(
-        vStack(splittedRows).splittedByHoleRows.map(_.standardized),
-        splittedRows.map(_.standardized)
+        vStack(splitRows).splitByHoleRows.map(_.standardized),
+        splitRows.map(_.standardized)
       )
     }
   }
 
-  property("s.standardized preserves s rasterization and sizes") {
-    forAll(shapeGen(primaryColorGen)) { s =>
-      val std = s.standardized
-      assertEquals(std.rasterized, s.rasterized)
-      assertEquals(std.width, s.width)
-      assertEquals(std.height, s.height)
+  property("s => s.above(Inverted(c, s)).validatedAllFilled = Some(_)") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val sAboveInv = s.above(Inverted(ifHole = c, s))
+      assertEquals(sAboveInv.validatedAllFilled, Some(sAboveInv))
+    }
+  }
+
+  property("s => s.below(Inverted(c, s)).validatedAllFilled = Some(_)") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val sBelowInv = s.below(Inverted(ifHole = c, s))
+      assertEquals(sBelowInv.validatedAllFilled, Some(sBelowInv))
+    }
+  }
+
+  property("s.above(Inverted(c, s)) = Inverted(c, s).above(s)") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val inv = Inverted(ifHole = c, s)
+      assertEquals(s.above(inv), inv.above(s))
+    }
+  }
+
+  property("s.below(Inverted(c, s)) = Inverted(c, s).below(s)") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val inv = Inverted(ifHole = c, s)
+      assertEquals(s.below(inv), inv.below(s))
+    }
+  }
+
+  property("s.above(Inverted(c, s)) = s.below(Inverted(c, s))") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val inv = Inverted(ifHole = c, s)
+      assertEquals(s.above(inv), s.below(inv))
+    }
+  }
+
+  property("Inverted(c, s).above(s) = Inverted(c, s).below(s)") {
+    forAll(shapeGen(primaryColorGen), primaryColorGen) { case (s, c) =>
+      val inv = Inverted(ifHole = c, s)
+      assertEquals(inv.above(s), inv.below(s))
     }
   }
 

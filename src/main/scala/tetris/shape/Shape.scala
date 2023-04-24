@@ -45,11 +45,11 @@ sealed trait Shape[A] {
 
   def inverted(ifHole: A): Shape[A] = Inverted(ifHole, this)
 
-  def splittedByFilledRows: List[Shape[A]] = splittedByValidRows(validatedAllFilledRow, this)
-  def splittedByFilledColumns: List[Shape[A]] = rotatedCW.splittedByFilledRows.map(_.rotatedCCW)
+  def splitByFilledRows: List[Shape[A]] = splitByValidRows(validatedAllFilledRow, this)
+  def splitByFilledColumns: List[Shape[A]] = rotatedCW.splitByFilledRows.map(_.rotatedCCW)
 
-  def splittedByHoleRows: List[Shape[A]] = splittedByValidRows(validatedAllHoleRow, this)
-  def splittedByHoleColumns: List[Shape[A]] = rotatedCW.splittedByHoleRows.map(_.rotatedCCW)
+  def splitByHoleRows: List[Shape[A]] = splitByValidRows(validatedAllHoleRow, this)
+  def splitByHoleColumns: List[Shape[A]] = rotatedCW.splitByHoleRows.map(_.rotatedCCW)
 
   def hSym: Shape[A] = hStack(this, vFlipped)
   def vSym: Shape[A] = vStack(this, hFlipped)
@@ -73,7 +73,7 @@ sealed trait Shape[A] {
       val (bottom, bTrimmedReversed) = topHeightAndTrimmed(rowSplit.reverse)
       (bTrimmedReversed.reverse, bottom)
     }
-    val (top, tTrimmed) = topHeightAndTrimmed(splittedByHoleRows)
+    val (top, tTrimmed) = topHeightAndTrimmed(splitByHoleRows)
     val (trimmed, bottom) = bottomTrimmedAndHeight(tTrimmed)
     VTrimmed(top, vStack(trimmed), bottom)
   }
@@ -195,7 +195,7 @@ object Shape {
   def validatedAllFilledRow[A](r: Row[A]): Option[Row[A]] = (r: List[Option[A]]).sequence.as(r)
   def validatedAllHoleRow[A](r: Row[A]): Option[Row[A]] = Some(r).filter(_.forall(_.isEmpty)).as(r)
 
-  def splittedByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
+  def splitByValidRows[A](validatedRow: Row[A] => Option[Row[A]], s: Shape[A]): List[Shape[A]] =
     s.rasterized.value
       // TODO: optimise for `::`!!! 🔥🔥🔥
       .foldLeft(List.empty[(Boolean, Raster[A])]) { case (acc, row) =>
