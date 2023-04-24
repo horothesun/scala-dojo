@@ -9,105 +9,108 @@ import Generators.FilledState._
 import Generators.PrimaryColor._
 import Models._
 import Shape._
-import ShapeSuite._
 
 class ShapeSuite extends ScalaCheckSuite {
 
-  property("HFlipped(HFlipped(s)) preserves s rasterization and sizes") {
+  property("HFlipped(HFlipped(s)).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(HFlipped(HFlipped(s))), rasterAndSizes(s))
+      assertEquals(HFlipped(HFlipped(s)).standardized, s.standardized)
     }
   }
 
-  property("VFlipped(VFlipped(s)) preserves s rasterization and sizes") {
+  property("VFlipped(VFlipped(s)).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(VFlipped(VFlipped(s))), rasterAndSizes(s))
+      assertEquals(VFlipped(VFlipped(s)).standardized, s.standardized)
     }
   }
 
-  property("Transposed(Transposed(s)) preserves s rasterization and sizes") {
+  test("Transposed sample") {
+    val r = filled[PrimaryColor](Red)
+    val obtained = r.bottomHoleBordered(2).rightFilledBordered(Green).transposed
+    val expected = r.rightHoleBordered(2).bottomFilledBordered(Green)
+    assertEquals(obtained.standardized, expected.standardized)
+  }
+
+  property("Transposed(Transposed(s)).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(Transposed(Transposed(s))), rasterAndSizes(s))
+      assertEquals(Transposed(Transposed(s)).standardized, s.standardized)
     }
   }
 
-  property("(Inverted(ifHole = Red, _) ^ 2) preserves rasterization and sizes, for Red-only Shapes") {
+  property("(Inverted(ifHole = Red, _) ^ 2) preserves standardization, for Red-only Shapes") {
     forAll(shapeGen(redColorGen)) { s =>
       val inverted: Endo[Shape[Red.type]] = Inverted(ifHole = Red, _)
-      assertEquals(rasterAndSizes((inverted ^ 2)(s)), rasterAndSizes(s))
+      assertEquals((inverted ^ 2)(s).standardized, s.standardized)
     }
   }
 
-  property("HStack(s.splittedByFilledColumns) preserves s rasterization and sizes") {
+  property("HStack(s.splittedByFilledColumns).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(HStack(s.splittedByFilledColumns)), rasterAndSizes(s))
+      assertEquals(HStack(s.splittedByFilledColumns).standardized, s.standardized)
     }
   }
 
-  property("HStack(splittedCols).splittedByFilledColumns preserves splittedCols rasterization and sizes") {
+  property("HStack(splittedCols).splittedByFilledColumns.standardized = splittedCols.standardized") {
     forAll(splittedByColumnsShapesGen(focus = AllFilled, Height(10), primaryColorGen)) { splittedCols =>
       assertEquals(
-        HStack(splittedCols).splittedByFilledColumns.map(rasterAndSizes),
-        splittedCols.map(rasterAndSizes)
+        HStack(splittedCols).splittedByFilledColumns.map(_.standardized),
+        splittedCols.map(_.standardized)
       )
     }
   }
 
-  property("vStack(s.splittedByFilledRows) preserves s rasterization and sizes") {
+  property("vStack(s.splittedByFilledRows).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(vStack(s.splittedByFilledRows)), rasterAndSizes(s))
+      assertEquals(vStack(s.splittedByFilledRows).standardized, s.standardized)
     }
   }
 
-  property("vStack(splittedRows).splittedByFilledRows preserves splittedRows rasterization and sizes") {
+  property("vStack(splittedRows).splittedByFilledRows.standardized = splittedRows.standardized") {
     forAll(splittedByRowsShapesGen(focus = AllFilled, Width(10), primaryColorGen)) { splittedRows =>
       assertEquals(
-        vStack(splittedRows).splittedByFilledRows.map(rasterAndSizes),
-        splittedRows.map(rasterAndSizes)
+        vStack(splittedRows).splittedByFilledRows.map(_.standardized),
+        splittedRows.map(_.standardized)
       )
     }
   }
 
-  property("HStack(s.splittedByHoleColumns) preserves s rasterization and sizes") {
+  property("HStack(s.splittedByHoleColumns).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(HStack(s.splittedByHoleColumns)), rasterAndSizes(s))
+      assertEquals(HStack(s.splittedByHoleColumns).standardized, s.standardized)
     }
   }
 
-  property("HStack(splittedCols).splittedByHoleColumns preserves splittedCols rasterization and sizes") {
+  property("HStack(splittedCols).splittedByHoleColumns.standardized = splittedCols.standardized") {
     forAll(splittedByColumnsShapesGen(focus = AllHoles, Height(10), primaryColorGen)) { splittedCols =>
       assertEquals(
-        HStack(splittedCols).splittedByHoleColumns.map(rasterAndSizes),
-        splittedCols.map(rasterAndSizes)
+        HStack(splittedCols).splittedByHoleColumns.map(_.standardized),
+        splittedCols.map(_.standardized)
       )
     }
   }
 
-  property("vStack(s.splittedByHoleRows) preserves s rasterization and sizes") {
+  property("vStack(s.splittedByHoleRows).standardized = s.standardized") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(vStack(s.splittedByHoleRows)), rasterAndSizes(s))
+      assertEquals(vStack(s.splittedByHoleRows).standardized, s.standardized)
     }
   }
 
-  property("vStack(splittedRows).splittedByHoleRows preserves splittedRows rasterization and sizes") {
+  property("vStack(splittedRows).splittedByHoleRows.standardized = splittedRows.standardized") {
     forAll(splittedByRowsShapesGen(focus = AllHoles, Width(10), primaryColorGen)) { splittedRows =>
       assertEquals(
-        vStack(splittedRows).splittedByHoleRows.map(rasterAndSizes),
-        splittedRows.map(rasterAndSizes)
+        vStack(splittedRows).splittedByHoleRows.map(_.standardized),
+        splittedRows.map(_.standardized)
       )
     }
   }
 
   property("s.standardized preserves s rasterization and sizes") {
     forAll(shapeGen(primaryColorGen)) { s =>
-      assertEquals(rasterAndSizes(s.standardized), rasterAndSizes(s))
+      val std = s.standardized
+      assertEquals(std.rasterized, s.rasterized)
+      assertEquals(std.width, s.width)
+      assertEquals(std.height, s.height)
     }
   }
-
-}
-
-object ShapeSuite {
-
-  def rasterAndSizes[A](s: Shape[A]): (Width, Height, Raster[A]) = (s.width, s.height, s.rasterized)
 
 }
