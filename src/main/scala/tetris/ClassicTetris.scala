@@ -76,33 +76,6 @@ object ClassicTetris {
     else if (right1 <= right2) Some(right1)
     else Some(right2)
 
-  /*
-   y
-   /\
-   |
-   |          0 | 1 | 2 |
-   |      0 |   |   |   |
-   |      1 |   | ® | ® |
-   |      2 |   | ® | ® |
-   2      3 |   |   |   |
-   |
-   -----------5----------------> x
-
-   windowTopRight   = Coord(x = 7, y = 4)
-   windowBottomLeft = Coord(x = 6, y = 3)
-   bottomLeft = Coord(x = 5, y = 2)
-   s.width = 3
-   s.height = 4
-
-   localRight = windowTopRight.x   - bottomLeft.x = 7 - 5 = 2
-   localLeft  = windowBottomLeft.x - bottomLeft.x = 6 - 5 = 1
-
-   localTop    = (s.height - 1) - (windowTopRight.y   - bottomLeft.y) = (4 - 1) - (4 - 2) = 3 - 2 = 1
-   localBottom = (s.height - 1) - (windowBottomLeft.y - bottomLeft.y) = (4 - 1) - (3 - 2) = 3 - 1 = 2
-
-   windowTopRight(local) = col: 2, row: 1
-   windowBottomLeft(local) = col: 1, row: 2
-   */
   def windowedShape[A](windowBottomLeft: Coord, windowTopRight: Coord)(
     bottomLeft: Coord,
     s: Shape[A]

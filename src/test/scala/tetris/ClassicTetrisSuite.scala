@@ -9,6 +9,53 @@ import Models.MergedIntersection._
 
 class ClassicTetrisSuite extends ScalaCheckSuite {
 
+  /*
+     y
+     /\
+     |
+     |          0 | 1 | 2 |
+     |      0 |   |   |   |
+     |      1 |   | º | º |
+     |      2 |   | º | º |
+     2      3 |   |   |   |
+     |
+     -----------5----------------> x
+   */
+  test("windowedShape on valid window bounds") {
+    val expected = hStack(f, h).bottomFilledBordered(Mono)
+    val shape = expected.topHoleBordered().bottomHoleBordered().leftHoleBordered()
+    assertEquals(
+      windowedShape(windowBottomLeft = Coord(x = 6, y = 3), windowTopRight = Coord(x = 7, y = 4))(
+        bottomLeft = Coord(x = 5, y = 2),
+        shape
+      ).map(_.standardized),
+      Some(expected.standardized)
+    )
+  }
+
+  /*
+     y
+     /\
+     |
+     |          0 | 1 | 2 |
+     |      0 |   |   |   |
+     |      1 |   | º | º | º
+     |      2 |   | º | º | º
+     2      3 |   |   |   |
+     |
+     -----------5----------------> x
+   */
+  test("windowedShape on invalid window bounds") {
+    val shape = hStack(f, h).bottomFilledBordered(Mono).topHoleBordered().bottomHoleBordered().leftHoleBordered()
+    assertEquals(
+      windowedShape(windowBottomLeft = Coord(x = 6, y = 3), windowTopRight = Coord(x = 8, y = 4))(
+        bottomLeft = Coord(x = 5, y = 2),
+        shape
+      ),
+      None
+    )
+  }
+
   test("mergedIntersection returns NotIntersecting") {
     assertEquals(
       mergedIntersection(
