@@ -1,6 +1,8 @@
 package tetris
 
 import munit.ScalaCheckSuite
+import shape.Generators.PrimaryColor
+import shape.Generators.PrimaryColor._
 import shape.Shape._
 import ClassicTetris._
 import Models._
@@ -111,6 +113,53 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
         assertEquals(intersection1.standardized, vStack(f, h).standardized)
         assertEquals(intersection2.standardized, vStack(f, f).standardized)
     }
+  }
+
+  test("merge on not overlapping Shapes") {
+    val (bottomLeft, merged) = merge[Color](
+      bottomLeftFront = Coord(x = -1, y = -1),
+      front = o,
+      bottomLeftBack = Coord(x = 2, y = -4),
+      back = s
+    )
+    assertEquals(bottomLeft, Coord(x = -1, y = -4))
+    assertEquals(
+      merged.standardized,
+      vStack(o, h, s.leftHoleBordered(3)).standardized
+    )
+  }
+
+  test("merge on overlapping Shapes w/o collision") {
+    val (bottomLeft, merged) = merge[Color](
+      bottomLeftFront = Coord(x = -1, y = -1),
+      front = o,
+      bottomLeftBack = Coord(x = 0, y = -2),
+      back = s
+    )
+    val ff_hf = hStack(h, f).topFilledBordered(Mono)
+    assertEquals(bottomLeft, Coord(x = -1, y = -2))
+    assertEquals(
+      merged.standardized,
+      hStack(ff_hf.topFilledBordered(Mono), ff_hf.vFlipped.topHoleBordered()).standardized
+    )
+  }
+
+  test("merge on overlapping Shapes with collision") {
+    val redO = filled[PrimaryColor](Red).hRepeated(2).vRepeated(2)
+    val g = filled[PrimaryColor](Green)
+    val h = hole[PrimaryColor]
+    val greenS = vStack(hStack(h, g, g), hStack(g, g))
+    val (bottomLeft, merged) = merge[PrimaryColor](
+      bottomLeftFront = Coord(x = -1, y = -1),
+      front = redO,
+      bottomLeftBack = Coord(x = 0, y = -1),
+      back = greenS
+    )
+    assertEquals(bottomLeft, Coord(x = -1, y = -1))
+    assertEquals(
+      merged.standardized,
+      hStack(redO, vStack(g, h).leftFilledBordered(Green)).standardized
+    )
   }
 
 }

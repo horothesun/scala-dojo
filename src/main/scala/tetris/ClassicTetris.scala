@@ -289,7 +289,7 @@ object ClassicTetris {
     val (bottomLeft07, myShape07) = merge[Color](
       bottomLeftFront = Coord(x = -1, y = -1),
       front = o,
-      bottomLeftBack = Coord(x = 2, y = -4),
+      bottomLeftBack = Coord(x = 0, y = -1),
       back = s
     )
     println(
