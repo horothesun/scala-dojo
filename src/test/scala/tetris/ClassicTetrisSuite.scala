@@ -31,7 +31,7 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       case NotIntersecting() | CollidingIntersection(_, _, _) => assert(cond = false, "Not ValidIntersection(...)")
       case ValidIntersection(bottomLeft, mergedIntersection) =>
         assertEquals(bottomLeft, Coord(x = 1, y = 0))
-        assertEquals(mergedIntersection.rasterized, hStack(f, f).vRepeated(2).rasterized)
+        assertEquals(mergedIntersection.standardized, hStack(f, f).vRepeated(2).standardized)
     }
 
   }
@@ -46,8 +46,8 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       case NotIntersecting() | ValidIntersection(_, _) => assert(cond = false, "Not CollidingIntersection(...)")
       case CollidingIntersection(bottomLeft, intersection1, intersection2) =>
         assertEquals(bottomLeft, Coord(x = 0, y = 0))
-        assertEquals(intersection1.rasterized, f.rasterized)
-        assertEquals(intersection2.rasterized, f.rasterized)
+        assertEquals(intersection1.standardized, f.standardized)
+        assertEquals(intersection2.standardized, f.standardized)
     }
   }
 
@@ -61,8 +61,8 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       case NotIntersecting() | ValidIntersection(_, _) => assert(cond = false, "Not CollidingIntersection(...)")
       case CollidingIntersection(bottomLeft, intersection1, intersection2) =>
         assertEquals(bottomLeft, Coord(x = 2, y = 0))
-        assertEquals(intersection1.rasterized, vStack(f, h).rasterized)
-        assertEquals(intersection2.rasterized, vStack(f, f).rasterized)
+        assertEquals(intersection1.standardized, vStack(f, h).standardized)
+        assertEquals(intersection2.standardized, vStack(f, f).standardized)
     }
   }
 
