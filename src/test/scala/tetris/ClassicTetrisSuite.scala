@@ -6,7 +6,6 @@ import shape.Generators.PrimaryColor._
 import shape.Shape._
 import ClassicTetris._
 import Models._
-import Models.Color._
 import Models.MergedIntersection._
 
 class ClassicTetrisSuite extends ScalaCheckSuite {
@@ -66,7 +65,7 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
         bottomLeft2 = Coord(x = 1, y = 1),
         s2 = f
       ),
-      NotIntersecting[Color]()
+      NotIntersecting[Mono.type]()
     )
   }
 
@@ -75,7 +74,7 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       bottomLeft1 = Coord(x = 0, y = 0),
       s1 = vStack(f, h).leftHoleBordered().leftFilledBordered(Mono),
       bottomLeft2 = Coord(x = 1, y = 0),
-      s2 = j.rotatedCW
+      s2 = j(Mono).rotatedCW
     ) match {
       case NotIntersecting() | CollidingIntersection(_, _, _) => assert(cond = false, "Not ValidIntersection(...)")
       case ValidIntersection(bottomLeft, mergedIntersection) =>
@@ -105,7 +104,7 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       bottomLeft1 = Coord(x = 0, y = 0),
       s1 = vStack(f, h).leftHoleBordered().leftFilledBordered(Mono),
       bottomLeft2 = Coord(x = 2, y = 0),
-      s2 = j.rotatedCW
+      s2 = j(Mono).rotatedCW
     ) match {
       case NotIntersecting() | ValidIntersection(_, _) => assert(cond = false, "Not CollidingIntersection(...)")
       case CollidingIntersection(bottomLeft, intersection1, intersection2) =>
@@ -116,25 +115,25 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
   }
 
   test("merge on not overlapping Shapes") {
-    val (bottomLeft, merged) = merge[Color](
+    val (bottomLeft, merged) = merge[Mono.type](
       bottomLeftFront = Coord(x = -1, y = -1),
-      front = o,
+      front = o(Mono),
       bottomLeftBack = Coord(x = 2, y = -4),
-      back = s
+      back = s(Mono)
     )
     assertEquals(bottomLeft, Coord(x = -1, y = -4))
     assertEquals(
       merged.standardized,
-      vStack(o, h, s.leftHoleBordered(3)).standardized
+      vStack(o(Mono), h, s(Mono).leftHoleBordered(3)).standardized
     )
   }
 
   test("merge on overlapping Shapes w/o collision") {
-    val (bottomLeft, merged) = merge[Color](
+    val (bottomLeft, merged) = merge[Mono.type](
       bottomLeftFront = Coord(x = -1, y = -1),
-      front = o,
+      front = o(Mono),
       bottomLeftBack = Coord(x = 0, y = -2),
-      back = s
+      back = s(Mono)
     )
     val ff_hf = hStack(h, f).topFilledBordered(Mono)
     assertEquals(bottomLeft, Coord(x = -1, y = -2))

@@ -7,8 +7,7 @@ import scala.annotation.tailrec
 import shape.Models._
 import ClassicTetrisNotReified.MergedIntersection._
 import ClassicTetrisNotReified.Shape._
-import Models.Color
-import Models.Color._
+import Models._
 
 object ClassicTetrisNotReified {
 
@@ -208,8 +207,8 @@ object ClassicTetrisNotReified {
 
   }
 
-  val h = hole[Color]
-  val f = filled[Color](Mono)
+  val h = hole[Mono.type]
+  val f = filled(Mono)
   val hf = hStack(h, f)
   val ff = f.hRepeated(2)
   val fff = f.hRepeated(3)
@@ -223,7 +222,7 @@ object ClassicTetrisNotReified {
   val l = j.vFlipped
   val s = vStack(hff, ff)
   val z = s.vFlipped
-  val allTetrominoes = NonEmptyList.of[Shape[Color]](i, o, t, j, l, s, z)
+  val allTetrominoes = NonEmptyList.of[Shape[Mono.type]](i, o, t, j, l, s, z)
 
   type ShapeEndo[A] = Shape[A] => Shape[A]
   implicit def shapeEndoMonoid[A]: Monoid[ShapeEndo[A]] = new Monoid[ShapeEndo[A]] {
@@ -369,13 +368,13 @@ object ClassicTetrisNotReified {
     )
     Foldable[List].fold(fs).apply(filled(a))
   }
-  val allComplexShapes = NonEmptyList.of[Shape[Color]](
+  val allComplexShapes = NonEmptyList.of[Shape[Mono.type]](
     plus,
     times,
     diamond,
     squareBorder,
-    squaredTarget[Color](2, Mono),
-    spiral[Color](2, Mono)
+    squaredTarget(2, Mono),
+    spiral(2, Mono)
   )
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
@@ -387,10 +386,10 @@ object ClassicTetrisNotReified {
     (List.fill(height.value)(emptyRow) :+ bottomBorder).mkString("\n")
   }
 
-  def shapeToString(s: Shape[Color]): String = s.show(filled = { case Mono => "🟩" }, hole = "⬜️")
+  def shapeToString(s: Shape[Mono.type]): String = s.show(filled = _ => "🟩", hole = "⬜️")
 
-  def mergedIntersectionToString(mi: MergedIntersection[Color]): String =
-    mi.show(filled = { case Mono => "🟩" }, hole = "⬜️")
+  def mergedIntersectionToString(mi: MergedIntersection[Mono.type]): String =
+    mi.show(filled = _ => "🟩", hole = "⬜️")
 
   def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))

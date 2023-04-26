@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import EndoOps._
 import Models._
-import Models.Color._
 import Models.MergedIntersection._
 import scala.math._
 import shape._
@@ -107,22 +106,22 @@ object ClassicTetris {
     (bottomLeft, extendedFront.above(extendedBack))
   }
 
-  val h = Hole[Color]()
-  val f = Filled[Color](Mono)
+  def i[A](a: A): Shape[A] = filled(a).vRepeated(4)
+  def o[A](a: A): Shape[A] = filled(a).hRepeated(2).vRepeated(2)
+  def t[A](a: A): Shape[A] = filled(a).leftHoleBordered().rightHoleBordered().topFilledBordered(a)
+  def j[A](a: A): Shape[A] = filled(a).vRepeated(3).leftHoleBordered().bottomFilledBordered(a)
+  def l[A](a: A): Shape[A] = j(a).vFlipped
+  def s[A](a: A): Shape[A] = vStack(filled(a).hRepeated(2).leftHoleBordered(), filled(a).hRepeated(2))
+  def z[A](a: A): Shape[A] = s(a).vFlipped
+  val allTetrominoesMono = NonEmptyList.of[Mono.type => Shape[Mono.type]](i, o, t, j, l, s, z).map(_(Mono))
+
+  val h = Hole[Mono.type]()
+  val f = Filled(Mono)
   val hf = hStack(h, f)
   val ff = f.hRepeated(2)
   val fff = f.hRepeated(3)
   val fhf = hStack(f, h, f)
   val hff = hStack(h, f, f)
-
-  val i = f.vRepeated(4)
-  val o = ff.vRepeated(2)
-  val t = hStack(h, f, h).topFilledBordered(Mono)
-  val j = f.vRepeated(3).leftHoleBordered().bottomFilledBordered(Mono)
-  val l = j.vFlipped
-  val s = vStack(hff, ff)
-  val z = s.vFlipped
-  val allTetrominoes = NonEmptyList.of[Shape[Color]](i, o, t, j, l, s, z)
 
   val plus = vStack(hf, fff, hf)
   val times = vStack(fhf, hf, fhf)
@@ -153,13 +152,13 @@ object ClassicTetris {
     }
   }
 
-  val allComplexShapes = NonEmptyList.of[Shape[Color]](
+  val allComplexShapes = NonEmptyList.of[Shape[Mono.type]](
     plus,
     times,
     diamond,
     squareBorder,
-    squaredTarget[Color](4, Mono),
-    spiral[Color](3, Mono)
+    squaredTarget(4, Mono),
+    spiral(3, Mono)
   )
 
   def showEmptyGrid(hole: => String, width: Width, height: Height): String = {
@@ -171,16 +170,16 @@ object ClassicTetris {
     (List.fill(height.value)(emptyRow) :+ bottomBorder).mkString("\n")
   }
 
-  def shapeToString(s: Shape[Color]): String = s.show(filled = { case Mono => "🟩" }, hole = "⬜️")
+  def shapeToString(s: Shape[Mono.type]): String = s.show(filled = _ => "🟩", hole = "⬜️")
 
-  def mergedIntersectionToString(mi: MergedIntersection[Color]): String =
-    mi.show(filled = { case Mono => "🟩" }, hole = "⬜️")
+  def mergedIntersectionToString(mi: MergedIntersection[Mono.type]): String =
+    mi.show(filled = _ => "🟩", hole = "⬜️")
 
   def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
 //    println("\n---")
     println(
-      allTetrominoes
+      allTetrominoesMono
         .concatNel(allComplexShapes)
         .map(shapeToString)
         .toList
@@ -189,10 +188,10 @@ object ClassicTetris {
     println("\n---\n")
     val complex = // empty.filledBorder(Mono)
       vStack(
-        hStack(t, f.vRepeated(2)),
-        i.rotatedCCW.vRepeated(3),
-        s,
-        i.rotatedCCW
+        hStack(t(Mono), f.vRepeated(2)),
+        i(Mono).rotatedCCW.vRepeated(3),
+        s(Mono),
+        i(Mono).rotatedCCW
       )
     println(shapeToString(complex))
     println("\n---\n")
@@ -255,7 +254,7 @@ object ClassicTetris {
     )
     println("\n---\n")
     val myShape03 = vStack(f, h).leftHoleBordered().leftFilledBordered(Mono)
-    val myShape04 = j.rotatedCW
+    val myShape04 = j(Mono).rotatedCW
     println(
       List(myShape03, myShape04)
         .map(shapeToString)
@@ -273,7 +272,7 @@ object ClassicTetris {
     )
     println("\n---\n")
     val myShape05 = f.hRepeated(5).topHoleBordered()
-    val myShape06 = vStack(l.rotatedCCW, f.hRepeated(2))
+    val myShape06 = vStack(l(Mono).rotatedCCW, f.hRepeated(2))
     println(
       List(myShape05, myShape06, myShape05.above(myShape06), myShape05.below(myShape06))
         .map(shapeToString)
@@ -286,14 +285,14 @@ object ClassicTetris {
         .mkString("\n\n")
     )
     println("\n---\n")
-    val (bottomLeft07, myShape07) = merge[Color](
+    val (bottomLeft07, myShape07) = merge[Mono.type](
       bottomLeftFront = Coord(x = -1, y = -1),
-      front = o,
-      bottomLeftBack = Coord(x = 0, y = -1),
-      back = s
+      front = o(Mono),
+      bottomLeftBack = Coord(x = 2, y = -4),
+      back = s(Mono)
     )
     println(
-      List(s, o, myShape07)
+      List(s(Mono), o(Mono), myShape07)
         .map(shapeToString)
         .appended(bottomLeft07.toString)
         .mkString("\n\n")

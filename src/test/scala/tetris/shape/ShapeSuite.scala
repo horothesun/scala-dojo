@@ -35,7 +35,7 @@ class ShapeSuite extends ScalaCheckSuite {
 
   test("Transposed sample") {
     val r = filled[PrimaryColor](Red)
-    val obtained = r.bottomHoleBordered(2).rightFilledBordered(Green).transposed
+    val obtained = Transposed(r.bottomHoleBordered(2).rightFilledBordered(Green))
     val expected = r.rightHoleBordered(2).bottomFilledBordered(Green)
     assertEquals(obtained.standardized, expected.standardized)
   }

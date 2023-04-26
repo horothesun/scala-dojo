@@ -23,9 +23,6 @@ object Models {
         extends MergedIntersection[A]
   }
 
-  sealed trait Color
-  object Color {
-    case object Mono extends Color
-  }
+  object Mono
 
 }
