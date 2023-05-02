@@ -386,10 +386,10 @@ object ClassicTetrisNotReified {
     (List.fill(height.value)(emptyRow) :+ bottomBorder).mkString("\n")
   }
 
-  def shapeToString(s: Shape[Mono.type]): String = s.show(filled = _ => "🟩", hole = "⬜️")
+  def shapeToString(s: Shape[Mono.type]): String = s.show(filled = { case Mono => "🟩" }, hole = "⬜️")
 
   def mergedIntersectionToString(mi: MergedIntersection[Mono.type]): String =
-    mi.show(filled = _ => "🟩", hole = "⬜️")
+    mi.show(filled = { case Mono => "🟩" }, hole = "⬜️")
 
   def main(args: Array[String]): Unit = {
 //    println(showEmptyGrid(hole = " .", Width(10), Height(20)))
