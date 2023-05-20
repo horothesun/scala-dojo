@@ -1,9 +1,8 @@
 import cats._
 import cats.implicits._
+import scala.annotation.tailrec
 import ClassicSnake.Direction._
 import ClassicSnake.Snake._
-
-import scala.annotation.tailrec
 
 object ClassicSnake {
 
@@ -19,8 +18,7 @@ object ClassicSnake {
     def grownLeft(head: A): Snake[A] = GrownLeft(head, tail = this)
     def grownRight(head: A): Snake[A] = GrownRight(head, tail = this)
 
-    def foldLeft[B](b: B)(f: (B, A) => B): B = Foldable[Snake].foldLeft(this, b)(f)
-    def foldRight[B](lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = Foldable[Snake].foldRight(this, lb)(f)
+    def map[B](f: A => B): Snake[B] = Functor[Snake].map(this)(f)
 
     def movedForward = ???
   }
@@ -30,21 +28,15 @@ object ClassicSnake {
     case class GrownLeft[A](head: A, tail: Snake[A]) extends Snake[A]
     case class GrownRight[A](head: A, tail: Snake[A]) extends Snake[A]
 
-    implicit val foldable: Foldable[Snake] = new Foldable[Snake] {
-      override def foldLeft[A, B](fa: Snake[A], b: B)(f: (B, A) => B): B =
+    implicit def eq[A: Eq]: Eq[Snake[A]] = Eq.fromUniversalEquals
+
+    implicit val functor: Functor[Snake] = new Functor[Snake] {
+      override def map[A, B](fa: Snake[A])(f: A => B): Snake[B] =
         fa match {
-          case Dot(head)                => f(b, head)
-          case GrownForward(head, tail) => f(foldLeft(tail, b)(f), head)
-          case GrownLeft(head, tail)    => f(foldLeft(tail, b)(f), head)
-          case GrownRight(head, tail)   => f(foldLeft(tail, b)(f), head)
-        }
-      @tailrec
-      override def foldRight[A, B](fa: Snake[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] =
-        fa match {
-          case Dot(head)                => f(head, lb)
-          case GrownForward(head, tail) => foldRight(tail, f(head, lb))(f)
-          case GrownLeft(head, tail)    => foldRight(tail, f(head, lb))(f)
-          case GrownRight(head, tail)   => foldRight(tail, f(head, lb))(f)
+          case Dot(head)                => Dot(f(head))
+          case GrownForward(head, tail) => GrownForward(f(head), map(tail)(f))
+          case GrownLeft(head, tail)    => GrownLeft(f(head), map(tail)(f))
+          case GrownRight(head, tail)   => GrownRight(f(head), map(tail)(f))
         }
     }
   }
@@ -98,17 +90,14 @@ object ClassicSnake {
       GrownRight((head, next(s)(b)), tb)
   }
 
-  def enrich_2[A, B](start: B, next: Snake[A] => B => B): Snake[A] => Snake[(A, B)] = ???
-//    _.foldRight[Snake[(A, B)]]()
-
   def main(args: Array[String]): Unit = {
     val snake1: Snake[String] = Dot("a").grownForward(2, "b").grownLeft("c")
-    val snake1FoldLeft = snake1.foldLeft(List.empty[String]) { case (acc, s) => s +: acc }.mkString(",")
-    val snake1FoldRight =
-      snake1.foldRight(Eval.now(List.empty[String])) { case (s, acc) => acc.map(_ :+ s) }.value.mkString(",")
+//    val snake1FoldLeft = snake1.foldLeft(List.empty[String])((acc, s) => acc :+ s).mkString(",")
+//    val snake1FoldRight =
+//      snake1.foldRight(Eval.now(List.empty[String]))((s, acc) => acc.map(s :: _)).value.mkString(",")
     println(s"snake1: $snake1")
-    println(s"snake1FoldLeft: $snake1FoldLeft")
-    println(s"snake1FoldRight: $snake1FoldRight")
+//    println(s"snake1FoldLeft: $snake1FoldLeft")
+//    println(s"snake1FoldRight: $snake1FoldRight")
   }
 
 }
