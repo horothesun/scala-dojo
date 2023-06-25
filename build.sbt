@@ -9,7 +9,7 @@ lazy val root = (project in file(".")).settings(
 )
 
 val catsVersion = "2.9.0"
-val catsEffectVersion = "3.5.0"
+val catsEffectVersion = "3.5.1"
 val betterMonadicForVersion = "0.3.1"
 val fs2Version = "3.7.0"
 val munitVersion = "0.7.29"
