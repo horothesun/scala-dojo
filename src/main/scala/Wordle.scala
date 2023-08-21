@@ -1,5 +1,6 @@
 import cats.data.NonEmptyList
 import Wordle.Char._
+import Wordle.GuessResult._
 import Wordle.PositionStatus._
 
 object Wordle {
@@ -21,11 +22,17 @@ object Wordle {
 
   case class Guess[A](value: Word[A])
 
-  case class GuessResult[A](value: Word[(A, PositionStatus)])
+  sealed trait GuessResult
+  object GuessResult {
+    case object CorrectGuess extends GuessResult
+    case object IncorrectGuess extends GuessResult
+  }
 
-  def getGuessResult[A](s: Solution[A], g: Guess[A]): GuessResult[A] = {
+  case class GuessStatus[A](value: Word[(A, PositionStatus)])
+
+  def getGuessStatus[A](s: Solution[A], g: Guess[A]): GuessStatus[A] = {
     val getStatus: (A, A) => PositionStatus = getPositionStatus(s)
-    GuessResult(
+    GuessStatus(
       Word(
         v1 = (g.value.v1, getStatus(s.value.v1, g.value.v1)),
         v2 = (g.value.v2, getStatus(s.value.v2, g.value.v2)),
@@ -100,11 +107,17 @@ object Wordle {
     case object Z extends Char
   }
 
+  def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
+    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == PresentAndCorrectPosition)) CorrectGuess
+    else IncorrectGuess
+
   def main(args: Array[String]): Unit = {
     val s: Solution[Char] = Solution(Word(C, O, D, E, R))
     val g: Guess[Char] = Guess(Word(D, E, C, O, R))
-    val result = getGuessResult(s, g)
-    println(s"getGuessResult($s, $g) = $result")
+    val gs = getGuessStatus(s, g)
+    println(gs)
+    val gr = getGuessResult(gs)
+    println(gr)
   }
 
 }
