@@ -1,4 +1,5 @@
 import cats.data.NonEmptyList
+import cats.Show
 import Wordle.Char._
 import Wordle.GuessResult._
 import Wordle.PositionStatus._
@@ -7,6 +8,14 @@ object Wordle {
 
   case class Word[A](v1: A, v2: A, v3: A, v4: A, v5: A) {
     lazy val toNel: NonEmptyList[A] = NonEmptyList.of(v1, v2, v3, v4, v5)
+
+    def map[B](f: A => B): Word[B] = Word(v1 = f(v1), v2 = f(v2), v3 = f(v3), v4 = f(v4), v5 = f(v5))
+  }
+  object Word {
+    implicit def show[A: Show]: Show[Word[A]] = Show.show[Word[A]] { w =>
+      val showedWord = w.map(Show[A].show)
+      s"Word(${showedWord.v1}, ${showedWord.v2}, ${showedWord.v3}, ${showedWord.v4}, ${showedWord.v5})"
+    }
   }
 
   sealed trait PositionStatus
@@ -14,6 +23,12 @@ object Wordle {
     case object NotPresent extends PositionStatus
     case object PresentButIncorrectPosition extends PositionStatus
     case object PresentAndCorrectPosition extends PositionStatus
+
+    implicit val show: Show[PositionStatus] = Show.show[PositionStatus] {
+      case NotPresent                  => "⬛️"
+      case PresentButIncorrectPosition => "🟨"
+      case PresentAndCorrectPosition   => "🟩"
+    }
   }
 
   case class Solution[A](value: Word[A]) {
@@ -26,12 +41,24 @@ object Wordle {
   object GuessResult {
     case object CorrectGuess extends GuessResult
     case object IncorrectGuess extends GuessResult
+
+    implicit val show: Show[GuessResult] = Show.show[GuessResult] {
+      case CorrectGuess   => "✅"
+      case IncorrectGuess => "❌"
+    }
   }
 
   case class GuessStatus[A](value: Word[(A, PositionStatus)])
+  object GuessStatus {
+    implicit def show[A: Show]: Show[GuessStatus[A]] =
+      Show.show[GuessStatus[A]] { gs =>
+        val showedValue = gs.value.map { case (a, ps) => s"(${Show[A].show(a)}, ${Show[PositionStatus].show(ps)})" }
+        s"GuessStatus($showedValue)"
+      }
+  }
 
   def getGuessStatus[A](s: Solution[A], g: Guess[A]): GuessStatus[A] = {
-    val getStatus: (A, A) => PositionStatus = getPositionStatus(s)
+    val getStatus = getPositionStatus(s) _
     GuessStatus(
       Word(
         v1 = (g.value.v1, getStatus(s.value.v1, g.value.v1)),
@@ -48,36 +75,7 @@ object Wordle {
     else if (solution.contains(guessElem)) PresentButIncorrectPosition
     else NotPresent
 
-  sealed trait Char {
-    override def toString: String = this match {
-      case Char.A => "A"
-      case Char.B => "B"
-      case Char.C => "C"
-      case Char.D => "D"
-      case Char.E => "E"
-      case Char.F => "F"
-      case Char.G => "G"
-      case Char.H => "H"
-      case Char.I => "I"
-      case Char.J => "J"
-      case Char.K => "K"
-      case Char.L => "L"
-      case Char.M => "M"
-      case Char.N => "N"
-      case Char.O => "O"
-      case Char.P => "P"
-      case Char.Q => "Q"
-      case Char.R => "R"
-      case Char.S => "S"
-      case Char.T => "T"
-      case Char.U => "U"
-      case Char.V => "V"
-      case Char.W => "W"
-      case Char.X => "X"
-      case Char.Y => "Y"
-      case Char.Z => "Z"
-    }
-  }
+  sealed trait Char
   object Char {
     case object A extends Char
     case object B extends Char
@@ -105,6 +103,35 @@ object Wordle {
     case object X extends Char
     case object Y extends Char
     case object Z extends Char
+
+    implicit val show: Show[Char] = Show.show[Char] {
+      case A => "A"
+      case B => "B"
+      case C => "C"
+      case D => "D"
+      case E => "E"
+      case F => "F"
+      case G => "G"
+      case H => "H"
+      case I => "I"
+      case J => "J"
+      case K => "K"
+      case L => "L"
+      case M => "M"
+      case N => "N"
+      case O => "O"
+      case P => "P"
+      case Q => "Q"
+      case R => "R"
+      case S => "S"
+      case T => "T"
+      case U => "U"
+      case V => "V"
+      case W => "W"
+      case X => "X"
+      case Y => "Y"
+      case Z => "Z"
+    }
   }
 
   def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
@@ -112,10 +139,10 @@ object Wordle {
     else IncorrectGuess
 
   def main(args: Array[String]): Unit = {
-    val s: Solution[Char] = Solution(Word(C, O, D, E, R))
-    val g: Guess[Char] = Guess(Word(D, E, C, O, R))
+    val s = Solution[Char](Word(C, O, D, E, R))
+    val g = Guess[Char](Word(D, E, C, O, R))
     val gs = getGuessStatus(s, g)
-    println(gs)
+    println(Show[GuessStatus[Char]].show(gs))
     val gr = getGuessResult(gs)
     println(gr)
   }
