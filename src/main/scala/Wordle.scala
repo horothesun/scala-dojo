@@ -20,14 +20,14 @@ object Wordle {
 
   sealed trait PositionStatus
   object PositionStatus {
-    case object NotPresent extends PositionStatus
-    case object PresentButIncorrectPosition extends PositionStatus
-    case object PresentAndCorrectPosition extends PositionStatus
+    case object Absent extends PositionStatus
+    case object IncorrectPosition extends PositionStatus
+    case object CorrectPosition extends PositionStatus
 
     implicit val show: Show[PositionStatus] = Show.show[PositionStatus] {
-      case NotPresent                  => "⬛️"
-      case PresentButIncorrectPosition => "🟨"
-      case PresentAndCorrectPosition   => "🟩"
+      case Absent            => "⬛️"
+      case IncorrectPosition => "🟨"
+      case CorrectPosition   => "🟩"
     }
   }
 
@@ -71,9 +71,9 @@ object Wordle {
   }
 
   def getPositionStatus[A](solution: Solution[A])(solutionElem: A, guessElem: A): PositionStatus =
-    if (solutionElem == guessElem) PresentAndCorrectPosition
-    else if (solution.contains(guessElem)) PresentButIncorrectPosition
-    else NotPresent
+    if (solutionElem == guessElem) CorrectPosition
+    else if (solution.contains(guessElem)) IncorrectPosition
+    else Absent
 
   sealed trait Char
   object Char {
@@ -135,7 +135,7 @@ object Wordle {
   }
 
   def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
-    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == PresentAndCorrectPosition)) CorrectGuess
+    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == CorrectPosition)) CorrectGuess
     else IncorrectGuess
 
   def main(args: Array[String]): Unit = {
