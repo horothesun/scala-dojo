@@ -37,14 +37,20 @@ object Wordle {
 
   case class Guess[A](value: Word[A])
 
-  sealed trait GuessResult
+  sealed trait GuessResult {
+    override def toString: String = "GuessResult." +
+      (this match {
+        case Correct   => "Correct"
+        case Incorrect => "Incorrect"
+      })
+  }
   object GuessResult {
-    case object CorrectGuess extends GuessResult
-    case object IncorrectGuess extends GuessResult
+    case object Correct extends GuessResult
+    case object Incorrect extends GuessResult
 
     implicit val show: Show[GuessResult] = Show.show[GuessResult] {
-      case CorrectGuess   => "✅"
-      case IncorrectGuess => "❌"
+      case Correct   => "✅"
+      case Incorrect => "❌"
     }
   }
 
@@ -135,8 +141,8 @@ object Wordle {
   }
 
   def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
-    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == CorrectPosition)) CorrectGuess
-    else IncorrectGuess
+    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == CorrectPosition)) Correct
+    else Incorrect
 
   def main(args: Array[String]): Unit = {
     val s = Solution[Char](Word(C, O, D, E, R))
