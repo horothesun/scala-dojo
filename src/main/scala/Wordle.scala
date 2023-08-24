@@ -7,22 +7,19 @@ import Wordle.PositionStatus._
 
 object Wordle {
 
-  case class Word[A](v1: A, v2: A, v3: A, v4: A, v5: A) {
-    lazy val toNel: NonEmptyList[A] = NonEmptyList.of(v1, v2, v3, v4, v5)
+  case class Word[A](p1: A, p2: A, p3: A, p4: A, p5: A) {
+    lazy val toNel: NonEmptyList[A] = NonEmptyList.of(p1, p2, p3, p4, p5)
 
     def contains(a: A): Boolean = toNel.exists(_ == a)
 
     def occurrences(implicit o: Order[A]): NonEmptyMap[A, Int] = toNel.groupMapReduceWithNem(identity)(_ => 1)(_ + _)
 
-    def map[B](f: A => B): Word[B] = Word(v1 = f(v1), v2 = f(v2), v3 = f(v3), v4 = f(v4), v5 = f(v5))
+    def map[B](f: A => B): Word[B] = Word(p1 = f(p1), p2 = f(p2), p3 = f(p3), p4 = f(p4), p5 = f(p5))
 
-    def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((v1, wb.v1), (v2, wb.v2), (v3, wb.v3), (v4, wb.v4), (v5, wb.v5))
+    def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((p1, wb.p1), (p2, wb.p2), (p3, wb.p3), (p4, wb.p4), (p5, wb.p5))
   }
   object Word {
-    implicit def show[A: Show]: Show[Word[A]] = Show.show[Word[A]] { w =>
-      val showedWord = w.map(Show[A].show)
-      s"Word(${showedWord.v1}, ${showedWord.v2}, ${showedWord.v3}, ${showedWord.v4}, ${showedWord.v5})"
-    }
+    implicit def show[A: Show]: Show[Word[A]] = Show.show[Word[A]](_.map(Show[A].show).toString)
   }
 
   sealed trait PositionStatus
@@ -38,9 +35,9 @@ object Wordle {
     }
   }
 
-  case class Solution[A](value: Word[A])
+  case class Solution[A](word: Word[A])
 
-  case class Guess[A](value: Word[A])
+  case class Guess[A](word: Word[A])
 
   sealed trait GuessResult {
     override def toString: String = "GuessResult." +
@@ -69,18 +66,25 @@ object Wordle {
   }
 
   def getGuessStatus[A: Order](s: Solution[A], g: Guess[A]): GuessStatus[A] = {
-    val solutionOccurrences = s.value.occurrences
-    val exactMatchOccurrences = s.value
-      .pairWith(g.value)
+    val solutionOccurrences = s.word.occurrences
+    val exactMatchOccurrences = s.word
+      .pairWith(g.word)
       .map { case (sa, ga) => if (sa == ga) Some(ga) else None }
       .toNel
       .collect { case Some(a) => a }
       .groupMapReduce(identity)(_ => 1)(_ + _)
-    val getSinglePosStatus = getPositionStatus(solutionOccurrences, exactMatchOccurrences) _
-    def getStatusAtPos(atPos: Word[A] => A): (A, PositionStatus) =
-      (atPos(g.value), getSinglePosStatus(atPos(s.value), atPos(g.value)))
+    def getPosStatusAt(atPos: Word[A] => A): PositionStatus =
+      getPositionStatus(solutionOccurrences, exactMatchOccurrences)(atPos(s.word), atPos(g.word))
     GuessStatus(
-      Word(getStatusAtPos(_.v1), getStatusAtPos(_.v2), getStatusAtPos(_.v3), getStatusAtPos(_.v4), getStatusAtPos(_.v5))
+      g.word.pairWith(
+        Word(
+          getPosStatusAt(_.p1),
+          getPosStatusAt(_.p2),
+          getPosStatusAt(_.p3),
+          getPosStatusAt(_.p4),
+          getPosStatusAt(_.p5)
+        )
+      )
     )
   }
 
@@ -90,12 +94,12 @@ object Wordle {
   )(solutionElem: A, guessElem: A): PositionStatus =
     if (solutionElem == guessElem) CorrectPosition
     else
-      solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgn =>
+      solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgo =>
         exactMatchOccurrences
           .get(guessElem)
-          .map(emn => (sgn, emn))
+          .map(emo => (sgo, emo))
           .fold[PositionStatus](ifEmpty = IncorrectPosition) {
-            case (sgn, emn) if sgn == emn => Absent
+            case (sgo, emo) if sgo == emo => Absent
             case _                        => IncorrectPosition
           }
       }
