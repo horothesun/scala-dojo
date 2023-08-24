@@ -9,10 +9,13 @@ object Wordle {
 
   case class Word[A](v1: A, v2: A, v3: A, v4: A, v5: A) {
     lazy val toNel: NonEmptyList[A] = NonEmptyList.of(v1, v2, v3, v4, v5)
-    def occurrences(implicit order: Order[A]): NonEmptyMap[A, Int] =
-      toNel.groupMapReduceWithNem(identity)(_ => 1)(_ + _)
+
+    def contains(a: A): Boolean = toNel.exists(_ == a)
+
+    def occurrences(implicit o: Order[A]): NonEmptyMap[A, Int] = toNel.groupMapReduceWithNem(identity)(_ => 1)(_ + _)
 
     def map[B](f: A => B): Word[B] = Word(v1 = f(v1), v2 = f(v2), v3 = f(v3), v4 = f(v4), v5 = f(v5))
+
     def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((v1, wb.v1), (v2, wb.v2), (v3, wb.v3), (v4, wb.v4), (v5, wb.v5))
   }
   object Word {
@@ -35,9 +38,7 @@ object Wordle {
     }
   }
 
-  case class Solution[A](value: Word[A]) {
-    def contains(a: A): Boolean = value.toNel.exists(_ == a)
-  }
+  case class Solution[A](value: Word[A])
 
   case class Guess[A](value: Word[A])
 
@@ -69,34 +70,35 @@ object Wordle {
 
   def getGuessStatus[A: Order](s: Solution[A], g: Guess[A]): GuessStatus[A] = {
     val solutionOccurrences = s.value.occurrences
-    val exactMatchOccurrences =
-      s.value
-        .pairWith(g.value)
-        .map { case (sa, ga) => if (sa == ga) Some(ga) else None }
-        .toNel
-        .collect { case Some(a) => a }
-        .groupMapReduce(identity)(_ => 1)(_ + _)
-    def getStatusAtPos(pos: Word[A] => A): (A, PositionStatus) =
-      (pos(g.value), getPositionStatus(s, solutionOccurrences, exactMatchOccurrences)(pos(s.value), pos(g.value)))
+    val exactMatchOccurrences = s.value
+      .pairWith(g.value)
+      .map { case (sa, ga) => if (sa == ga) Some(ga) else None }
+      .toNel
+      .collect { case Some(a) => a }
+      .groupMapReduce(identity)(_ => 1)(_ + _)
+    val getSinglePosStatus = getPositionStatus(solutionOccurrences, exactMatchOccurrences) _
+    def getStatusAtPos(atPos: Word[A] => A): (A, PositionStatus) =
+      (atPos(g.value), getSinglePosStatus(atPos(s.value), atPos(g.value)))
     GuessStatus(
       Word(getStatusAtPos(_.v1), getStatusAtPos(_.v2), getStatusAtPos(_.v3), getStatusAtPos(_.v4), getStatusAtPos(_.v5))
     )
   }
 
   def getPositionStatus[A: Order](
-    s: Solution[A],
     solutionOccurrences: NonEmptyMap[A, Int],
     exactMatchOccurrences: Map[A, Int]
   )(solutionElem: A, guessElem: A): PositionStatus =
     if (solutionElem == guessElem) CorrectPosition
-    else if (s.contains(guessElem))
-      exactMatchOccurrences
-        .get(guessElem)
-        .map(emn => (solutionOccurrences(guessElem).get, emn))
-        .fold[PositionStatus](ifEmpty = IncorrectPosition) { case (sgn, emn) =>
-          if (sgn == emn) Absent else IncorrectPosition
-        }
-    else Absent
+    else
+      solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgn =>
+        exactMatchOccurrences
+          .get(guessElem)
+          .map(emn => (sgn, emn))
+          .fold[PositionStatus](ifEmpty = IncorrectPosition) {
+            case (sgn, emn) if sgn == emn => Absent
+            case _                        => IncorrectPosition
+          }
+      }
 
   sealed trait Char
   object Char {

@@ -1,9 +1,20 @@
+import cats.Order
 import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop._
 import Wordle._
 import Wordle.Char._
 import Wordle.PositionStatus._
+import WordleSpec._
+import WordleSpec.TestChar._
 
 class WordleSpec extends ScalaCheckSuite {
+
+  property("word.contains(char) ==> word.occurrences(char).isDefined") {
+    forAll(wordGen, testCharGen) { (w, c) =>
+      w.contains(c) ==> w.occurrences(Order[TestChar])(c).isDefined
+    }
+  }
 
   test("getGuessStatus when guess matches solution on all positions") {
     assertEquals(
@@ -88,5 +99,28 @@ class WordleSpec extends ScalaCheckSuite {
       )
     )
   }
+
+}
+
+object WordleSpec {
+
+  sealed trait TestChar
+  object TestChar {
+    case object C1 extends TestChar
+    case object C2 extends TestChar
+    case object C3 extends TestChar
+    case object C4 extends TestChar
+    case object C5 extends TestChar
+    case object C6 extends TestChar
+
+    implicit val ordering: Ordering[TestChar] = Ordering[String].on[TestChar](_.toString)
+    implicit val order: Order[TestChar] = Order.fromOrdering[TestChar]
+  }
+
+  val testCharGen: Gen[TestChar] = Gen.oneOf(C1, C2, C3, C4, C5, C6)
+  val wordGen: Gen[Word[TestChar]] =
+    Gen
+      .zip(testCharGen, testCharGen, testCharGen, testCharGen, testCharGen)
+      .map((Word.apply[TestChar] _).tupled)
 
 }
