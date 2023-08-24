@@ -35,24 +35,23 @@ class WordleSpec extends ScalaCheckSuite {
     )
   }
 
-  // TODO: fix!!! 🔥🔥🔥
-//  test(
-//    "getGuessStatus when guess contains twice a char present in the solution only once," +
-//      " both in the correct and in an incorrect position"
-//  ) {
-//    assertEquals(
-//      getGuessStatus(Solution[Char](Word(S, P, L, I, T)), Guess[Char](Word(P, I, L, L, S))),
-//      GuessStatus[Char](
-//        Word(
-//          (P, IncorrectPosition),
-//          (I, IncorrectPosition),
-//          (L, CorrectPosition),
-//          (L, Absent),
-//          (S, IncorrectPosition)
-//        )
-//      )
-//    )
-//  }
+  test(
+    "getGuessStatus when guess contains twice a char present in the solution only once," +
+      " both in the correct and in an incorrect position"
+  ) {
+    assertEquals(
+      getGuessStatus(Solution[Char](Word(S, P, L, I, T)), Guess[Char](Word(P, I, L, L, S))),
+      GuessStatus[Char](
+        Word(
+          (P, IncorrectPosition),
+          (I, IncorrectPosition),
+          (L, CorrectPosition),
+          (L, Absent),
+          (S, IncorrectPosition)
+        )
+      )
+    )
+  }
 
   test(
     "getGuessStatus when guess contains twice a char present in the solution twice," +
