@@ -16,6 +16,13 @@ class WordleSpec extends ScalaCheckSuite {
     }
   }
 
+  test("getGuessStatus when guess doesn't have any of solution's chars") {
+    assertEquals(
+      getGuessStatus(Solution[Char](Word(T, H, I, N, K)), Guess[Char](Word(G, A, M, E, R))),
+      GuessStatus[Char](Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent)))
+    )
+  }
+
   test("getGuessStatus when guess matches solution on all positions") {
     assertEquals(
       getGuessStatus(Solution[Char](Word(G, A, M, E, R)), Guess[Char](Word(G, A, M, E, R))),

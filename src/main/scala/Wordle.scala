@@ -14,6 +14,7 @@ object Wordle {
 
     def occurrences(implicit o: Order[A]): NonEmptyMap[A, Int] = toNel.groupMapReduceWithNem(identity)(_ => 1)(_ + _)
 
+    // TODO: laws tests!!! 🔥🔥🔥
     def map[B](f: A => B): Word[B] = Word(p1 = f(p1), p2 = f(p2), p3 = f(p3), p4 = f(p4), p5 = f(p5))
 
     def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((p1, wb.p1), (p2, wb.p2), (p3, wb.p3), (p4, wb.p4), (p5, wb.p5))
