@@ -22,8 +22,7 @@ object Wordle {
     implicit def eq[A: Eq]: Eq[Word[A]] = Eq.fromUniversalEquals
 
     implicit val functor: Functor[Word] = new Functor[Word] {
-      override def map[A, B](fa: Word[A])(f: A => B): Word[B] =
-        Word(p1 = f(fa.p1), p2 = f(fa.p2), p3 = f(fa.p3), p4 = f(fa.p4), p5 = f(fa.p5))
+      override def map[A, B](fa: Word[A])(f: A => B): Word[B] = Word(f(fa.p1), f(fa.p2), f(fa.p3), f(fa.p4), f(fa.p5))
     }
 
     implicit def show[A: Show]: Show[Word[A]] = Show.show[Word[A]](_.map(Show[A].show).toString)
