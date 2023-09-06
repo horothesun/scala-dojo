@@ -175,6 +175,65 @@ object Wordle {
     if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == CorrectPosition)) Correct
     else Incorrect
 
+  case class Dictionary[A](ws: List[Word[A]])
+  case class GuessHistory[A](gss: Set[GuessStatus[A]])
+
+  sealed trait Guesser[A] {
+    def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]]
+  }
+  object Guesser {
+//    def const[A](w: Word[A]): Guesser[A] = new Guesser[A] {
+//      override def guesses(d: Dictionary[A], guessHistory: GuessHistory[A]): List[Guess[A]] = List(Guess(w))
+//    }
+
+    case class Empty[A]() extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] = List.empty[Guess[A]]
+    }
+    case class Const[A](g: Guess[A]) extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] = List(g)
+    }
+    case class Absent[A](a: A) extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
+        d.ws.filterNot(_.contains(a)).map(Guess.apply)
+    }
+    case class IncorrectPosition[A](a: A, notAtPos: Word[A] => A) extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
+        d.ws.filterNot(w => notAtPos(w) == a).map(Guess.apply)
+    }
+    case class CorrectPosition[A](a: A, pos: Word[A] => A) extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
+        d.ws.filter(w => pos(w) == a).map(Guess.apply)
+    }
+    case class And[A](g1: Guesser[A], g2: Guesser[A]) extends Guesser[A] {
+      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
+        g2.guesses(Dictionary(g1.guesses(d, history).map(_.word)), history)
+    }
+
+    def from[A](gs: GuessStatus[A]): Guesser[A] = {
+      val Word((a1, ps1), (a2, ps2), (a3, ps3), (a4, ps4), (a5, ps5)) = gs.value
+      And(
+        getGuesser(a1, ps1, _.p1),
+        And(
+          getGuesser(a2, ps2, _.p2),
+          And(
+            getGuesser(a3, ps3, _.p3),
+            And(
+              getGuesser(a4, ps4, _.p4),
+              getGuesser(a5, ps5, _.p5)
+            )
+          )
+        )
+      )
+    }
+
+    def getGuesser[A](a: A, ps: PositionStatus, pos: Word[A] => A): Guesser[A] =
+      ps match {
+        case PositionStatus.Absent            => Guesser.Absent(a)
+        case PositionStatus.IncorrectPosition => Guesser.IncorrectPosition(a, notAtPos = pos)
+        case PositionStatus.CorrectPosition   => Guesser.CorrectPosition(a, pos)
+      }
+  }
+
   def main(args: Array[String]): Unit = {
     val s = Solution[Char](Word(C, O, D, E, R))
     val g = Guess[Char](Word(D, E, C, O, R))
