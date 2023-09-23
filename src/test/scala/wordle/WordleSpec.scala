@@ -1,12 +1,16 @@
+package wordle
+
 import cats.Order
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
 import Wordle._
 import Wordle.Char._
+import Wordle.Guesser._
 import Wordle.PositionStatus._
-import WordleSpec._
 import WordleSpec.TestChar._
+import WordleSpec.{TestChar, testCharGen, wordGen}
+import Wordle.WordPos._
 
 class WordleSpec extends ScalaCheckSuite {
 
@@ -103,6 +107,48 @@ class WordleSpec extends ScalaCheckSuite {
           (Y, Absent),
           (D, Absent)
         )
+      )
+    )
+  }
+
+  test("Guesser from all absent and unique chars GuessStatus") {
+    assertEquals(
+      Guesser.from[TestChar](GuessStatus(Word((C1, Absent), (C2, Absent), (C3, Absent), (C4, Absent), (C5, Absent)))),
+      And[TestChar](
+        And(
+          And(
+            And(
+              AbsentFromWord(C1),
+              AbsentFromWord(C2)
+            ),
+            AbsentFromWord(C3)
+          ),
+          AbsentFromWord(C4)
+        ),
+        AbsentFromWord(C5)
+      )
+    )
+  }
+
+  test("Guesser from 2 absent duplicate chars and 3 unique correct GuessStatus") {
+    assertEquals(
+      Guesser.from[TestChar](
+        GuessStatus(
+          Word((C1, Absent), (C1, Absent), (C2, CorrectPosition), (C3, CorrectPosition), (C4, CorrectPosition))
+        )
+      ),
+      And[TestChar](
+        And(
+          And(
+            And(
+              AbsentFromWord(C1),
+              AbsentFromWord(C1)
+            ),
+            MatchingPosition(C2, Pos3)
+          ),
+          MatchingPosition(C3, Pos4)
+        ),
+        MatchingPosition(C4, Pos5)
       )
     )
   }
