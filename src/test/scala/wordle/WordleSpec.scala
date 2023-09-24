@@ -8,9 +8,9 @@ import Wordle._
 import Wordle.Char._
 import Wordle.Guesser._
 import Wordle.PositionStatus._
-import WordleSpec.TestChar._
-import WordleSpec.{TestChar, testCharGen, wordGen}
 import Wordle.WordPos._
+import WordleSpec._
+import WordleSpec.TestChar._
 
 class WordleSpec extends ScalaCheckSuite {
 
@@ -30,30 +30,14 @@ class WordleSpec extends ScalaCheckSuite {
   test("getGuessStatus when guess matches solution on all positions") {
     assertEquals(
       getGuessStatus(Solution[Char](Word(G, A, M, E, R)), Guess[Char](Word(G, A, M, E, R))),
-      GuessStatus[Char](
-        Word(
-          (G, CorrectPosition),
-          (A, CorrectPosition),
-          (M, CorrectPosition),
-          (E, CorrectPosition),
-          (R, CorrectPosition)
-        )
-      )
+      GuessStatus[Char](Word((G, Correct), (A, Correct), (M, Correct), (E, Correct), (R, Correct)))
     )
   }
 
   test("getGuessStatus when guess is solution's anagram and matches one position") {
     assertEquals(
       getGuessStatus(Solution[Char](Word(C, O, D, E, R)), Guess[Char](Word(D, E, C, O, R))),
-      GuessStatus[Char](
-        Word(
-          (D, IncorrectPosition),
-          (E, IncorrectPosition),
-          (C, IncorrectPosition),
-          (O, IncorrectPosition),
-          (R, CorrectPosition)
-        )
-      )
+      GuessStatus[Char](Word((D, Incorrect), (E, Incorrect), (C, Incorrect), (O, Incorrect), (R, Correct)))
     )
   }
 
@@ -63,15 +47,7 @@ class WordleSpec extends ScalaCheckSuite {
   ) {
     assertEquals(
       getGuessStatus(Solution[Char](Word(S, P, L, I, T)), Guess[Char](Word(P, I, L, L, S))),
-      GuessStatus[Char](
-        Word(
-          (P, IncorrectPosition),
-          (I, IncorrectPosition),
-          (L, CorrectPosition),
-          (L, Absent),
-          (S, IncorrectPosition)
-        )
-      )
+      GuessStatus[Char](Word((P, Incorrect), (I, Incorrect), (L, Correct), (L, Absent), (S, Incorrect)))
     )
   }
 
@@ -81,15 +57,7 @@ class WordleSpec extends ScalaCheckSuite {
   ) {
     assertEquals(
       getGuessStatus(Solution[Char](Word(S, P, I, L, L)), Guess[Char](Word(P, I, L, L, S))),
-      GuessStatus[Char](
-        Word(
-          (P, IncorrectPosition),
-          (I, IncorrectPosition),
-          (L, IncorrectPosition),
-          (L, CorrectPosition),
-          (S, IncorrectPosition)
-        )
-      )
+      GuessStatus[Char](Word((P, Incorrect), (I, Incorrect), (L, Incorrect), (L, Correct), (S, Incorrect)))
     )
   }
 
@@ -99,21 +67,15 @@ class WordleSpec extends ScalaCheckSuite {
   ) {
     assertEquals(
       getGuessStatus(Solution[Char](Word(S, P, I, L, L)), Guess[Char](Word(L, L, O, Y, D))),
-      GuessStatus[Char](
-        Word(
-          (L, IncorrectPosition),
-          (L, IncorrectPosition),
-          (O, Absent),
-          (Y, Absent),
-          (D, Absent)
-        )
-      )
+      GuessStatus[Char](Word((L, Incorrect), (L, Incorrect), (O, Absent), (Y, Absent), (D, Absent)))
     )
   }
 
   test("Guesser from all absent and unique chars GuessStatus") {
     assertEquals(
-      Guesser.from[TestChar](GuessStatus(Word((C1, Absent), (C2, Absent), (C3, Absent), (C4, Absent), (C5, Absent)))),
+      Guesser.from[TestChar](
+        GuessStatus(Word((C1, Absent), (C2, Absent), (C3, Absent), (C4, Absent), (C5, Absent)))
+      ),
       And[TestChar](
         And(
           And(
@@ -133,9 +95,7 @@ class WordleSpec extends ScalaCheckSuite {
   test("Guesser from 2 absent duplicate chars and 3 unique correct GuessStatus") {
     assertEquals(
       Guesser.from[TestChar](
-        GuessStatus(
-          Word((C1, Absent), (C1, Absent), (C2, CorrectPosition), (C3, CorrectPosition), (C4, CorrectPosition))
-        )
+        GuessStatus(Word((C1, Absent), (C1, Absent), (C2, Correct), (C3, Correct), (C4, Correct)))
       ),
       And[TestChar](
         And(

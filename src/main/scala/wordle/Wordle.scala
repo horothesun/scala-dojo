@@ -40,6 +40,8 @@ object Wordle {
 
     def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((p1, wb.p1), (p2, wb.p2), (p3, wb.p3), (p4, wb.p4), (p5, wb.p5))
 
+    override def toString: String = s"$p1$p2$p3$p4$p5"
+
   }
   object Word {
     implicit def eq[A: Eq]: Eq[Word[A]] = Eq.fromUniversalEquals
@@ -48,19 +50,20 @@ object Wordle {
       override def map[A, B](fa: Word[A])(f: A => B): Word[B] = Word(f(fa.p1), f(fa.p2), f(fa.p3), f(fa.p4), f(fa.p5))
     }
 
-    implicit def show[A: Show]: Show[Word[A]] = Show.show[Word[A]](_.map(Show[A].show).toString)
+    implicit def show[A: Show]: Show[Word[A]] =
+      Show.show[Word[A]](_.map(Show[A].show).toNel.mkString_("Word(", ",", ")"))
   }
 
   sealed trait PositionStatus
   object PositionStatus {
     case object Absent extends PositionStatus
-    case object IncorrectPosition extends PositionStatus
-    case object CorrectPosition extends PositionStatus
+    case object Incorrect extends PositionStatus
+    case object Correct extends PositionStatus
 
     implicit val show: Show[PositionStatus] = Show.show[PositionStatus] {
-      case Absent            => "⬛️"
-      case IncorrectPosition => "🟨"
-      case CorrectPosition   => "🟩"
+      case Absent    => "⬛️"
+      case Incorrect => "🟨"
+      case Correct   => "🟩"
     }
   }
 
@@ -71,17 +74,17 @@ object Wordle {
   sealed trait GuessResult {
     override def toString: String = "GuessResult." +
       (this match {
-        case Correct   => "Correct"
-        case Incorrect => "Incorrect"
+        case Solved   => "Solved"
+        case Unsolved => "Unsolved"
       })
   }
   object GuessResult {
-    case object Correct extends GuessResult
-    case object Incorrect extends GuessResult
+    case object Solved extends GuessResult
+    case object Unsolved extends GuessResult
 
     implicit val show: Show[GuessResult] = Show.show[GuessResult] {
-      case Correct   => "✅"
-      case Incorrect => "❌"
+      case Solved   => "✅"
+      case Unsolved => "❌"
     }
   }
 
@@ -126,15 +129,15 @@ object Wordle {
     solutionOccurrences: NonEmptyMap[A, Int],
     exactMatchOccurrences: Map[A, Int]
   )(solutionElem: A, guessElem: A): PositionStatus =
-    if (solutionElem == guessElem) CorrectPosition
+    if (solutionElem == guessElem) Correct
     else
       solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgo =>
         exactMatchOccurrences
           .get(guessElem)
           .map(emo => (sgo, emo))
-          .fold[PositionStatus](ifEmpty = IncorrectPosition) {
+          .fold[PositionStatus](ifEmpty = Incorrect) {
             case (sgo, emo) if sgo == emo => Absent
-            case _                        => IncorrectPosition
+            case _                        => Incorrect
           }
       }
 
@@ -230,41 +233,38 @@ object Wordle {
   }
 
   def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
-    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == CorrectPosition)) Correct
-    else Incorrect
+    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == Correct)) Solved
+    else Unsolved
 
   case class Dictionary[A](ws: List[Word[A]])
-  case class GuessHistory[A](gss: Set[GuessStatus[A]])
+  case class GuessHistory[A](gss: List[GuessStatus[A]])
 
   sealed trait Guesser[A] {
-    def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]]
+    def guesses(d: Dictionary[A]): List[Guess[A]]
   }
   object Guesser {
 
     case class Empty[A]() extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] = List.empty[Guess[A]]
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = List.empty[Guess[A]]
     }
     case class Const[A](g: Guess[A]) extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] = List(g)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = List(g)
     }
     case class All[A]() extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] = d.ws.map(Guess.apply)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.map(Guess.apply)
     }
     case class AbsentFromWord[A](a: A) extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
-        d.ws.filterNot(_.contains(a)).map(Guess.apply)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.filterNot(_.contains(a)).map(Guess.apply)
     }
     case class WrongPosition[A](a: A, pos: WordPos) extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
-        d.ws.filterNot(w => w.at(pos) == a).map(Guess.apply)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] =
+        d.ws.filterNot(w => w.at(pos) == a).filter(w => w.contains(a)).map(Guess.apply)
     }
     case class MatchingPosition[A](a: A, pos: WordPos) extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
-        d.ws.filter(w => w.at(pos) == a).map(Guess.apply)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.filter(w => w.at(pos) == a).map(Guess.apply)
     }
     case class And[A](g1: Guesser[A], g2: Guesser[A]) extends Guesser[A] {
-      override def guesses(d: Dictionary[A], history: GuessHistory[A]): List[Guess[A]] =
-        g2.guesses(Dictionary(g1.guesses(d, history).map(_.word)), history)
+      override def guesses(d: Dictionary[A]): List[Guess[A]] = g2.guesses(Dictionary(g1.guesses(d).map(_.word)))
     }
 
     def from[A](gs: GuessStatus[A])(implicit o: Order[A]): Guesser[A] = {
@@ -293,8 +293,8 @@ object Wordle {
       ps match {
         case PositionStatus.Absent =>
           if (allStatuses.forall(_ == PositionStatus.Absent)) Guesser.AbsentFromWord(a) else Guesser.All()
-        case PositionStatus.IncorrectPosition => Guesser.WrongPosition(a, pos)
-        case PositionStatus.CorrectPosition   => Guesser.MatchingPosition(a, pos)
+        case PositionStatus.Incorrect => Guesser.WrongPosition(a, pos)
+        case PositionStatus.Correct   => Guesser.MatchingPosition(a, pos)
       }
   }
 
@@ -308,13 +308,32 @@ object Wordle {
   }
 
   def main(args: Array[String]): Unit = {
-    val s = Solution[Char](Word(C, O, D, E, R))
-    val g = Guess[Char](Word(D, E, C, O, R))
-    val gs = getGuessStatus(s, g)
-    println(Show[GuessStatus[Char]].show(gs))
-    val gr = getGuessResult(gs)
-    println(gr)
-    println(getDictionary.ws.take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+//    val s = Solution[Char](Word(C, O, D, E, R))
+//    val g = Guess[Char](Word(D, E, C, O, R))
+//    val gs = getGuessStatus(s, g)
+//    println(Show[GuessStatus[Char]].show(gs))
+//    val gr = getGuessResult(gs)
+//    println(gr)
+
+//    println(getDictionary.ws.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+
+    val history = GuessHistory[Char](
+      List[Word[(Char, PositionStatus)]](
+        Word(
+          (G, Absent),
+          (A, Absent),
+          (M, Absent),
+          (E, Absent),
+          (R, Absent)
+        )
+      ).map(GuessStatus.apply)
+    )
+    val guesser = history.gss.map(Guesser.from[Char]).reduce(Guesser.And[Char])
+    val dict = getDictionary
+    val guesses = guesser.guesses(dict)
+    println(
+      guesses.map(_.word.toString).mkString(s"Guesses (${guesses.length}/${dict.ws.length}):\n  ", "\n  ", "")
+    )
   }
 
 }

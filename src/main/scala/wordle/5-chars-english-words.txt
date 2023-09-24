@@ -376,6 +376,7 @@ edgar
 edges
 egypt
 eight
+elate
 elder
 elect
 elite
@@ -1184,6 +1185,7 @@ teddy
 teens
 teeth
 tells
+tepid
 terms
 terry
 tests
