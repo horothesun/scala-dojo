@@ -3,6 +3,7 @@ package wordle
 import cats._
 import cats.data._
 import cats.implicits._
+import scala.io.Source
 import Wordle.Char._
 import Wordle.GuessResult._
 import Wordle.PositionStatus._
@@ -196,6 +197,36 @@ object Wordle {
     }
     implicit val ordering: Ordering[Char] = Ordering[String].on[Char](_.toString)
     implicit val order: Order[Char] = Order.fromOrdering[Char]
+
+    def apply(char: scala.Char): Option[Char] = char match {
+      case 'a' | 'A' => Some(A)
+      case 'b' | 'B' => Some(B)
+      case 'c' | 'C' => Some(C)
+      case 'd' | 'D' => Some(D)
+      case 'e' | 'E' => Some(E)
+      case 'f' | 'F' => Some(F)
+      case 'g' | 'G' => Some(G)
+      case 'h' | 'H' => Some(H)
+      case 'i' | 'I' => Some(I)
+      case 'j' | 'J' => Some(J)
+      case 'k' | 'K' => Some(K)
+      case 'l' | 'L' => Some(L)
+      case 'm' | 'M' => Some(M)
+      case 'n' | 'N' => Some(N)
+      case 'o' | 'O' => Some(O)
+      case 'p' | 'P' => Some(P)
+      case 'q' | 'Q' => Some(Q)
+      case 'r' | 'R' => Some(R)
+      case 's' | 'S' => Some(S)
+      case 't' | 'T' => Some(T)
+      case 'u' | 'U' => Some(U)
+      case 'v' | 'V' => Some(V)
+      case 'w' | 'W' => Some(W)
+      case 'x' | 'X' => Some(X)
+      case 'y' | 'Y' => Some(Y)
+      case 'z' | 'Z' => Some(Z)
+      case _         => None
+    }
   }
 
   def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
@@ -267,11 +298,14 @@ object Wordle {
       }
   }
 
-//  implicit def eq[A: Eq]: Eq[Guesser[A]] = Eq.fromUniversalEquals
-//
-//  implicit val semigroupKAnd: SemigroupK[Guesser] = new SemigroupK[Guesser] {
-//    override def combineK[A](x: Guesser[A], y: Guesser[A]): Guesser[A] = Guesser.And(x, y)
-//  }
+  def getDictionary: Dictionary[Char] = {
+    val src = Source.fromFile("src/main/scala/wordle/5-chars-english-words.txt")
+    val ws = src.getLines.toList
+      .map(_.toList.traverse(Char.apply))
+      .collect { case Some(List(c1, c2, c3, c4, c5)) => Word(c1, c2, c3, c4, c5) }
+    src.close()
+    Dictionary(ws)
+  }
 
   def main(args: Array[String]): Unit = {
     val s = Solution[Char](Word(C, O, D, E, R))
@@ -280,6 +314,7 @@ object Wordle {
     println(Show[GuessStatus[Char]].show(gs))
     val gr = getGuessResult(gs)
     println(gr)
+    println(getDictionary.ws.take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
   }
 
 }
