@@ -6,7 +6,7 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop._
 import Wordle._
 import Wordle.Char._
-import Wordle.Guesser._
+import Wordle.Suggester._
 import Wordle.PositionStatus._
 import Wordle.WordPos._
 import WordleSpec._
@@ -71,9 +71,9 @@ class WordleSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Guesser from all absent and unique chars GuessStatus") {
+  test("Suggester from all absent and unique chars GuessStatus") {
     assertEquals(
-      Guesser.from[TestChar](
+      Suggester.from[TestChar](
         GuessStatus(Word((C1, Absent), (C2, Absent), (C3, Absent), (C4, Absent), (C5, Absent)))
       ),
       And[TestChar](
@@ -92,9 +92,9 @@ class WordleSpec extends ScalaCheckSuite {
     )
   }
 
-  test("Guesser from 2 absent duplicate chars and 3 unique correct GuessStatus") {
+  test("Suggester from 2 absent duplicate chars and 3 unique correct GuessStatus") {
     assertEquals(
-      Guesser.from[TestChar](
+      Suggester.from[TestChar](
         GuessStatus(Word((C1, Absent), (C1, Absent), (C2, Correct), (C3, Correct), (C4, Correct)))
       ),
       And[TestChar](

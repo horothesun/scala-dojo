@@ -236,38 +236,41 @@ object Wordle {
     if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == Correct)) Solved
     else Unsolved
 
-  case class Dictionary[A](ws: List[Word[A]])
-  case class GuessHistory[A](gss: List[GuessStatus[A]])
+  case class Dictionary[A](words: Set[Word[A]])
+  case class GuessHistory[A](guessStatuses: List[GuessStatus[A]])
 
-  sealed trait Guesser[A] {
-    def guesses(d: Dictionary[A]): List[Guess[A]]
+  sealed trait Suggester[A] {
+    def getSuggestions(d: Dictionary[A]): List[Guess[A]]
   }
-  object Guesser {
+  object Suggester {
 
-    case class Empty[A]() extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = List.empty[Guess[A]]
+    case class Empty[A]() extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = List.empty[Guess[A]]
     }
-    case class Const[A](g: Guess[A]) extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = List(g)
+    case class Const[A](g: Guess[A]) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = List(g)
     }
-    case class All[A]() extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.map(Guess.apply)
+    case class All[A]() extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = d.words.toList.map(Guess.apply)
     }
-    case class AbsentFromWord[A](a: A) extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.filterNot(_.contains(a)).map(Guess.apply)
+    case class AbsentFromWord[A](a: A) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
+        d.words.toList.filterNot(_.contains(a)).map(Guess.apply)
     }
-    case class WrongPosition[A](a: A, pos: WordPos) extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] =
-        d.ws.filterNot(w => w.at(pos) == a).filter(w => w.contains(a)).map(Guess.apply)
+    case class WrongPosition[A](a: A, pos: WordPos) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
+        d.words.toList.filterNot(w => w.at(pos) == a).filter(w => w.contains(a)).map(Guess.apply)
     }
-    case class MatchingPosition[A](a: A, pos: WordPos) extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = d.ws.filter(w => w.at(pos) == a).map(Guess.apply)
+    case class MatchingPosition[A](a: A, pos: WordPos) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
+        d.words.toList.filter(w => w.at(pos) == a).map(Guess.apply)
     }
-    case class And[A](g1: Guesser[A], g2: Guesser[A]) extends Guesser[A] {
-      override def guesses(d: Dictionary[A]): List[Guess[A]] = g2.guesses(Dictionary(g1.guesses(d).map(_.word)))
+    case class And[A](g1: Suggester[A], g2: Suggester[A]) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
+        g2.getSuggestions(Dictionary(g1.getSuggestions(d).map(_.word).toSet))
     }
 
-    def from[A](gs: GuessStatus[A])(implicit o: Order[A]): Guesser[A] = {
+    def from[A](gs: GuessStatus[A])(implicit o: Order[A]): Suggester[A] = {
       val Word(t1, t2, t3, t4, t5) = gs.valueWithAllStatuses
       List[((A, PositionStatus, NonEmptyList[PositionStatus]), WordPos)](
         (t1, Pos1),
@@ -275,26 +278,29 @@ object Wordle {
         (t3, Pos3),
         (t4, Pos4),
         (t5, Pos5)
-      ).map { case ((a, ps, pss), pos) => getGuesser(a, ps, pss, pos) }.mapFilter {
+      ).map { case ((a, ps, pss), pos) => getSuggester(a, ps, pss, pos) }.mapFilter {
         case All() => None
-        case g @ _ => Some(g)
+        case s @ _ => Some(s)
       }.toNel
-        .fold[Guesser[A]](ifEmpty = All()) { case NonEmptyList(gHead, gTail) =>
-          gTail.foldLeft[Guesser[A]](gHead) { case (g1, g2) => And(g1, g2) }
+        .fold[Suggester[A]](ifEmpty = All()) { case NonEmptyList(sHead, sTail) =>
+          sTail.foldLeft[Suggester[A]](sHead) { case (s1, s2) => And(s1, s2) }
         }
     }
 
-    def getGuesser[A](
+    def fromHistory[A](h: GuessHistory[A])(implicit o: Order[A]): Suggester[A] =
+      h.guessStatuses.map(Suggester.from[A]).reduce(Suggester.And[A])
+
+    def getSuggester[A](
       a: A,
       ps: PositionStatus,
       allStatuses: NonEmptyList[PositionStatus],
       pos: WordPos
-    ): Guesser[A] =
+    ): Suggester[A] =
       ps match {
         case PositionStatus.Absent =>
-          if (allStatuses.forall(_ == PositionStatus.Absent)) Guesser.AbsentFromWord(a) else Guesser.All()
-        case PositionStatus.Incorrect => Guesser.WrongPosition(a, pos)
-        case PositionStatus.Correct   => Guesser.MatchingPosition(a, pos)
+          if (allStatuses.forall(_ == PositionStatus.Absent)) Suggester.AbsentFromWord(a) else Suggester.All()
+        case PositionStatus.Incorrect => Suggester.WrongPosition(a, pos)
+        case PositionStatus.Correct   => Suggester.MatchingPosition(a, pos)
       }
   }
 
@@ -303,6 +309,7 @@ object Wordle {
     val ws = src.getLines.toList
       .map(_.toList.traverse(Char.apply))
       .collect { case Some(List(c1, c2, c3, c4, c5)) => Word(c1, c2, c3, c4, c5) }
+      .toSet
     src.close()
     Dictionary(ws)
   }
@@ -315,18 +322,19 @@ object Wordle {
 //    val gr = getGuessResult(gs)
 //    println(gr)
 
-//    println(getDictionary.ws.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+//    println(getDictionary.words.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
 
     val history = GuessHistory[Char](
       List[Word[(Char, PositionStatus)]](
         Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent))
       ).map(GuessStatus.apply)
     )
-    val guesser = history.gss.map(Guesser.from[Char]).reduce(Guesser.And[Char])
     val dict = getDictionary
-    val guesses = guesser.guesses(dict)
+    val suggestions = Suggester.fromHistory(history).getSuggestions(dict)
     println(
-      guesses.map(_.word.toString).mkString(s"Guesses (${guesses.length}/${dict.ws.length}):\n  ", "\n  ", "")
+      suggestions
+        .map(_.word.toString)
+        .mkString(s"Suggestions (${suggestions.length}/${dict.words.size}):\n  ", "\n  ", "")
     )
   }
 
