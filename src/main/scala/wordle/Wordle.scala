@@ -319,13 +319,7 @@ object Wordle {
 
     val history = GuessHistory[Char](
       List[Word[(Char, PositionStatus)]](
-        Word(
-          (G, Absent),
-          (A, Absent),
-          (M, Absent),
-          (E, Absent),
-          (R, Absent)
-        )
+        Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent))
       ).map(GuessStatus.apply)
     )
     val guesser = history.gss.map(Guesser.from[Char]).reduce(Guesser.And[Char])
