@@ -69,8 +69,6 @@ object Wordle {
 
   case class Solution[A](word: Word[A])
 
-  case class Guess[A](word: Word[A])
-
   sealed trait GuessResult {
     override def toString: String = "GuessResult." +
       (this match {
@@ -86,6 +84,10 @@ object Wordle {
       case Solved   => "✅"
       case Unsolved => "❌"
     }
+
+    def from[A](guessStatus: GuessStatus[A]): GuessResult =
+      if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == Correct)) Solved
+      else Unsolved
   }
 
   case class GuessStatus[A](value: Word[(A, PositionStatus)]) {
@@ -95,51 +97,43 @@ object Wordle {
     }
   }
   object GuessStatus {
+
     implicit def show[A: Show]: Show[GuessStatus[A]] =
       Show.show[GuessStatus[A]] { gs =>
         val showedValue = gs.value.map { case (a, ps) => s"(${Show[A].show(a)}, ${Show[PositionStatus].show(ps)})" }
         s"GuessStatus($showedValue)"
       }
-  }
 
-  def getGuessStatus[A: Order](s: Solution[A], g: Guess[A]): GuessStatus[A] = {
-    val solutionOccurrences = s.word.occurrences
-    val exactMatchOccurrences = s.word
-      .pairWith(g.word)
-      .map { case (sa, ga) => if (sa == ga) Some(ga) else None }
-      .toNel
-      .collect { case Some(a) => a }
-      .groupMapReduce(identity)(_ => 1)(_ + _)
-    def getPosStatusAt(atPos: Word[A] => A): PositionStatus =
-      getPositionStatus(solutionOccurrences, exactMatchOccurrences)(atPos(s.word), atPos(g.word))
-    GuessStatus(
-      g.word.pairWith(
-        Word(
-          getPosStatusAt(_.p1),
-          getPosStatusAt(_.p2),
-          getPosStatusAt(_.p3),
-          getPosStatusAt(_.p4),
-          getPosStatusAt(_.p5)
-        )
-      )
-    )
-  }
+    def from[A: Order](s: Solution[A], guess: Word[A]): GuessStatus[A] = {
+      val solutionOccurrences = s.word.occurrences
+      val exactMatchOccurrences = s.word
+        .pairWith(guess)
+        .map { case (sa, ga) => if (sa == ga) Some(ga) else None }
+        .toNel
+        .collect { case Some(a) => a }
+        .groupMapReduce(identity)(_ => 1)(_ + _)
+      def getPosStatusAt(pos: WordPos): PositionStatus =
+        getPositionStatus(solutionOccurrences, exactMatchOccurrences)(s.word.at(pos), guess.at(pos))
+      GuessStatus(guess.pairWith(Word(Pos1, Pos2, Pos3, Pos4, Pos5).map(getPosStatusAt)))
+    }
 
-  def getPositionStatus[A: Order](
-    solutionOccurrences: NonEmptyMap[A, Int],
-    exactMatchOccurrences: Map[A, Int]
-  )(solutionElem: A, guessElem: A): PositionStatus =
-    if (solutionElem == guessElem) Correct
-    else
-      solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgo =>
-        exactMatchOccurrences
-          .get(guessElem)
-          .map(emo => (sgo, emo))
-          .fold[PositionStatus](ifEmpty = Incorrect) {
-            case (sgo, emo) if sgo == emo => Absent
-            case _                        => Incorrect
-          }
-      }
+    def getPositionStatus[A: Order](
+      solutionOccurrences: NonEmptyMap[A, Int],
+      exactMatchOccurrences: Map[A, Int]
+    )(solutionElem: A, guessElem: A): PositionStatus =
+      if (solutionElem == guessElem) Correct
+      else
+        solutionOccurrences(guessElem).fold[PositionStatus](ifEmpty = Absent) { sgo =>
+          exactMatchOccurrences
+            .get(guessElem)
+            .map(emo => (sgo, emo))
+            .fold[PositionStatus](ifEmpty = Incorrect) {
+              case (sgo, emo) if sgo == emo => Absent
+              case _                        => Incorrect
+            }
+        }
+
+  }
 
   sealed trait Char
   object Char {
@@ -232,45 +226,36 @@ object Wordle {
     }
   }
 
-  def getGuessResult[A](guessStatus: GuessStatus[A]): GuessResult =
-    if (guessStatus.value.toNel.map { case (_, ps) => ps }.forall(_ == Correct)) Solved
-    else Unsolved
-
   case class Dictionary[A](words: Set[Word[A]])
   case class GuessHistory[A](guessStatuses: List[GuessStatus[A]])
 
   sealed trait Suggester[A] {
-    def getSuggestions(d: Dictionary[A]): List[Guess[A]]
+    def getSuggestions(d: Dictionary[A]): List[Word[A]]
   }
   object Suggester {
 
-    case class Empty[A]() extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = List.empty[Guess[A]]
-    }
-    case class Const[A](g: Guess[A]) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = List(g)
-    }
     case class All[A]() extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] = d.words.toList.map(Guess.apply)
+      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList
     }
     case class AbsentFromWord[A](a: A) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
-        d.words.toList.filterNot(_.contains(a)).map(Guess.apply)
+      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList.filterNot(_.contains(a))
     }
     case class WrongPosition[A](a: A, pos: WordPos) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
-        d.words.toList.filterNot(w => w.at(pos) == a).filter(w => w.contains(a)).map(Guess.apply)
+      override def getSuggestions(d: Dictionary[A]): List[Word[A]] =
+        d.words.toList.filterNot(w => w.at(pos) == a).filter(w => w.contains(a))
     }
     case class MatchingPosition[A](a: A, pos: WordPos) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
-        d.words.toList.filter(w => w.at(pos) == a).map(Guess.apply)
+      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList.filter(w => w.at(pos) == a)
     }
-    case class And[A](g1: Suggester[A], g2: Suggester[A]) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Guess[A]] =
-        g2.getSuggestions(Dictionary(g1.getSuggestions(d).map(_.word).toSet))
+    case class And[A](s1: Suggester[A], s2: Suggester[A]) extends Suggester[A] {
+      override def getSuggestions(d: Dictionary[A]): List[Word[A]] =
+        s2.getSuggestions(Dictionary(s1.getSuggestions(d).toSet))
     }
 
-    def from[A](gs: GuessStatus[A])(implicit o: Order[A]): Suggester[A] = {
+    def fromHistory[A: Order](h: GuessHistory[A]): Suggester[A] =
+      h.guessStatuses.map(Suggester.from[A]).reduce(Suggester.And[A])
+
+    def from[A: Order](gs: GuessStatus[A]): Suggester[A] = {
       val Word(t1, t2, t3, t4, t5) = gs.valueWithAllStatuses
       List[((A, PositionStatus, NonEmptyList[PositionStatus]), WordPos)](
         (t1, Pos1),
@@ -287,9 +272,6 @@ object Wordle {
         }
     }
 
-    def fromHistory[A](h: GuessHistory[A])(implicit o: Order[A]): Suggester[A] =
-      h.guessStatuses.map(Suggester.from[A]).reduce(Suggester.And[A])
-
     def getSuggester[A](
       a: A,
       ps: PositionStatus,
@@ -302,9 +284,10 @@ object Wordle {
         case PositionStatus.Incorrect => Suggester.WrongPosition(a, pos)
         case PositionStatus.Correct   => Suggester.MatchingPosition(a, pos)
       }
+
   }
 
-  def getDictionary: Dictionary[Char] = {
+  def fetchDictionary: Dictionary[Char] = {
     val src = Source.fromFile("src/main/scala/wordle/5-chars-english-words.txt")
     val ws = src.getLines.toList
       .map(_.toList.traverse(Char.apply))
@@ -315,25 +298,25 @@ object Wordle {
   }
 
   def main(args: Array[String]): Unit = {
-//    val s = Solution[Char](Word(C, O, D, E, R))
-//    val g = Guess[Char](Word(D, E, C, O, R))
-//    val gs = getGuessStatus(s, g)
-//    println(Show[GuessStatus[Char]].show(gs))
-//    val gr = getGuessResult(gs)
-//    println(gr)
+    val solution = Solution(Word[Char](C, O, D, E, R))
+    val guess = Word[Char](D, E, C, O, R)
+    val guessStatus = GuessStatus.from(solution, guess)
+    println(guessStatus.show)
+    val guessResult = GuessResult.from(guessStatus)
+    println(guessResult)
 
-//    println(getDictionary.words.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+    println(fetchDictionary.words.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
 
     val history = GuessHistory[Char](
       List[Word[(Char, PositionStatus)]](
         Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent))
       ).map(GuessStatus.apply)
     )
-    val dict = getDictionary
+    val dict = fetchDictionary
     val suggestions = Suggester.fromHistory(history).getSuggestions(dict)
     println(
       suggestions
-        .map(_.word.toString)
+        .map(_.toString)
         .mkString(s"Suggestions (${suggestions.length}/${dict.words.size}):\n  ", "\n  ", "")
     )
   }

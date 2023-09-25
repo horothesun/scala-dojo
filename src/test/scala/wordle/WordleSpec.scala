@@ -20,53 +20,53 @@ class WordleSpec extends ScalaCheckSuite {
     }
   }
 
-  test("getGuessStatus when guess doesn't have any of solution's chars") {
+  test("GuessStatus.from(...) when guess doesn't have any of solution's chars") {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(T, H, I, N, K)), Guess[Char](Word(G, A, M, E, R))),
+      GuessStatus.from(Solution(Word[Char](T, H, I, N, K)), Word[Char](G, A, M, E, R)),
       GuessStatus[Char](Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent)))
     )
   }
 
-  test("getGuessStatus when guess matches solution on all positions") {
+  test("GuessStatus.from(...) when guess matches solution on all positions") {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(G, A, M, E, R)), Guess[Char](Word(G, A, M, E, R))),
+      GuessStatus.from(Solution(Word[Char](G, A, M, E, R)), Word[Char](G, A, M, E, R)),
       GuessStatus[Char](Word((G, Correct), (A, Correct), (M, Correct), (E, Correct), (R, Correct)))
     )
   }
 
-  test("getGuessStatus when guess is solution's anagram and matches one position") {
+  test("GuessStatus.from(...) when guess is solution's anagram and matches one position") {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(C, O, D, E, R)), Guess[Char](Word(D, E, C, O, R))),
+      GuessStatus.from(Solution(Word[Char](C, O, D, E, R)), Word[Char](D, E, C, O, R)),
       GuessStatus[Char](Word((D, Incorrect), (E, Incorrect), (C, Incorrect), (O, Incorrect), (R, Correct)))
     )
   }
 
   test(
-    "getGuessStatus when guess contains twice a char present in the solution only once," +
+    "GuessStatus.from(...) when guess contains twice a char present in the solution only once," +
       " both in the correct and in an incorrect position"
   ) {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(S, P, L, I, T)), Guess[Char](Word(P, I, L, L, S))),
+      GuessStatus.from(Solution(Word[Char](S, P, L, I, T)), Word[Char](P, I, L, L, S)),
       GuessStatus[Char](Word((P, Incorrect), (I, Incorrect), (L, Correct), (L, Absent), (S, Incorrect)))
     )
   }
 
   test(
-    "getGuessStatus when guess contains twice a char present in the solution twice," +
+    "GuessStatus.from(...) when guess contains twice a char present in the solution twice," +
       " both in the correct and in an incorrect position"
   ) {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(S, P, I, L, L)), Guess[Char](Word(P, I, L, L, S))),
+      GuessStatus.from(Solution(Word[Char](S, P, I, L, L)), Word[Char](P, I, L, L, S)),
       GuessStatus[Char](Word((P, Incorrect), (I, Incorrect), (L, Incorrect), (L, Correct), (S, Incorrect)))
     )
   }
 
   test(
-    "getGuessStatus when guess contains twice a char present in the solution twice, " +
+    "GuessStatus.from(...) when guess contains twice a char present in the solution twice, " +
       "both in the incorrect position"
   ) {
     assertEquals(
-      getGuessStatus(Solution[Char](Word(S, P, I, L, L)), Guess[Char](Word(L, L, O, Y, D))),
+      GuessStatus.from(Solution(Word[Char](S, P, I, L, L)), Word[Char](L, L, O, Y, D)),
       GuessStatus[Char](Word((L, Incorrect), (L, Incorrect), (O, Absent), (Y, Absent), (D, Absent)))
     )
   }
