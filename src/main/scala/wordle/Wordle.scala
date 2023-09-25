@@ -298,14 +298,42 @@ object Wordle {
   }
 
   def main(args: Array[String]): Unit = {
-    val solution = Solution(Word[Char](C, O, D, E, R))
-    val guess = Word[Char](D, E, C, O, R)
-    val guessStatus = GuessStatus.from(solution, guess)
-    println(guessStatus.show)
-    val guessResult = GuessResult.from(guessStatus)
-    println(guessResult)
+//    val solution = Solution(Word[Char](C, O, D, E, R))
+//    val guess = Word[Char](D, E, C, O, R)
+//    val guessStatus = GuessStatus.from(solution, guess)
+//    println(guessStatus.show)
+//    val guessResult = GuessResult.from(guessStatus)
+//    println(guessResult)
 
-    println(fetchDictionary.words.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+//    println(fetchDictionary.words.map(_.show).take(5).mkString("Dictionary:\n  ", ",\n  ", ",\n  ..."))
+
+//    val history_THUMP = GuessHistory[Char](
+//      List[Word[(Char, PositionStatus)]](
+//        Word((G, Absent), (A, Absent), (M, Incorrect), (E, Absent), (R, Absent)),
+//        Word((M, Incorrect), (O, Absent), (U, Correct), (N, Absent), (T, Incorrect)),
+//        Word((T, Correct), (H, Correct), (U, Correct), (M, Correct), (B, Absent)),
+//        Word((T, Correct), (H, Correct), (U, Correct), (M, Correct), (P, Correct))
+//      ).map(GuessStatus.apply)
+//    )
+
+//    val history_SCAMP = GuessHistory[Char](
+//      List[Word[(Char, PositionStatus)]](
+//        Word((G, Absent), (A, Incorrect), (M, Incorrect), (E, Absent), (R, Absent)),
+//        Word((A, Incorrect), (M, Incorrect), (P, Incorrect), (L, Absent), (Y, Absent)),
+//        Word((S, Correct), (W, Absent), (A, Correct), (M, Correct), (P, Correct)),
+//        Word((S, Correct), (C, Correct), (A, Correct), (M, Correct), (P, Correct))
+//      ).map(GuessStatus.apply)
+//    )
+
+//    val history_CONDO = GuessHistory[Char](
+//      List[Word[(Char, PositionStatus)]](
+//        Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent)),
+//        Word((B, Absent), (O, Correct), (N, Correct), (U, Absent), (S, Absent)),
+//        Word((T, Absent), (O, Correct), (N, Correct), (I, Absent), (C, Incorrect)),
+//        Word((C, Correct), (O, Correct), (N, Correct), (C, Absent), (H, Absent)),
+//        Word((C, Correct), (O, Correct), (N, Correct), (D, Correct), (O, Correct))
+//      ).map(GuessStatus.apply)
+//    )
 
     val history = GuessHistory[Char](
       List[Word[(Char, PositionStatus)]](
