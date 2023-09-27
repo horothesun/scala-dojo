@@ -3,11 +3,16 @@ package wordle
 import cats._
 import cats.data._
 import cats.implicits._
+
 import scala.io.Source
 import Wordle.Char._
+import Wordle.GuesserFilter._
+import Wordle.GuesserSort._
 import Wordle.GuessResult._
 import Wordle.PositionStatus._
 import Wordle.WordPos._
+
+import scala.collection.immutable
 
 object Wordle {
 
@@ -36,6 +41,8 @@ object Wordle {
 
     def occurrences(implicit o: Order[A]): NonEmptyMap[A, Int] = toNel.groupMapReduceWithNem(identity)(_ => 1)(_ + _)
 
+    def hasAllDistinct(implicit o: Order[A]): Boolean = occurrences.keys.size == 5
+
     def map[B](f: A => B): Word[B] = Functor[Word].map(this)(f)
 
     def pairWith[B](wb: Word[B]): Word[(A, B)] = Word((p1, wb.p1), (p2, wb.p2), (p3, wb.p3), (p4, wb.p4), (p5, wb.p5))
@@ -49,6 +56,9 @@ object Wordle {
     implicit val functor: Functor[Word] = new Functor[Word] {
       override def map[A, B](fa: Word[A])(f: A => B): Word[B] = Word(f(fa.p1), f(fa.p2), f(fa.p3), f(fa.p4), f(fa.p5))
     }
+
+    implicit def ordering[A: Ordering]: Ordering[Word[A]] = Ordering[String].on[Word[A]](_.toString)
+    implicit def order[A: Order]: Order[Word[A]] = Order.fromOrdering[Word[A]]
 
     implicit def show[A: Show]: Show[Word[A]] =
       Show.show[Word[A]](_.map(Show[A].show).toNel.mkString_("Word(", ",", ")"))
@@ -227,33 +237,42 @@ object Wordle {
   }
 
   case class Dictionary[A](words: Set[Word[A]])
+
   case class GuessHistory[A](guessStatuses: List[GuessStatus[A]])
+  object GuessHistory {
+    implicit def show[A: Show]: Show[GuessHistory[A]] =
+      Show.show[GuessHistory[A]](_.guessStatuses.map(_.show).mkString("GuessHistory(\n  ", ",\n  ", "\n)"))
+
+    def empty[A]: GuessHistory[A] = GuessHistory(guessStatuses = List.empty)
+  }
 
   sealed trait Suggester[A] {
-    def getSuggestions(d: Dictionary[A]): List[Word[A]]
+    def getSuggestions(d: Dictionary[A]): Set[Word[A]]
   }
   object Suggester {
 
     case class All[A]() extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList
+      override def getSuggestions(d: Dictionary[A]): Set[Word[A]] = d.words
     }
     case class AbsentFromWord[A](a: A) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList.filterNot(_.contains(a))
+      override def getSuggestions(d: Dictionary[A]): Set[Word[A]] = d.words.filterNot(_.contains(a))
     }
     case class WrongPosition[A](a: A, pos: WordPos) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Word[A]] =
-        d.words.toList.filterNot(w => w.at(pos) == a).filter(w => w.contains(a))
+      override def getSuggestions(d: Dictionary[A]): Set[Word[A]] =
+        d.words.filterNot(w => w.at(pos) == a).filter(w => w.contains(a))
     }
     case class MatchingPosition[A](a: A, pos: WordPos) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Word[A]] = d.words.toList.filter(w => w.at(pos) == a)
+      override def getSuggestions(d: Dictionary[A]): Set[Word[A]] = d.words.filter(w => w.at(pos) == a)
     }
     case class And[A](s1: Suggester[A], s2: Suggester[A]) extends Suggester[A] {
-      override def getSuggestions(d: Dictionary[A]): List[Word[A]] =
-        s2.getSuggestions(Dictionary(s1.getSuggestions(d).toSet))
+      override def getSuggestions(d: Dictionary[A]): Set[Word[A]] = s2.getSuggestions(Dictionary(s1.getSuggestions(d)))
     }
 
     def fromHistory[A: Order](h: GuessHistory[A]): Suggester[A] =
-      h.guessStatuses.map(Suggester.from[A]).reduce(Suggester.And[A])
+      h.guessStatuses match {
+        case Nil    => Suggester.All[A]()
+        case _ :: _ => h.guessStatuses.map(Suggester.from[A]).reduce(Suggester.And[A])
+      }
 
     def from[A: Order](gs: GuessStatus[A]): Suggester[A] = {
       val Word(t1, t2, t3, t4, t5) = gs.valueWithAllStatuses
@@ -287,6 +306,40 @@ object Wordle {
 
   }
 
+  sealed trait GuesserFilter
+  object GuesserFilter {
+    case object Unfiltered extends GuesserFilter
+    case object AllDistinctFirst extends GuesserFilter
+    case object WithDuplicatesFirst extends GuesserFilter
+  }
+
+  sealed trait GuesserSort
+  object GuesserSort {
+    case object Ascending extends GuesserSort
+    case object Descending extends GuesserSort
+    case object Shuffled extends GuesserSort
+    case object Unsorted extends GuesserSort
+  }
+
+  def getGuess[A: Order](filter: GuesserFilter, sort: GuesserSort)(suggestions: Set[Word[A]]): Option[Word[A]] = {
+    val filteredGroups = filter match {
+      case Unfiltered => List(suggestions)
+      case AllDistinctFirst =>
+        val (allDistinct, withDuplicates) = suggestions.partition(_.hasAllDistinct)
+        List(allDistinct, withDuplicates)
+      case WithDuplicatesFirst =>
+        val (allDistinct, withDuplicates) = suggestions.partition(_.hasAllDistinct)
+        List(withDuplicates, allDistinct)
+    }
+    val sortedGroups = sort match {
+      case Ascending  => filteredGroups.map(g => g.toList.sorted)
+      case Descending => filteredGroups.map(g => g.toList.sorted.reverse)
+      case Shuffled   => filteredGroups.map(g => scala.util.Random.shuffle(g.toList))
+      case Unsorted   => filteredGroups
+    }
+    sortedGroups.headOption.flatMap(_.headOption)
+  }
+
   def fetchDictionary: Dictionary[Char] = {
     val src = Source.fromFile("src/main/scala/wordle/5-chars-english-words.txt")
     val ws = src.getLines.toList
@@ -296,6 +349,33 @@ object Wordle {
     src.close()
     Dictionary(ws)
   }
+
+  def getHistory[A: Order](
+    dictionary: Dictionary[A],
+    guesserFilter: GuesserFilter,
+    guesserSort: GuesserSort,
+    solution: Solution[A]
+  ): GuessHistory[A] =
+    GuessHistory(List.unfold[GuessStatus[A], (GuessHistory[A], GuessResult)]((GuessHistory.empty, Unsolved)) {
+      case (history, guessResult) =>
+        guessResult match {
+          case Solved => None
+          case Unsolved =>
+            history.guessStatuses match {
+              case _ :: _ :: _ :: _ :: _ :: _ :: Nil => None
+              case _ =>
+                val suggestions = Suggester.fromHistory(history).getSuggestions(dictionary)
+                suggestions.toList match {
+                  case Nil => None
+                  case _ =>
+                    getGuess[A](guesserFilter, guesserSort)(suggestions)
+                      .map(guess => GuessStatus.from(solution, guess))
+                      .map(gs => (gs, (GuessHistory(history.guessStatuses :+ gs), GuessResult.from(gs))))
+                }
+            }
+        }
+
+    })
 
   def main(args: Array[String]): Unit = {
 //    val solution = Solution(Word[Char](C, O, D, E, R))
@@ -319,7 +399,7 @@ object Wordle {
 //    val history_SCAMP = GuessHistory[Char](
 //      List[Word[(Char, PositionStatus)]](
 //        Word((G, Absent), (A, Incorrect), (M, Incorrect), (E, Absent), (R, Absent)),
-//        Word((A, Incorrect), (M, Incorrect), (P, Incorrect), (L, Absent), (Y, Absent)),
+//        Word((A, Incorrect), (M, InKrrect), (P, Incorrect), (L, Absent), (Y, Absent)),
 //        Word((S, Correct), (W, Absent), (A, Correct), (M, Correct), (P, Correct)),
 //        Word((S, Correct), (C, Correct), (A, Correct), (M, Correct), (P, Correct))
 //      ).map(GuessStatus.apply)
@@ -335,18 +415,29 @@ object Wordle {
 //      ).map(GuessStatus.apply)
 //    )
 
-    val history = GuessHistory[Char](
-      List[Word[(Char, PositionStatus)]](
-        Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent))
-      ).map(GuessStatus.apply)
+//    val history = GuessHistory[Char](
+//      List[Word[(Char, PositionStatus)]](
+//        Word((G, Absent), (A, Absent), (M, Absent), (E, Absent), (R, Absent)),
+//        Word((B, Absent), (O, Correct), (N, Correct), (U, Absent), (S, Absent))
+//      ).map(GuessStatus.apply)
+//    )
+//    val dict = fetchDictionary
+//    val suggestions = Suggester.fromHistory(history).getSuggestions(dict)
+//    println(
+//      suggestions
+//        .map(_.toString)
+//        .mkString(s"Suggestions (${suggestions.size}/${dict.words.size}):\n  ", "\n  ", "")
+//    )
+//    val guess = getGuess[Char](GuesserFilter.Unfiltered, GuesserSort.Shuffled)(suggestions)
+//    println(s"Guess: ${guess.fold(ifEmpty = "<N/D>")(_.toString)}")
+
+    val matchHistory = getHistory[Char](
+      dictionary = fetchDictionary,
+      GuesserFilter.AllDistinctFirst,
+      GuesserSort.Shuffled,
+      Solution(Word[Char](B, I, L, L, Y))
     )
-    val dict = fetchDictionary
-    val suggestions = Suggester.fromHistory(history).getSuggestions(dict)
-    println(
-      suggestions
-        .map(_.toString)
-        .mkString(s"Suggestions (${suggestions.length}/${dict.words.size}):\n  ", "\n  ", "")
-    )
+    println(matchHistory.show)
   }
 
 }
