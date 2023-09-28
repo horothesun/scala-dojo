@@ -4,11 +4,11 @@ import cats.Order
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import Wordle._
-import Wordle.Char._
-import Wordle.Suggester._
-import Wordle.PositionStatus._
-import Wordle.WordPos._
+import Models._
+import Models.Char._
+import Models.PositionStatus._
+import Models.WordPos._
+import Suggester._
 import WordleSpec._
 import WordleSpec.TestChar._
 

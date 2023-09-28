@@ -4,7 +4,7 @@ import cats.laws.discipline.FunctorTests
 import munit.DisciplineSuite
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
-import Wordle.Word
+import Models._
 import WordleLawsSuite._
 
 class WordleLawsSuite extends DisciplineSuite {
