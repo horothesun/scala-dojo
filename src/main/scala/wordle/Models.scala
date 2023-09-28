@@ -104,8 +104,8 @@ object Models {
   object GuessStatus {
     implicit def show[A: Show]: Show[GuessStatus[A]] =
       Show.show[GuessStatus[A]] { gs =>
-        val showedValue = gs.value.map { case (a, ps) => s"(${Show[A].show(a)}, ${Show[PositionStatus].show(ps)})" }
-        s"GuessStatus($showedValue)"
+        val showedValue = gs.value.map { case (a, ps) => s"(${a.show},${ps.show})" }
+        s"GuessStatus(${showedValue.toString})"
       }
 
     def from[A: Order](s: Solution[A], guess: Word[A]): GuessStatus[A] = {

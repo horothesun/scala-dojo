@@ -50,7 +50,7 @@ object Suggester {
       case s @ _ => Some(s)
     }.toNel
       .fold[Suggester[A]](ifEmpty = All()) { case NonEmptyList(sHead, sTail) =>
-        sTail.foldLeft[Suggester[A]](sHead) { case (s1, s2) => And(s1, s2) }
+        sTail.foldLeft[Suggester[A]](sHead)(_ and _)
       }
   }
 
