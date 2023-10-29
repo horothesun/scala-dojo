@@ -17,6 +17,9 @@ object Day1 {
     def from(s: NonEmptyString): Option[FoodItem] = s.toList.mkString.toIntOption.map(FoodItem.apply)
   }
 
+  def getTop3ElvesWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
+    parseElfPacks(input).map(_.map(_.foodItems.map(_.calories).sum).sorted.reverse.take(3).sum)
+
   def getElfWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
     parseElfPacks(input).map(_.map(_.foodItems.map(_.calories).sum).max)
 
