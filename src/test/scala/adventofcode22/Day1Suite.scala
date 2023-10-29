@@ -25,7 +25,7 @@ class Day1Suite extends ScalaCheckSuite {
   }
 
   property("splitListBy[Char] behaves like String.split with non-empty splits") {
-    forAll(splitListByInputGen(alphabet = NonEmptyList.of('a', 'b', 'c', 'd'))) { case (c, s) =>
+    forAll(separatorAndNonEmptySplitsStringGen(alphabet = NonEmptyList.of('a', 'b', 'c', 'd'))) { case (c, s) =>
       assertEquals(
         splitListBy[Char](c)(s.toList),
         s.split(s"$c").map(_.toList).toList
@@ -88,7 +88,7 @@ class Day1Suite extends ScalaCheckSuite {
 }
 object Day1Suite {
 
-  def splitListByInputGen(alphabet: NonEmptyList[Char]): Gen[(Char, String)] = {
+  def separatorAndNonEmptySplitsStringGen(alphabet: NonEmptyList[Char]): Gen[(Char, String)] = {
     val NonEmptyList(c, rest) = alphabet
     val nonEmptyStringFromRestGen = Gen.chooseNum(1, 5).flatMap(n => Gen.stringOfN(n, Gen.oneOf(rest)))
     Gen.zip(
