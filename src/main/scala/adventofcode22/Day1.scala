@@ -7,7 +7,9 @@ object Day1 {
 
   type NonEmptyString = NonEmptyList[Char]
 
-  case class ElfPack(foodItems: List[FoodItem])
+  case class ElfPack(foodItems: List[FoodItem]) {
+    def totalCalories: Int = foodItems.map(_.calories).sum
+  }
   object ElfPack {
     def from(items: List[NonEmptyString]): Option[ElfPack] = items.traverse(FoodItem.from).map(ElfPack.apply)
   }
@@ -18,10 +20,10 @@ object Day1 {
   }
 
   def getTop3ElvesWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
-    parseElfPacks(input).map(_.map(_.foodItems.map(_.calories).sum).sorted.reverse.take(3).sum)
+    parseElfPacks(input).map(_.map(_.totalCalories).sorted.reverse.take(3).sum)
 
   def getElfWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
-    parseElfPacks(input).map(_.map(_.foodItems.map(_.calories).sum).max)
+    parseElfPacks(input).map(_.map(_.totalCalories).max)
 
   def parseElfPacks(ss: List[String]): Option[List[ElfPack]] =
     splitListBy[String]("")(ss)
