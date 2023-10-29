@@ -25,9 +25,9 @@ object Day1 {
   def getElfWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
     parseElfPacks(input).map(_.map(_.totalCalories).max)
 
-  def parseElfPacks(ss: List[String]): Option[List[ElfPack]] =
-    splitListBy[String]("")(ss)
-      .traverse(_.traverse(_.toList.toNel))
+  def parseElfPacks(input: List[String]): Option[List[ElfPack]] =
+    splitListBy[String]("")(input)
+      .traverse(_.traverse[Option, NonEmptyString](_.toList.toNel))
       .flatMap(_.traverse(ElfPack.from))
 
   def splitListBy[A](a: A)(as: List[A]): List[List[A]] =
