@@ -1,5 +1,3 @@
-ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation")
-
 lazy val root = (project in file(".")).settings(
   inThisBuild(
     List(
@@ -7,7 +5,8 @@ lazy val root = (project in file(".")).settings(
       scalaVersion := "2.13.12"
     )
   ),
-  name := "scala-dojo"
+  name := "scala-dojo",
+  scalacOptions := Seq("-unchecked", "-deprecation")
 )
 
 val catsVersion = "2.10.0"
