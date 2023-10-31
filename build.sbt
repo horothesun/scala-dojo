@@ -1,3 +1,5 @@
+ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation")
+
 lazy val root = (project in file(".")).settings(
   inThisBuild(
     List(

@@ -1,9 +1,9 @@
 package adventofcode22
 
-import adventofcode22.Day3._
 import cats.data.NonEmptyList
 import cats.implicits._
 import munit.ScalaCheckSuite
+import Day3._
 
 class Day3Suite extends ScalaCheckSuite {
 
@@ -67,9 +67,35 @@ class Day3Suite extends ScalaCheckSuite {
     )
   }
 
+  test("getRepeatedItemsPrioritiesSum on small input") {
+    val input =
+      """
+        |vJrwpWtwJgWrhcsFMMfFFhFp
+        |jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+        |PmmdzqPrVvPwwTWBwg
+        |wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+        |ttgJtRGJQctTZtZT
+        |CrZsJsPPZsGzwwsLwLmpwMDw
+        |""".stripMargin.linesIterator.toList.drop(1)
+    assertEquals(getRepeatedItemsPrioritiesSum(input), Some(157))
+  }
+
   test("getRepeatedItemsPrioritiesSum on BIG input") {
     val input = getLinesFromFile("src/test/scala/adventofcode22/day3_input.txt")
     assertEquals(getRepeatedItemsPrioritiesSum(input), Some(7_903))
+  }
+
+  test("getGroupedBadgeItemsPrioritiesSum on small input") {
+    val input =
+      """
+        |vJrwpWtwJgWrhcsFMMfFFhFp
+        |jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+        |PmmdzqPrVvPwwTWBwg
+        |wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+        |ttgJtRGJQctTZtZT
+        |CrZsJsPPZsGzwwsLwLmpwMDw
+        |""".stripMargin.linesIterator.toList.drop(1)
+    assertEquals(getGroupedBadgeItemsPrioritiesSum(input), Some(70))
   }
 
   test("getGroupedBadgeItemsPrioritiesSum on BIG input") {

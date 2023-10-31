@@ -20,10 +20,15 @@ object Day1 {
   }
 
   def getTop3ElvesWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
-    parseElfPacks(input).map(_.map(_.totalCalories).sorted.reverse.take(3).sum)
+    parseElfPacks(input).map(getTop3ElvesWithMostCaloriesTotalCalories)
+
+  def getTop3ElvesWithMostCaloriesTotalCalories(eps: List[ElfPack]): Int =
+    eps.map(_.totalCalories).sorted.reverse.take(3).sum
 
   def getElfWithMostCaloriesTotalCalories(input: List[String]): Option[Int] =
-    parseElfPacks(input).map(_.map(_.totalCalories).max)
+    parseElfPacks(input).map(getElfWithMostCaloriesTotalCalories)
+
+  def getElfWithMostCaloriesTotalCalories(eps: List[ElfPack]): Int = eps.map(_.totalCalories).max
 
   def parseElfPacks(input: List[String]): Option[List[ElfPack]] =
     splitListBy[String]("")(input)
@@ -39,7 +44,7 @@ object Day1 {
 
   def getLinesFromFile(filename: String): List[String] = {
     val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines.toList
+    val result = source.getLines().toList
     source.close
     result
   }

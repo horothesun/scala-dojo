@@ -80,11 +80,14 @@ object Wordle {
 
   def fetchDictionary: Dictionary[Char] = {
     val src = Source.fromFile("src/main/scala/wordle/5-chars-english-words.txt")
-    val ws = src.getLines.toList
-      .map(_.toList.traverse(Char.apply))
-      .collect { case Some(List(c1, c2, c3, c4, c5)) => Word(c1, c2, c3, c4, c5) }
-      .toSet
-    src.close()
+    val ws =
+      src
+        .getLines()
+        .toList
+        .map(_.toList.traverse(Char.apply))
+        .collect { case Some(List(c1, c2, c3, c4, c5)) => Word(c1, c2, c3, c4, c5) }
+        .toSet
+    src.close
     Dictionary(ws)
   }
 

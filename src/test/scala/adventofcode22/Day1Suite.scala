@@ -50,7 +50,7 @@ class Day1Suite extends ScalaCheckSuite {
         |9000
         |
         |10000
-        |""".stripMargin.linesIterator.toList
+        |""".stripMargin.linesIterator.toList.drop(1)
     assertEquals(getElfWithMostCaloriesTotalCalories(input), Some(24_000))
   }
 
@@ -76,7 +76,7 @@ class Day1Suite extends ScalaCheckSuite {
         |9000
         |
         |10000
-        |""".stripMargin.linesIterator.toList
+        |""".stripMargin.linesIterator.toList.drop(1)
     assertEquals(getTop3ElvesWithMostCaloriesTotalCalories(input), Some(45_000))
   }
 

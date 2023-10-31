@@ -68,9 +68,9 @@ object Day2 {
       override def fromInt(x: Int): Score = Score(x)
       override def parseString(str: String): Option[Score] = str.toIntOption.map(Score.apply)
       override def toInt(x: Score): Int = x.value
-      override def toLong(x: Score): Long = x.value
-      override def toFloat(x: Score): Float = x.value
-      override def toDouble(x: Score): Double = x.value
+      override def toLong(x: Score): Long = x.value.toLong
+      override def toFloat(x: Score): Float = x.value.toFloat
+      override def toDouble(x: Score): Double = x.value.toDouble
       override def compare(x: Score, y: Score): Int = x.value.compare(y.value)
     }
   }
@@ -135,7 +135,7 @@ object Day2 {
 
   def getLinesFromFile(filename: String): List[String] = {
     val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines.toList
+    val result = source.getLines().toList
     source.close
     result
   }

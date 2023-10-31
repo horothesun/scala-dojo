@@ -1,8 +1,8 @@
 package adventofcode22
 
-import adventofcode22.Day3.Item._
 import cats.data.NonEmptyList
 import cats.implicits._
+import Day3.Item._
 
 object Day3 {
 
@@ -47,17 +47,22 @@ object Day3 {
   def parseRucksacks(input: List[String]): Option[List[Rucksack]] = input.traverse(Rucksack.from)
 
   def getRepeatedItemsPrioritiesSum(input: List[String]): Option[Int] =
-    parseRucksacks(input).map(_.mapFilter(_.repeatedItemsBetweenCompartments.headOption).map(_.priority).sum)
+    parseRucksacks(input).map(getRepeatedItemsPrioritiesSum)
+
+  def getRepeatedItemsPrioritiesSum(rs: List[Rucksack]): Int =
+    rs.mapFilter(_.repeatedItemsBetweenCompartments.headOption).map(_.priority).sum
+
+  def getGroupedBadgeItemsPrioritiesSum(input: List[String]): Option[Int] =
+    parseRucksacks(input).map(getGroupedBadgeItemsPrioritiesSum)
+
+  def getGroupedBadgeItemsPrioritiesSum(rs: List[Rucksack]): Int =
+    rs.grouped(3).toList.mapFilter(g => getItemsPresentInAllRucksacks(g).headOption).map(_.priority).sum
 
   def getItemsPresentInAllRucksacks(rs: List[Rucksack]): List[Item] = rs.map(_.allItems.toList).reduce(_ intersect _)
 
-  def getGroupedBadgeItemsPrioritiesSum(input: List[String]): Option[Int] =
-    parseRucksacks(input)
-      .map(_.grouped(3).toList.mapFilter(g => getItemsPresentInAllRucksacks(g).headOption).map(_.priority).sum)
-
   def getLinesFromFile(filename: String): List[String] = {
     val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines.toList
+    val result = source.getLines().toList
     source.close
     result
   }
