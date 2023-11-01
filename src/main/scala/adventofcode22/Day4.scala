@@ -11,31 +11,32 @@ object Day4 {
     def isFullyContainedIn(that: SectionRange): Boolean = value.toList.intersect(that.value.toList) == value.toList
     def isOverlapping(that: SectionRange): Boolean = value.toList.intersect(that.value.toList).nonEmpty
   }
-
-  case class AssignmentPair(lsr: SectionRange, rsr: SectionRange) {
-    def isOneRangeFullyContainedIntoTheOther: Boolean = lsr.isFullyContainedIn(rsr) || rsr.isFullyContainedIn(lsr)
-    def areRangesOverlapping: Boolean = lsr.isOverlapping(rsr)
-  }
-
-  def parseSectionRange(s: String): Option[SectionRange] = s.split('-') match {
-    case Array(minS, maxS) =>
-      (
-        minS.toIntOption,
-        maxS.toIntOption
-      ).mapN { case (min, max) => Range.inclusive(min, max).toList.map(Section.apply) }
-        .flatMap(_.toNel)
-        .map(SectionRange.apply)
-    case _ => None
-  }
-
-  def parseSectionRangePair(s: String): Option[AssignmentPair] =
-    s.split(',') match {
-      case Array(l, r) => (parseSectionRange(l), parseSectionRange(r)).mapN(AssignmentPair.apply)
-      case _           => None
+  object SectionRange {
+    def from(s: String): Option[SectionRange] = s.split('-') match {
+      case Array(minS, maxS) =>
+        (
+          minS.toIntOption,
+          maxS.toIntOption
+        ).mapN { case (min, max) => Range.inclusive(min, max).toList.map(Section.apply) }
+          .flatMap(_.toNel)
+          .map(SectionRange.apply)
+      case _ => None
     }
+  }
 
-  def parseAssignmentPairs(input: List[String]): Option[List[AssignmentPair]] =
-    input.traverse(parseSectionRangePair)
+  case class AssignmentPair(l: SectionRange, r: SectionRange) {
+    def isOneRangeFullyContainedIntoTheOther: Boolean = l.isFullyContainedIn(r) || r.isFullyContainedIn(l)
+    def areRangesOverlapping: Boolean = l.isOverlapping(r)
+  }
+  object AssignmentPair {
+    def from(s: String): Option[AssignmentPair] =
+      s.split(',') match {
+        case Array(l, r) => (SectionRange.from(l), SectionRange.from(r)).mapN(AssignmentPair.apply)
+        case _           => None
+      }
+  }
+
+  def parseAssignmentPairs(input: List[String]): Option[List[AssignmentPair]] = input.traverse(AssignmentPair.from)
 
   def getAssignmentPairsWithFullyContainedRangeCount(input: List[String]): Option[Int] =
     parseAssignmentPairs(input).map(getAssignmentPairsWithFullyContainedRangeCount)

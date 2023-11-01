@@ -7,16 +7,16 @@ import FileLoader._
 
 class Day4Suite extends ScalaCheckSuite {
 
-  test("parseSectionRange(\"3-5\") returns correct section list") {
+  test("SectionRange.from(\"3-5\") returns correct section list") {
     assertEquals(
-      parseSectionRange("3-5"),
+      SectionRange.from("3-5"),
       Some(SectionRange(NonEmptyList.of(Section(3), Section(4), Section(5))))
     )
   }
 
-  test("parseSectionRangePair(\"2-3,5-6\") returns correct section list pair") {
+  test("AssignmentPair.from(\"2-3,5-6\") returns correct section list pair") {
     assertEquals(
-      parseSectionRangePair("2-3,5-6"),
+      AssignmentPair.from("2-3,5-6"),
       Some(
         AssignmentPair(
           SectionRange(NonEmptyList.of(Section(2), Section(3))),
