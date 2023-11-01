@@ -17,8 +17,7 @@ object Day4 {
         (
           minS.toIntOption,
           maxS.toIntOption
-        ).mapN { case (min, max) => Range.inclusive(min, max).toList.map(Section.apply) }
-          .flatMap(_.toNel)
+        ).flatMapN { case (min, max) => (min to max).map(Section.apply).toList.toNel }
           .map(SectionRange.apply)
       case _ => None
     }
