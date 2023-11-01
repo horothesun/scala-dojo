@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import munit.ScalaCheckSuite
 import Day3._
+import FileLoader._
 
 class Day3Suite extends ScalaCheckSuite {
 

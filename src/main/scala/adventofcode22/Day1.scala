@@ -42,11 +42,4 @@ object Day1 {
       }
       ._1
 
-  def getLinesFromFile(filename: String): List[String] = {
-    val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines().toList
-    source.close
-    result
-  }
-
 }

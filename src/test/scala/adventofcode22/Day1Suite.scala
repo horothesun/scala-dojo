@@ -6,6 +6,7 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop._
 import Day1._
 import Day1Suite._
+import FileLoader._
 
 class Day1Suite extends ScalaCheckSuite {
 

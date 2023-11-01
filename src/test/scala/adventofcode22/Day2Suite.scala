@@ -4,6 +4,7 @@ import munit.ScalaCheckSuite
 import Day2._
 import Day2.Shape._
 import Day2.Winner._
+import FileLoader._
 
 class Day2Suite extends ScalaCheckSuite {
 

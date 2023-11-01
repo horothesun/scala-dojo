@@ -133,11 +133,4 @@ object Day2 {
   def getMyPlannedTotalScore(input: List[String]): Option[Score] =
     parsePlannedMatch(input).map(_.map(Round.fromPlan).map(getRoundOutcome).map(_.me).sum)
 
-  def getLinesFromFile(filename: String): List[String] = {
-    val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines().toList
-    source.close
-    result
-  }
-
 }

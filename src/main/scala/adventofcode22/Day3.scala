@@ -60,11 +60,4 @@ object Day3 {
 
   def getItemsPresentInAllRucksacks(rs: List[Rucksack]): List[Item] = rs.map(_.allItems.toList).reduce(_ intersect _)
 
-  def getLinesFromFile(filename: String): List[String] = {
-    val source = scala.io.Source.fromFile(filename)
-    val result = source.getLines().toList
-    source.close
-    result
-  }
-
 }
