@@ -14,11 +14,9 @@ object Day4 {
   object SectionRange {
     def from(s: String): Option[SectionRange] = s.split('-') match {
       case Array(minStr, maxStr) =>
-        (
-          minStr.toIntOption,
-          maxStr.toIntOption
-        ).flatMapN { case (min, max) => (min to max).map(Section.apply).toList.toNel }
-          .map(SectionRange.apply)
+        (minStr.toIntOption, maxStr.toIntOption).flatMapN { case (min, max) =>
+          (min to max).map(Section.apply).toList.toNel.map(SectionRange.apply)
+        }
       case _ => None
     }
   }
