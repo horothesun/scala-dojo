@@ -2,6 +2,7 @@ package adventofcode22
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import ListOps._
 
 object Day1 {
 
@@ -34,12 +35,5 @@ object Day1 {
     splitListBy[String]("")(input)
       .traverse(_.traverse[Option, NonEmptyString](_.toList.toNel))
       .flatMap(_.traverse(ElfPack.from))
-
-  def splitListBy[A](a: A)(as: List[A]): List[List[A]] =
-    (as :+ a)
-      .foldLeft((List.empty[List[A]], List.empty[A])) { case ((res, acc), next) =>
-        if (next == a) (res :+ acc, List.empty) else (res, acc :+ next)
-      }
-      ._1
 
 }
