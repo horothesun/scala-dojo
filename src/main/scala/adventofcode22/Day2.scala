@@ -60,19 +60,7 @@ object Day2 {
     def `+`(that: Score): Score = Numeric[Score].plus(this, that)
   }
   object Score {
-    implicit val numeric: Numeric[Score] = new Numeric[Score] {
-      override def plus(x: Score, y: Score): Score = Score(x.value + y.value)
-      override def minus(x: Score, y: Score): Score = Score(x.value - y.value)
-      override def times(x: Score, y: Score): Score = Score(x.value * y.value)
-      override def negate(x: Score): Score = Score(-x.value)
-      override def fromInt(x: Int): Score = Score(x)
-      override def parseString(str: String): Option[Score] = str.toIntOption.map(Score.apply)
-      override def toInt(x: Score): Int = x.value
-      override def toLong(x: Score): Long = x.value.toLong
-      override def toFloat(x: Score): Float = x.value.toFloat
-      override def toDouble(x: Score): Double = x.value.toDouble
-      override def compare(x: Score, y: Score): Int = x.value.compare(y.value)
-    }
+    implicit val numeric: Numeric[Score] = Numeric[Int].imap(Score.apply)(_.value)
   }
 
   case class RoundOutcome(winner: Winner, me: Score, opponent: Score)
