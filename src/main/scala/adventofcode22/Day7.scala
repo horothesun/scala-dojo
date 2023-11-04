@@ -27,7 +27,7 @@ object Day7 {
     case Dir(_, content) => fs.sumAll :: content.flatMap(getAllDirSizes)
   }
 
-  def getAllDirsWithSizeAtMost(maxSize: Size, fs: FileSystem[Size]): List[Size] =
+  def getAllDirSizesAtMost(maxSize: Size, fs: FileSystem[Size]): List[Size] =
     getAllDirSizes(fs).filter(_ < maxSize)
 
 }

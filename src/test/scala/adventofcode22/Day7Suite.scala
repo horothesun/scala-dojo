@@ -31,9 +31,9 @@ class Day7Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getAllDirsWithSizeAtMost(maxSize = Size(100_000), root) returns 'a' and 'e' directory sizes") {
+  test("getAllDirSizesAtMost(maxSize = Size(100_000), root) returns 'a' and 'e' directory sizes") {
     assertEquals(
-      getAllDirsWithSizeAtMost(maxSize = Size(100_000), root),
+      getAllDirSizesAtMost(maxSize = Size(100_000), root),
       List(Size(94853), Size(584))
     )
   }
