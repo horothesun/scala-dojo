@@ -2,6 +2,8 @@ package adventofcode22
 
 import cats.implicits._
 import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop._
 import Day7._
 import Day7.FileSystem._
 import Day7.TerminalInfo._
@@ -10,6 +12,47 @@ import Day7.TerminalOutput._
 import Day7Suite._
 
 class Day7Suite extends ScalaCheckSuite {
+
+  test("Stack.empty[Int].push(1).push(2).push(3).toList returns List(3, 2, 1)") {
+    assertEquals(
+      Stack.empty[Int].push(1).push(2).push(3).toList,
+      List(3, 2, 1)
+    )
+  }
+
+  test("Path.from(Stack.empty[DirName]) returns None") {
+    assertEquals(Path.from(Stack.empty[DirName]), None)
+  }
+
+  test("Path.from returns None on Stack[DirName] representing 'a/b/c'") {
+    val stack =
+      Stack
+        .empty[DirName]
+        .push(DirName("a"))
+        .push(DirName("b"))
+        .push(DirName("c"))
+    assertEquals(Path.from(stack), None)
+  }
+
+  property("Path.from returns None on Stack NOT starting with '/'") {
+    forAll(dirNameStackNotStartingWithRoot) { stack =>
+      assertEquals(Path.from(stack), None)
+    }
+  }
+
+  test("Path.from returns correct value on Stack[DirName] representing '/a/b/c'") {
+    val stack =
+      Stack
+        .empty[DirName]
+        .push(DirName.root)
+        .push(DirName("a"))
+        .push(DirName("b"))
+        .push(DirName("c"))
+    assertEquals(
+      Path.from(stack),
+      Some(Path.Root / DirName("a") / DirName("b") / DirName("c"))
+    )
+  }
 
   test("getTerminalOutputs returns valid value") {
     val input =
@@ -136,14 +179,21 @@ class Day7Suite extends ScalaCheckSuite {
     )
   }
 
-//  test("getSumOfAllDirSizesAtMost100k(bigInput) returns valid ") {
-//    assertEquals(getSumOfAllDirSizesAtMost100k(bigInput), Some(Size(100)))
-//  }
+  test("getSumOfAllDirSizesAtMost100k(bigInput) returns Size(1_611_443)") {
+    assertEquals(getSumOfAllDirSizesAtMost100k(bigInput), Some(Size(1_611_443)))
+  }
 
 }
 object Day7Suite {
 
   val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day7_input.txt")
+
+  def stackGen[A](aGen: Gen[A]): Gen[Stack[A]] = Gen.lzy(Gen.oneOf(emptyStackGen[A], consStackGen(aGen)))
+  def emptyStackGen[A]: Gen[Stack[A]] = Gen.const(Stack.empty[A])
+  def consStackGen[A](aGen: Gen[A]): Gen[Stack[A]] = Gen.zip(aGen, stackGen(aGen)).map((Stack.Cons.apply[A] _).tupled)
+
+  def nonRootDirNameGen: Gen[DirName] = Gen.stringOfN(3, Gen.alphaLowerChar).map(DirName.apply)
+  def dirNameStackNotStartingWithRoot: Gen[Stack[DirName]] = stackGen[DirName](nonRootDirNameGen)
 
   val terminalOutputs: List[TerminalOutput] =
     List(

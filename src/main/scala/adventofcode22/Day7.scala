@@ -2,6 +2,7 @@ package adventofcode22
 
 import cats._
 import cats.implicits._
+import Day7.Path._
 import Day7.FileSystem._
 import Day7.Stack._
 import Day7.TerminalInfo._
@@ -26,6 +27,8 @@ object Day7 {
     case class Cons[A](top: A, tail: Stack[A]) extends Stack[A]
 
     def empty[A]: Stack[A] = Empty()
+
+    implicit val foldable: Foldable[Stack] = derived.semiauto.foldable
   }
 
   case class FileName(value: String)
@@ -33,6 +36,25 @@ object Day7 {
   case class DirName(value: String)
   object DirName {
     val root: DirName = DirName("/")
+  }
+
+  sealed trait Path {
+    def `/`(dirName: DirName): Path = PathCons(path = this, dirName)
+
+    def getDirName: DirName = this match {
+      case Path.Root            => DirName.root
+      case PathCons(_, dirName) => dirName
+    }
+  }
+  object Path {
+    case object Root extends Path
+    case class PathCons(path: Path, dirName: DirName) extends Path
+
+    def from(stack: Stack[DirName]): Option[Path] =
+      stack.toList.reverse match {
+        case DirName.root :: tail => Some(tail.foldLeft[Path](Root)(_ / _))
+        case _                    => None
+      }
   }
 
   case class Size(value: Long)
@@ -151,43 +173,48 @@ object Day7 {
       .sequence
 
   def getFileSystem(terminalInfos: TerminalInfo*): Option[FileSystem[Size]] = {
-    val (_, lsLogsByDirName) =
-      terminalInfos.foldLeft[(Stack[DirName], Map[DirName, List[TerminalLsLog]])]((Stack.empty, Map.empty)) {
-        case ((dirStack, lsLogsByDirName), termInfo) =>
+    val (_, lsLogsByPath) =
+      // TODO: extract and test!!! 👀👀👀
+      terminalInfos.foldLeft[(Stack[DirName], Map[Path, List[TerminalLsLog]])]((Stack.empty, Map.empty)) {
+        case ((dirStack, lsLogsByPath), termInfo) =>
           termInfo match {
             case CdCmd(dirName) =>
-              (
-                dirStack.push(dirName),
-                lsLogsByDirName
-                  .get(dirName)
-                  .fold(ifEmpty = lsLogsByDirName.updated(dirName, List.empty))(_ => lsLogsByDirName)
-              )
+              val newDirStack = dirStack.push(dirName)
+              val newLsLogsByPath =
+                Path
+                  .from(newDirStack)
+                  .map(newPath =>
+                    lsLogsByPath
+                      .get(newPath)
+                      .fold(ifEmpty = lsLogsByPath.updated(newPath, List.empty))(_ => lsLogsByPath)
+                  )
+                  // TODO: handle error case!!! 🔥🔥🔥
+                  .getOrElse(lsLogsByPath)
+              (newDirStack, newLsLogsByPath)
             case CdUpCmd() =>
               (
                 dirStack.pop.fold(ifEmpty = dirStack)(_._2), // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-                lsLogsByDirName
+                lsLogsByPath
               )
             case Ls(logs) =>
-              // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-              dirStack.peek.fold(ifEmpty = (dirStack, lsLogsByDirName)) { currentDir =>
-                (
-                  dirStack,
-                  lsLogsByDirName.updated(currentDir, logs) // override any pre-calculated content
-                )
-              }
+              val newLsLogsByPath = Path
+                .from(dirStack)
+                .map(currentPath => lsLogsByPath.updated(currentPath, logs)) // override any pre-calculated content
+                .getOrElse(lsLogsByPath) // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
+              (dirStack, newLsLogsByPath)
           }
       }
 
-    def aux(dirName: DirName): Option[FileSystem[Size]] =
-      lsLogsByDirName
-        .getOrElse(dirName, List.empty)
+    def aux(path: Path): Option[FileSystem[Size]] =
+      lsLogsByPath
+        .getOrElse(path, List.empty)
         .traverse {
-          case DirLsLog(dirName)         => aux(dirName)
+          case DirLsLog(dirName)         => aux(path / dirName)
           case FileLsLog(fileName, size) => Some(File(fileName, size))
         }
-        .map(content => Dir(dirName, content))
+        .map(content => Dir(path.getDirName, content))
 
-    aux(DirName.root)
+    aux(Path.Root)
   }
 
   def getAllDirSizes(fs: FileSystem[Size]): List[Size] = fs match {
@@ -196,7 +223,7 @@ object Day7 {
   }
 
   def getAllDirSizesAtMost(maxSize: Size, fs: FileSystem[Size]): List[Size] =
-    getAllDirSizes(fs).filter(_ < maxSize)
+    getAllDirSizes(fs).filter(_ < maxSize) // TODO: < or <= !?! 👀👀👀
 
   def getSumOfAllDirSizesAtMost100k(input: List[String]): Option[Size] =
     getTerminalOutputs(input)
