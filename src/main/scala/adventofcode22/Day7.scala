@@ -151,32 +151,32 @@ object Day7 {
       .sequence
 
   def getFileSystem(terminalInfos: TerminalInfo*): Option[FileSystem[Size]] = {
-    type LsLogsByDirName = Map[DirName, List[TerminalLsLog]]
-    val (_, lsLogsByDirName) = terminalInfos.foldLeft[(Stack[DirName], LsLogsByDirName)]((Stack.empty, Map.empty)) {
-      case ((dirStack, lsLogsByDirName), termInfo) =>
-        termInfo match {
-          case CdCmd(dirName) =>
-            (
-              dirStack.push(dirName),
-              lsLogsByDirName
-                .get(dirName)
-                .fold(ifEmpty = lsLogsByDirName.updated(dirName, List.empty))(_ => lsLogsByDirName)
-            )
-          case CdUpCmd() =>
-            (
-              dirStack.pop.fold(ifEmpty = dirStack)(_._2), // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-              lsLogsByDirName
-            )
-          case Ls(logs) =>
-            // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-            dirStack.peek.fold(ifEmpty = (dirStack, lsLogsByDirName)) { currentDir =>
+    val (_, lsLogsByDirName) =
+      terminalInfos.foldLeft[(Stack[DirName], Map[DirName, List[TerminalLsLog]])]((Stack.empty, Map.empty)) {
+        case ((dirStack, lsLogsByDirName), termInfo) =>
+          termInfo match {
+            case CdCmd(dirName) =>
               (
-                dirStack,
-                lsLogsByDirName.updated(currentDir, logs) // override any pre-calculated content
+                dirStack.push(dirName),
+                lsLogsByDirName
+                  .get(dirName)
+                  .fold(ifEmpty = lsLogsByDirName.updated(dirName, List.empty))(_ => lsLogsByDirName)
               )
-            }
-        }
-    }
+            case CdUpCmd() =>
+              (
+                dirStack.pop.fold(ifEmpty = dirStack)(_._2), // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
+                lsLogsByDirName
+              )
+            case Ls(logs) =>
+              // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
+              dirStack.peek.fold(ifEmpty = (dirStack, lsLogsByDirName)) { currentDir =>
+                (
+                  dirStack,
+                  lsLogsByDirName.updated(currentDir, logs) // override any pre-calculated content
+                )
+              }
+          }
+      }
 
     def aux(dirName: DirName): Option[FileSystem[Size]] =
       lsLogsByDirName

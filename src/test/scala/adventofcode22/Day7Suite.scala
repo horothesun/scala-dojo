@@ -45,10 +45,6 @@ class Day7Suite extends ScalaCheckSuite {
     assertEquals(getTerminalOutputs(bigInput).map(_.length), Some(bigInput.length))
   }
 
-  test("getTerminalInfos returns valid value") {
-    assertEquals(getTerminalInfos(terminalOutputs: _*), Some(terminalInfos))
-  }
-
   test("getTerminalInfos on CdCmdTermOut followed by DirTermOut returns None") {
     assertEquals(
       getTerminalInfos(
@@ -89,6 +85,23 @@ class Day7Suite extends ScalaCheckSuite {
     )
   }
 
+  test("getTerminalInfos returns valid value (small input)") {
+    assertEquals(getTerminalInfos(terminalOutputs: _*), Some(terminalInfos))
+  }
+
+  test("getTerminalInfos(bigInput) preserves information") {
+    val termOuts = getTerminalOutputs(bigInput)
+    val termInfoSize = termOuts
+      .flatMap(to => getTerminalInfos(to: _*))
+      .map(tis =>
+        tis.map {
+          case CdCmd(_) | CdUpCmd() => 1
+          case Ls(logs)             => 1 + logs.length
+        }.sum
+      )
+    assertEquals(termInfoSize, Some(bigInput.length))
+  }
+
   test("getFileSystem returns valid value") {
     assertEquals(getFileSystem(terminalInfos: _*), Some(root))
   }
@@ -116,7 +129,7 @@ class Day7Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getAllDirSizesAtMost(maxSize = Size(100_000), root) returns 'a' and 'e' directory sizes") {
+  test("getAllDirSizesAtMost(maxSize = 100k, root) returns 'a' and 'e' directory sizes") {
     assertEquals(
       getAllDirSizesAtMost(maxSize = Size(100_000), root),
       List(Size(94853), Size(584))
