@@ -9,7 +9,7 @@ import Day7Suite._
 
 class Day7Suite extends ScalaCheckSuite {
 
-  test("getTerminalOutputs (small input)") {
+  test("getTerminalOutputs returns valid value") {
     val input =
       """
         |$ cd /
@@ -36,37 +36,12 @@ class Day7Suite extends ScalaCheckSuite {
         |5626152 d.ext
         |7214296 k
         |""".stripMargin.linesIterator.toList.drop(1)
-    assertEquals(
-      getTerminalOutputs(input),
-      Some(
-        List(
-          CdCmd(DirName("/")),
-          LsCmd(),
-          DirLog(DirName("a")),
-          FileLog(FileName("b.txt"), Size(14848514)),
-          FileLog(FileName("c.dat"), Size(8504156)),
-          DirLog(DirName("d")),
-          CdCmd(DirName("a")),
-          LsCmd(),
-          DirLog(DirName("e")),
-          FileLog(FileName("f"), Size(29116)),
-          FileLog(FileName("g"), Size(2557)),
-          FileLog(FileName("h.lst"), Size(62596)),
-          CdCmd(DirName("e")),
-          LsCmd(),
-          FileLog(FileName("i"), Size(584)),
-          CdOutCmd(),
-          CdOutCmd(),
-          CdCmd(DirName("d")),
-          LsCmd(),
-          FileLog(FileName("j"), Size(4060174)),
-          FileLog(FileName("d.log"), Size(8033020)),
-          FileLog(FileName("d.ext"), Size(5626152)),
-          FileLog(FileName("k"), Size(7214296))
-        )
-      )
-    )
+    assertEquals(getTerminalOutputs(input), Some(terminalOutputs))
   }
+
+//  test("getFileSystem returns valid value") {
+//    assertEquals(getFileSystem(terminalOutputs), None)
+//  }
 
   test("directory 'a' total size is 94853") {
     assertEquals(a.sumAll, Size(94853))
@@ -100,6 +75,33 @@ class Day7Suite extends ScalaCheckSuite {
 
 }
 object Day7Suite {
+
+  val terminalOutputs: List[TerminalOutput] =
+    List(
+      CdCmd(DirName("/")),
+      LsCmd(),
+      DirLog(DirName("a")),
+      FileLog(FileName("b.txt"), Size(14848514)),
+      FileLog(FileName("c.dat"), Size(8504156)),
+      DirLog(DirName("d")),
+      CdCmd(DirName("a")),
+      LsCmd(),
+      DirLog(DirName("e")),
+      FileLog(FileName("f"), Size(29116)),
+      FileLog(FileName("g"), Size(2557)),
+      FileLog(FileName("h.lst"), Size(62596)),
+      CdCmd(DirName("e")),
+      LsCmd(),
+      FileLog(FileName("i"), Size(584)),
+      CdOutCmd(),
+      CdOutCmd(),
+      CdCmd(DirName("d")),
+      LsCmd(),
+      FileLog(FileName("j"), Size(4060174)),
+      FileLog(FileName("d.log"), Size(8033020)),
+      FileLog(FileName("d.ext"), Size(5626152)),
+      FileLog(FileName("k"), Size(7214296))
+    )
 
   val i: FileSystem[Size] = File(FileName("i"), Size(584))
   val f: FileSystem[Size] = File(FileName("f"), Size(29116))

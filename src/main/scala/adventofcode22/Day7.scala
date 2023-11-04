@@ -26,6 +26,15 @@ object Day7 {
     def empty[A]: Stack[A] = Empty()
   }
 
+  case class FileName(value: String)
+  case class DirName(value: String)
+
+  case class Size(value: Int)
+  object Size {
+    implicit val order: Order[Size] = Order.by(_.value)
+    implicit val numeric: Numeric[Size] = Numeric[Int].imap(Size.apply)(_.value)
+  }
+
   sealed trait TerminalOutput
   object TerminalOutput {
     case class CdCmd(dirName: DirName) extends TerminalOutput
@@ -76,18 +85,6 @@ object Day7 {
         .reduce(_ orElse _)
   }
 
-  def getTerminalOutputs(input: List[String]): Option[List[TerminalOutput]] =
-    input.traverse(TerminalOutput.from)
-
-  case class FileName(value: String)
-  case class DirName(value: String)
-
-  case class Size(value: Int)
-  object Size {
-    implicit val order: Order[Size] = Order.by(_.value)
-    implicit val numeric: Numeric[Size] = Numeric[Int].imap(Size.apply)(_.value)
-  }
-
   sealed trait FileSystem[A]
   object FileSystem {
     case class File[A](name: FileName, metadata: A) extends FileSystem[A]
@@ -95,6 +92,11 @@ object Day7 {
 
     implicit val foldable: Foldable[FileSystem] = derived.semiauto.foldable
   }
+
+  def getTerminalOutputs(input: List[String]): Option[List[TerminalOutput]] = input.traverse(TerminalOutput.from)
+
+  def getFileSystem(terminalOutputs: List[TerminalOutput]): Option[FileSystem[Size]] =
+    ???
 
   def getAllDirSizes(fs: FileSystem[Size]): List[Size] = fs match {
     case File(_, _)      => List.empty
