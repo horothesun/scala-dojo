@@ -4,7 +4,7 @@ import munit.ScalaCheckSuite
 import Day2._
 import Day2.Shape._
 import Day2.Winner._
-import FileLoader._
+import Day2Suite._
 
 class Day2Suite extends ScalaCheckSuite {
 
@@ -19,14 +19,17 @@ class Day2Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getMyTotalScore from BIG input") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day2_input.txt")
-    assertEquals(getMyTotalScore(input), Some(Score(12_586)))
+  test("getMyTotalScore(bigInput) returns valid value") {
+    assertEquals(getMyTotalScore(bigInput), Some(Score(12_586)))
   }
 
-  test("getMyPlannedTotalScore from BIG input") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day2_input.txt")
-    assertEquals(getMyPlannedTotalScore(input), Some(Score(13_193)))
+  test("getMyPlannedTotalScore(bigInput) returns valid value") {
+    assertEquals(getMyPlannedTotalScore(bigInput), Some(Score(13_193)))
   }
+
+}
+object Day2Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day2_input.txt")
 
 }

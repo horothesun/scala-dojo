@@ -2,7 +2,7 @@ package adventofcode22
 
 import munit.ScalaCheckSuite
 import Day1._
-import FileLoader._
+import Day1Suite._
 
 class Day1Suite extends ScalaCheckSuite {
 
@@ -28,8 +28,7 @@ class Day1Suite extends ScalaCheckSuite {
   }
 
   test("total Calories carried by the Elf with most calories (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day1_input.txt")
-    assertEquals(getElfWithMostCaloriesTotalCalories(input), Some(70_764))
+    assertEquals(getElfWithMostCaloriesTotalCalories(bigInput), Some(70_764))
   }
 
   test("total Calories carried by top 3 Elves with most calories (small input)") {
@@ -54,8 +53,12 @@ class Day1Suite extends ScalaCheckSuite {
   }
 
   test("total Calories carried by top 3 Elves with most calories (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day1_input.txt")
-    assertEquals(getTop3ElvesWithMostCaloriesTotalCalories(input), Some(203_905))
+    assertEquals(getTop3ElvesWithMostCaloriesTotalCalories(bigInput), Some(203_905))
   }
+
+}
+object Day1Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day1_input.txt")
 
 }

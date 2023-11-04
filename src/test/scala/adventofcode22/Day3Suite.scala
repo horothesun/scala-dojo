@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import munit.ScalaCheckSuite
 import Day3._
-import FileLoader._
+import Day3Suite._
 
 class Day3Suite extends ScalaCheckSuite {
 
@@ -81,9 +81,8 @@ class Day3Suite extends ScalaCheckSuite {
     assertEquals(getRepeatedItemsPrioritiesSum(input), Some(157))
   }
 
-  test("getRepeatedItemsPrioritiesSum on BIG input") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day3_input.txt")
-    assertEquals(getRepeatedItemsPrioritiesSum(input), Some(7_903))
+  test("getRepeatedItemsPrioritiesSum(bigInput) returns valid value") {
+    assertEquals(getRepeatedItemsPrioritiesSum(bigInput), Some(7_903))
   }
 
   test("getGroupedBadgeItemsPrioritiesSum on small input") {
@@ -99,9 +98,13 @@ class Day3Suite extends ScalaCheckSuite {
     assertEquals(getGroupedBadgeItemsPrioritiesSum(input), Some(70))
   }
 
-  test("getGroupedBadgeItemsPrioritiesSum on BIG input") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day3_input.txt")
-    assertEquals(getGroupedBadgeItemsPrioritiesSum(input), Some(2_548))
+  test("getGroupedBadgeItemsPrioritiesSum(bigInput) returns valid value") {
+    assertEquals(getGroupedBadgeItemsPrioritiesSum(bigInput), Some(2_548))
   }
+
+}
+object Day3Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day3_input.txt")
 
 }

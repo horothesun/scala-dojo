@@ -2,8 +2,8 @@ package adventofcode22
 
 import munit.ScalaCheckSuite
 import Day5._
-import Day5.CrateItem.Crate
-import FileLoader._
+import Day5.CrateItem._
+import Day5Suite._
 
 class Day5Suite extends ScalaCheckSuite {
 
@@ -300,9 +300,8 @@ class Day5Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getStacksTopCratesAfterPerformingBaseMovePlan (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day5_input.txt")
-    assertEquals(getStacksTopCratesAfterPerformingBaseMovePlan(input), Some("TQRFCBSJJ"))
+  test("getStacksTopCratesAfterPerformingBaseMovePlan(bigInput) returns valid value") {
+    assertEquals(getStacksTopCratesAfterPerformingBaseMovePlan(bigInput), Some("TQRFCBSJJ"))
   }
 
   test("performing MovePlan on Stacks produces valid Stacks") {
@@ -327,9 +326,13 @@ class Day5Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getStacksTopCratesAfterPerformingMovePlan (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day5_input.txt")
-    assertEquals(getStacksTopCratesAfterPerformingMovePlan(input), Some("RMHFJNVFP"))
+  test("getStacksTopCratesAfterPerformingMovePlan(bigInput) returns valid value") {
+    assertEquals(getStacksTopCratesAfterPerformingMovePlan(bigInput), Some("RMHFJNVFP"))
   }
+
+}
+object Day5Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day5_input.txt")
 
 }

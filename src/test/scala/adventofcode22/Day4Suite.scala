@@ -3,7 +3,7 @@ package adventofcode22
 import cats.data.NonEmptyList
 import munit.ScalaCheckSuite
 import Day4._
-import FileLoader._
+import Day4Suite._
 
 class Day4Suite extends ScalaCheckSuite {
 
@@ -81,9 +81,8 @@ class Day4Suite extends ScalaCheckSuite {
     assertEquals(getAssignmentPairsWithFullyContainedRangeCount(input), Some(2))
   }
 
-  test("getAssignmentPairsWithFullyContainedRangeCount (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day4_input.txt")
-    assertEquals(getAssignmentPairsWithFullyContainedRangeCount(input), Some(532))
+  test("getAssignmentPairsWithFullyContainedRangeCount(bigInput) returns valid value") {
+    assertEquals(getAssignmentPairsWithFullyContainedRangeCount(bigInput), Some(532))
   }
 
   test("getAssignmentPairsWithOverlappingRangesCount (small input)") {
@@ -99,9 +98,13 @@ class Day4Suite extends ScalaCheckSuite {
     assertEquals(getAssignmentPairsWithOverlappingRangesCount(input), Some(4))
   }
 
-  test("getAssignmentPairsWithOverlappingRangesCount (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day4_input.txt")
-    assertEquals(getAssignmentPairsWithOverlappingRangesCount(input), Some(854))
+  test("getAssignmentPairsWithOverlappingRangesCount(bigInput) returns valid value") {
+    assertEquals(getAssignmentPairsWithOverlappingRangesCount(bigInput), Some(854))
   }
+
+}
+object Day4Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day4_input.txt")
 
 }

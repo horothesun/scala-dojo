@@ -7,7 +7,6 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop._
 import Day6._
 import Day6Suite._
-import FileLoader._
 
 class Day6Suite extends ScalaCheckSuite {
 
@@ -47,9 +46,8 @@ class Day6Suite extends ScalaCheckSuite {
     assertEquals(getFinal1BasedIndex(maxPrefixLength = 4, input), Some(11))
   }
 
-  test("getStartOfPacketMarkerIndex (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day6_input.txt")
-    assertEquals(getStartOfPacketMarkerIndex(input), Some(1850))
+  test("getStartOfPacketMarkerIndex(bigInput) returns valid value") {
+    assertEquals(getStartOfPacketMarkerIndex(bigInput), Some(1850))
   }
 
   test("getFinal1BasedIndex(maxPrefixLength = 14, \"mjqjpqmgbljsphdztnvjfqwrcgsmlb\".toList) returns Some(19)") {
@@ -77,13 +75,14 @@ class Day6Suite extends ScalaCheckSuite {
     assertEquals(getFinal1BasedIndex(maxPrefixLength = 14, input), Some(26))
   }
 
-  test("getStartOfMessageMarkerIndex (BIG input)") {
-    val input = getLinesFromFile("src/test/scala/adventofcode22/day6_input.txt")
-    assertEquals(getStartOfMessageMarkerIndex(input), Some(2823))
+  test("getStartOfMessageMarkerIndex(bigInput) returns valid value") {
+    assertEquals(getStartOfMessageMarkerIndex(bigInput), Some(2823))
   }
 
 }
 object Day6Suite {
+
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day6_input.txt")
 
   val nonEmptySetGen: Gen[NonEmptySet[Int]] =
     Gen
