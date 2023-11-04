@@ -57,7 +57,9 @@ object Day7 {
       }
   }
 
-  case class Size(value: Long)
+  case class Size(value: Long) {
+    def `-`(that: Size): Size = Numeric[Size].minus(this, that)
+  }
   object Size {
     implicit val order: Order[Size] = Order.by(_.value)
     implicit val numeric: Numeric[Size] = Numeric[Long].imap(Size.apply)(_.value)
@@ -173,48 +175,45 @@ object Day7 {
       .sequence
 
   def getFileSystem(terminalInfos: TerminalInfo*): Option[FileSystem[Size]] = {
-    val (_, lsLogsByPath) =
-      // TODO: extract and test!!! 👀👀👀
-      terminalInfos.foldLeft[(Stack[DirName], Map[Path, List[TerminalLsLog]])]((Stack.empty, Map.empty)) {
-        case ((dirStack, lsLogsByPath), termInfo) =>
-          termInfo match {
-            case CdCmd(dirName) =>
-              val newDirStack = dirStack.push(dirName)
-              val newLsLogsByPath =
-                Path
-                  .from(newDirStack)
-                  .map(newPath =>
-                    lsLogsByPath
-                      .get(newPath)
-                      .fold(ifEmpty = lsLogsByPath.updated(newPath, List.empty))(_ => lsLogsByPath)
-                  )
-                  // TODO: handle error case!!! 🔥🔥🔥
-                  .getOrElse(lsLogsByPath)
-              (newDirStack, newLsLogsByPath)
-            case CdUpCmd() =>
-              (
-                dirStack.pop.fold(ifEmpty = dirStack)(_._2), // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-                lsLogsByPath
-              )
-            case Ls(logs) =>
-              val newLsLogsByPath = Path
+    type LsLogsByPath = Map[Path, List[TerminalLsLog]]
+    val (_, lsLogsByPath) = terminalInfos.foldLeft[(Stack[DirName], LsLogsByPath)]((Stack.empty, Map.empty)) {
+      case ((dirStack, lsLogsByPath), termInfo) =>
+        termInfo match {
+          case CdCmd(dirName) =>
+            val newDirStack = dirStack.push(dirName)
+            val newLsLogsByPath =
+              Path
+                .from(newDirStack)
+                .map(newPath =>
+                  lsLogsByPath
+                    .get(newPath)
+                    .fold(ifEmpty = lsLogsByPath.updated(newPath, List.empty))(_ => lsLogsByPath)
+                )
+                .getOrElse(lsLogsByPath) // ignoring Path.from(dirStack) == None
+            (newDirStack, newLsLogsByPath)
+          case CdUpCmd() =>
+            val newDirStack = dirStack.pop.fold(ifEmpty = dirStack)(_._2) // ignoring empty Stack[DirName]
+            (newDirStack, lsLogsByPath)
+          case Ls(logs) =>
+            val newLsLogsByPath =
+              Path
                 .from(dirStack)
-                .map(currentPath => lsLogsByPath.updated(currentPath, logs)) // override any pre-calculated content
-                .getOrElse(lsLogsByPath) // TODO: handle empty Stack[DirName]!!! 🔥🔥🔥
-              (dirStack, newLsLogsByPath)
-          }
-      }
+                .map(currentPath => lsLogsByPath.updated(currentPath, logs)) // overriding any pre-calculated content
+                .getOrElse(lsLogsByPath) // ignoring Path.from(dirStack) == None
+            (dirStack, newLsLogsByPath)
+        }
+    }
 
-    def aux(path: Path): Option[FileSystem[Size]] =
+    def getFileSystemFromPath(path: Path): Option[FileSystem[Size]] =
       lsLogsByPath
         .getOrElse(path, List.empty)
         .traverse {
-          case DirLsLog(dirName)         => aux(path / dirName)
+          case DirLsLog(dirName)         => getFileSystemFromPath(path / dirName)
           case FileLsLog(fileName, size) => Some(File(fileName, size))
         }
         .map(content => Dir(path.getDirName, content))
 
-    aux(Path.Root)
+    getFileSystemFromPath(Path.Root)
   }
 
   def getAllDirSizes(fs: FileSystem[Size]): List[Size] = fs match {
@@ -223,12 +222,28 @@ object Day7 {
   }
 
   def getAllDirSizesAtMost(maxSize: Size, fs: FileSystem[Size]): List[Size] =
-    getAllDirSizes(fs).filter(_ < maxSize) // TODO: < or <= !?! 👀👀👀
+    getAllDirSizes(fs).filter(_ <= maxSize)
 
   def getSumOfAllDirSizesAtMost100k(input: List[String]): Option[Size] =
     getTerminalOutputs(input)
       .flatMap(getTerminalInfos)
       .flatMap(getFileSystem)
       .map(fs => getAllDirSizesAtMost(maxSize = Size(100_000), fs).sum)
+
+  val TOTAL_DISK_SPACE: Size = Size(70_000_000)
+  val REQUIRED_UNUSED_DISK_SPACE: Size = Size(30_000_000)
+
+  def getUnusedDiskSpace(fs: FileSystem[Size]): Size = TOTAL_DISK_SPACE - fs.sumAll
+
+  def getSmallestDirSizeToDelete(fs: FileSystem[Size]): Option[Size] = {
+    val unusedDiskSpace = getUnusedDiskSpace(fs)
+    getAllDirSizes(fs).filter(_ >= REQUIRED_UNUSED_DISK_SPACE - unusedDiskSpace).sorted.headOption
+  }
+
+  def getSmallestDirSizeToDelete(input: List[String]): Option[Size] =
+    getTerminalOutputs(input)
+      .flatMap(getTerminalInfos)
+      .flatMap(getFileSystem)
+      .flatMap(getSmallestDirSizeToDelete)
 
 }

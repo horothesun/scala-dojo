@@ -183,6 +183,18 @@ class Day7Suite extends ScalaCheckSuite {
     assertEquals(getSumOfAllDirSizesAtMost100k(bigInput), Some(Size(1_611_443)))
   }
 
+  test("getUnusedDiskSpace(root) is Size(21618835)") {
+    assertEquals(getUnusedDiskSpace(root), Size(21618835))
+  }
+
+  test("getSmallestDirSizeToDelete(root) returns Some(Size(24933642))") {
+    assertEquals(getSmallestDirSizeToDelete(root), Some(Size(24933642)))
+  }
+
+  test("getSmallestDirSizeToDelete(bigInput) returns Some(Size(2086088))") {
+    assertEquals(getSmallestDirSizeToDelete(bigInput), Some(Size(2086088)))
+  }
+
 }
 object Day7Suite {
 
