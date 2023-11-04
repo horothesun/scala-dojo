@@ -4,9 +4,69 @@ import cats.implicits._
 import munit.ScalaCheckSuite
 import Day7._
 import Day7.FileSystem._
+import Day7.TerminalOutput._
 import Day7Suite._
 
 class Day7Suite extends ScalaCheckSuite {
+
+  test("getTerminalOutputs (small input)") {
+    val input =
+      """
+        |$ cd /
+        |$ ls
+        |dir a
+        |14848514 b.txt
+        |8504156 c.dat
+        |dir d
+        |$ cd a
+        |$ ls
+        |dir e
+        |29116 f
+        |2557 g
+        |62596 h.lst
+        |$ cd e
+        |$ ls
+        |584 i
+        |$ cd ..
+        |$ cd ..
+        |$ cd d
+        |$ ls
+        |4060174 j
+        |8033020 d.log
+        |5626152 d.ext
+        |7214296 k
+        |""".stripMargin.linesIterator.toList.drop(1)
+    assertEquals(
+      getTerminalOutputs(input),
+      Some(
+        List(
+          CdCmd(DirName("/")),
+          LsCmd(),
+          DirLog(DirName("a")),
+          FileLog(FileName("b.txt"), Size(14848514)),
+          FileLog(FileName("c.dat"), Size(8504156)),
+          DirLog(DirName("d")),
+          CdCmd(DirName("a")),
+          LsCmd(),
+          DirLog(DirName("e")),
+          FileLog(FileName("f"), Size(29116)),
+          FileLog(FileName("g"), Size(2557)),
+          FileLog(FileName("h.lst"), Size(62596)),
+          CdCmd(DirName("e")),
+          LsCmd(),
+          FileLog(FileName("i"), Size(584)),
+          CdOutCmd(),
+          CdOutCmd(),
+          CdCmd(DirName("d")),
+          LsCmd(),
+          FileLog(FileName("j"), Size(4060174)),
+          FileLog(FileName("d.log"), Size(8033020)),
+          FileLog(FileName("d.ext"), Size(5626152)),
+          FileLog(FileName("k"), Size(7214296))
+        )
+      )
+    )
+  }
 
   test("directory 'a' total size is 94853") {
     assertEquals(a.sumAll, Size(94853))
@@ -41,21 +101,21 @@ class Day7Suite extends ScalaCheckSuite {
 }
 object Day7Suite {
 
-  val i: FileSystem[Size] = File(Name("i"), Size(584))
-  val f: FileSystem[Size] = File(Name("f"), Size(29116))
-  val g: FileSystem[Size] = File(Name("g"), Size(2557))
-  val h_lst: FileSystem[Size] = File(Name("h.lst"), Size(62596))
-  val b_txt: FileSystem[Size] = File(Name("b.txt"), Size(14848514))
-  val c_dat: FileSystem[Size] = File(Name("c.dat"), Size(8504156))
-  val j: FileSystem[Size] = File(Name("j"), Size(4060174))
-  val d_log: FileSystem[Size] = File(Name("d.log"), Size(8033020))
-  val d_ext: FileSystem[Size] = File(Name("d.ext"), Size(5626152))
-  val k: FileSystem[Size] = File(Name("k"), Size(7214296))
+  val i: FileSystem[Size] = File(FileName("i"), Size(584))
+  val f: FileSystem[Size] = File(FileName("f"), Size(29116))
+  val g: FileSystem[Size] = File(FileName("g"), Size(2557))
+  val h_lst: FileSystem[Size] = File(FileName("h.lst"), Size(62596))
+  val b_txt: FileSystem[Size] = File(FileName("b.txt"), Size(14848514))
+  val c_dat: FileSystem[Size] = File(FileName("c.dat"), Size(8504156))
+  val j: FileSystem[Size] = File(FileName("j"), Size(4060174))
+  val d_log: FileSystem[Size] = File(FileName("d.log"), Size(8033020))
+  val d_ext: FileSystem[Size] = File(FileName("d.ext"), Size(5626152))
+  val k: FileSystem[Size] = File(FileName("k"), Size(7214296))
 
-  val e: FileSystem[Size] = Dir(Name("e"), List(i))
-  val a: FileSystem[Size] = Dir(Name("a"), List(e, f, g, h_lst))
-  val d: FileSystem[Size] = Dir(Name("d"), List(j, d_log, d_ext, k))
+  val e: FileSystem[Size] = Dir(DirName("e"), List(i))
+  val a: FileSystem[Size] = Dir(DirName("a"), List(e, f, g, h_lst))
+  val d: FileSystem[Size] = Dir(DirName("d"), List(j, d_log, d_ext, k))
 
-  val root: FileSystem[Size] = Dir(Name("/"), List(a, b_txt, c_dat, d))
+  val root: FileSystem[Size] = Dir(DirName("/"), List(a, b_txt, c_dat, d))
 
 }
