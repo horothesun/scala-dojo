@@ -4,6 +4,8 @@ import cats.implicits._
 import munit.ScalaCheckSuite
 import Day7._
 import Day7.FileSystem._
+import Day7.TerminalInfo._
+import Day7.TerminalLsLog._
 import Day7.TerminalOutput._
 import Day7Suite._
 
@@ -39,9 +41,57 @@ class Day7Suite extends ScalaCheckSuite {
     assertEquals(getTerminalOutputs(input), Some(terminalOutputs))
   }
 
-//  test("getFileSystem returns valid value") {
-//    assertEquals(getFileSystem(terminalOutputs), None)
-//  }
+  test("getTerminalOutputs(bigInput) returns same-sized list") {
+    assertEquals(getTerminalOutputs(bigInput).map(_.length), Some(bigInput.length))
+  }
+
+  test("getTerminalInfos returns valid value") {
+    assertEquals(getTerminalInfos(terminalOutputs: _*), Some(terminalInfos))
+  }
+
+  test("getTerminalInfos on CdCmdTermOut followed by DirTermOut returns None") {
+    assertEquals(
+      getTerminalInfos(
+        CdCmdTermOut(DirName.root),
+        DirTermOut(DirName("a"))
+      ),
+      None
+    )
+  }
+
+  test("getTerminalInfos on CdCmdTermOut followed by FileTermOut returns None") {
+    assertEquals(
+      getTerminalInfos(
+        CdCmdTermOut(DirName.root),
+        FileTermOut(FileName("b.txt"), Size(14848514))
+      ),
+      None
+    )
+  }
+
+  test("getTerminalInfos on CdUpCmdTermOut followed by DirTermOut returns None") {
+    assertEquals(
+      getTerminalInfos(
+        CdUpCmdTermOut(),
+        DirTermOut(DirName("a"))
+      ),
+      None
+    )
+  }
+
+  test("getTerminalInfos on CdUpCmdTermOut followed by FileTermOut returns None") {
+    assertEquals(
+      getTerminalInfos(
+        CdUpCmdTermOut(),
+        FileTermOut(FileName("b.txt"), Size(14848514))
+      ),
+      None
+    )
+  }
+
+  test("getFileSystem returns valid value") {
+    assertEquals(getFileSystem(terminalInfos: _*), Some(root))
+  }
 
   test("directory 'a' total size is 94853") {
     assertEquals(a.sumAll, Size(94853))
@@ -73,34 +123,79 @@ class Day7Suite extends ScalaCheckSuite {
     )
   }
 
+//  test("getSumOfAllDirSizesAtMost100k(bigInput) returns valid ") {
+//    assertEquals(getSumOfAllDirSizesAtMost100k(bigInput), Some(Size(100)))
+//  }
+
 }
 object Day7Suite {
 
+  val bigInput: List[String] = FileLoader.getLinesFromFile("src/test/scala/adventofcode22/day7_input.txt")
+
   val terminalOutputs: List[TerminalOutput] =
     List(
-      CdCmd(DirName("/")),
-      LsCmd(),
-      DirLog(DirName("a")),
-      FileLog(FileName("b.txt"), Size(14848514)),
-      FileLog(FileName("c.dat"), Size(8504156)),
-      DirLog(DirName("d")),
+      CdCmdTermOut(DirName.root),
+      LsCmdTermOut(),
+      DirTermOut(DirName("a")),
+      FileTermOut(FileName("b.txt"), Size(14848514)),
+      FileTermOut(FileName("c.dat"), Size(8504156)),
+      DirTermOut(DirName("d")),
+      CdCmdTermOut(DirName("a")),
+      LsCmdTermOut(),
+      DirTermOut(DirName("e")),
+      FileTermOut(FileName("f"), Size(29116)),
+      FileTermOut(FileName("g"), Size(2557)),
+      FileTermOut(FileName("h.lst"), Size(62596)),
+      CdCmdTermOut(DirName("e")),
+      LsCmdTermOut(),
+      FileTermOut(FileName("i"), Size(584)),
+      CdUpCmdTermOut(),
+      CdUpCmdTermOut(),
+      CdCmdTermOut(DirName("d")),
+      LsCmdTermOut(),
+      FileTermOut(FileName("j"), Size(4060174)),
+      FileTermOut(FileName("d.log"), Size(8033020)),
+      FileTermOut(FileName("d.ext"), Size(5626152)),
+      FileTermOut(FileName("k"), Size(7214296))
+    )
+
+  val terminalInfos: List[TerminalInfo] =
+    List(
+      CdCmd(DirName.root),
+      Ls(
+        List(
+          DirLsLog(DirName("a")),
+          FileLsLog(FileName("b.txt"), Size(14848514)),
+          FileLsLog(FileName("c.dat"), Size(8504156)),
+          DirLsLog(DirName("d"))
+        )
+      ),
       CdCmd(DirName("a")),
-      LsCmd(),
-      DirLog(DirName("e")),
-      FileLog(FileName("f"), Size(29116)),
-      FileLog(FileName("g"), Size(2557)),
-      FileLog(FileName("h.lst"), Size(62596)),
+      Ls(
+        List(
+          DirLsLog(DirName("e")),
+          FileLsLog(FileName("f"), Size(29116)),
+          FileLsLog(FileName("g"), Size(2557)),
+          FileLsLog(FileName("h.lst"), Size(62596))
+        )
+      ),
       CdCmd(DirName("e")),
-      LsCmd(),
-      FileLog(FileName("i"), Size(584)),
-      CdOutCmd(),
-      CdOutCmd(),
+      Ls(
+        List(
+          FileLsLog(FileName("i"), Size(584))
+        )
+      ),
+      CdUpCmd(),
+      CdUpCmd(),
       CdCmd(DirName("d")),
-      LsCmd(),
-      FileLog(FileName("j"), Size(4060174)),
-      FileLog(FileName("d.log"), Size(8033020)),
-      FileLog(FileName("d.ext"), Size(5626152)),
-      FileLog(FileName("k"), Size(7214296))
+      Ls(
+        List(
+          FileLsLog(FileName("j"), Size(4060174)),
+          FileLsLog(FileName("d.log"), Size(8033020)),
+          FileLsLog(FileName("d.ext"), Size(5626152)),
+          FileLsLog(FileName("k"), Size(7214296))
+        )
+      )
     )
 
   val i: FileSystem[Size] = File(FileName("i"), Size(584))
@@ -118,6 +213,6 @@ object Day7Suite {
   val a: FileSystem[Size] = Dir(DirName("a"), List(e, f, g, h_lst))
   val d: FileSystem[Size] = Dir(DirName("d"), List(j, d_log, d_ext, k))
 
-  val root: FileSystem[Size] = Dir(DirName("/"), List(a, b_txt, c_dat, d))
+  val root: FileSystem[Size] = Dir(DirName.root, List(a, b_txt, c_dat, d))
 
 }
