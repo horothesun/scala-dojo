@@ -114,9 +114,9 @@ class Day5Suite extends ScalaCheckSuite {
       Stacks.from(filledCrateStacks),
       Some(
         Stacks(
-          Stack(Crate('N'), Crate('Z')),
-          Stack(Crate('D'), Crate('C'), Crate('M')),
-          Stack(Crate('P'))
+          Stack.of(Crate('Z')).push(Crate('N')),
+          Stack.of(Crate('M')).push(Crate('C')).push(Crate('D')),
+          Stack.of(Crate('P'))
         )
       )
     )
@@ -133,9 +133,9 @@ class Day5Suite extends ScalaCheckSuite {
       Stacks.from(filledCrateStacks),
       Some(
         Stacks(
-          Stack(Crate('D'), Crate('N'), Crate('Z')),
-          Stack(Crate('C'), Crate('M')),
-          Stack(Crate('P'))
+          Stack.of(Crate('Z')).push(Crate('N')).push(Crate('D')),
+          Stack.of(Crate('M')).push(Crate('C')),
+          Stack.of(Crate('P'))
         )
       )
     )
@@ -154,8 +154,8 @@ class Day5Suite extends ScalaCheckSuite {
       Some(
         Stacks(
           Stack.empty[Crate],
-          Stack(Crate('C'), Crate('M')),
-          Stack(Crate('Z'), Crate('N'), Crate('D'), Crate('P'))
+          Stack.of(Crate('M')).push(Crate('C')),
+          Stack.of(Crate('P')).push(Crate('D')).push(Crate('N')).push(Crate('Z'))
         )
       )
     )
@@ -173,9 +173,9 @@ class Day5Suite extends ScalaCheckSuite {
       Stacks.from(filledCrateStacks),
       Some(
         Stacks(
-          Stack(Crate('M'), Crate('C')),
+          Stack.of(Crate('C')).push(Crate('M')),
           Stack.empty[Crate],
-          Stack(Crate('Z'), Crate('N'), Crate('D'), Crate('P'))
+          Stack.of(Crate('P')).push(Crate('D')).push(Crate('N')).push(Crate('Z'))
         )
       )
     )
@@ -193,9 +193,9 @@ class Day5Suite extends ScalaCheckSuite {
       Stacks.from(filledCrateStacks),
       Some(
         Stacks(
-          Stack(Crate('C')),
-          Stack(Crate('M')),
-          Stack(Crate('Z'), Crate('N'), Crate('D'), Crate('P'))
+          Stack.of(Crate('C')),
+          Stack.of(Crate('M')),
+          Stack.of(Crate('P')).push(Crate('D')).push(Crate('N')).push(Crate('Z'))
         )
       )
     )
@@ -230,17 +230,17 @@ class Day5Suite extends ScalaCheckSuite {
 
   test("performing BaseMove(from = 2, to = 1) on Stacks with non-empty 'from' Stack produces valid Stacks") {
     val stacks = Stacks(
-      Stack(Crate('N'), Crate('Z')),
-      Stack(Crate('D'), Crate('C'), Crate('M')),
-      Stack(Crate('P'))
+      Stack.of(Crate('Z')).push(Crate('N')),
+      Stack.of(Crate('M')).push(Crate('C')).push(Crate('D')),
+      Stack.of(Crate('P'))
     )
     assertEquals(
       BaseMove(from = 2, to = 1).performOn(stacks),
       Some(
         Stacks(
-          Stack(Crate('D'), Crate('N'), Crate('Z')),
-          Stack(Crate('C'), Crate('M')),
-          Stack(Crate('P'))
+          Stack.of(Crate('Z')).push(Crate('N')).push(Crate('D')),
+          Stack.of(Crate('M')).push(Crate('C')),
+          Stack.of(Crate('P'))
         )
       )
     )
@@ -248,9 +248,9 @@ class Day5Suite extends ScalaCheckSuite {
 
   test("performing BaseMove(from = 2, to = 1) on Stacks with empty 'from' Stack produces valid Stacks") {
     val stacks = Stacks(
-      Stack(Crate('M'), Crate('C')),
+      Stack.of(Crate('C')).push(Crate('M')),
       Stack.empty[Crate],
-      Stack(Crate('Z'), Crate('N'), Crate('D'), Crate('P'))
+      Stack.of(Crate('P')).push(Crate('D')).push(Crate('N')).push(Crate('Z'))
     )
     assertEquals(BaseMove(from = 2, to = 1).performOn(stacks), None)
   }
@@ -286,16 +286,16 @@ class Day5Suite extends ScalaCheckSuite {
       )
     )
     val stacks = Stacks(
-      Stack(Crate('N'), Crate('Z')),
-      Stack(Crate('D'), Crate('C'), Crate('M')),
-      Stack(Crate('P'))
+      Stack.of(Crate('Z')).push(Crate('N')),
+      Stack.of(Crate('M')).push(Crate('C')).push(Crate('D')),
+      Stack.of(Crate('P'))
     )
     assertEquals(
       baseMovePlan.performOn(stacks),
       Stacks(
-        Stack(Crate('C')),
-        Stack(Crate('M')),
-        Stack(Crate('Z'), Crate('N'), Crate('D'), Crate('P'))
+        Stack.of(Crate('C')),
+        Stack.of(Crate('M')),
+        Stack.of(Crate('P')).push(Crate('D')).push(Crate('N')).push(Crate('Z'))
       )
     )
   }
@@ -312,16 +312,16 @@ class Day5Suite extends ScalaCheckSuite {
       Move(n = 1, from = 1, to = 2)
     )
     val stacks = Stacks(
-      Stack(Crate('N'), Crate('Z')),
-      Stack(Crate('D'), Crate('C'), Crate('M')),
-      Stack(Crate('P'))
+      Stack.of(Crate('Z')).push(Crate('N')),
+      Stack.of(Crate('M')).push(Crate('C')).push(Crate('D')),
+      Stack.of(Crate('P'))
     )
     assertEquals(
       movePlan.performOn(stacks),
       Stacks(
-        Stack(Crate('M')),
-        Stack(Crate('C')),
-        Stack(Crate('D'), Crate('N'), Crate('Z'), Crate('P'))
+        Stack.of(Crate('M')),
+        Stack.of(Crate('C')),
+        Stack.of(Crate('P')).push(Crate('Z')).push(Crate('N')).push(Crate('D'))
       )
     )
   }

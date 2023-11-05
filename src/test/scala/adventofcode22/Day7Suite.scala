@@ -13,15 +13,8 @@ import Day7Suite._
 
 class Day7Suite extends ScalaCheckSuite {
 
-  test("Stack.empty[Int].push(1).push(2).push(3).toList returns List(3, 2, 1)") {
-    assertEquals(
-      Stack.empty[Int].push(1).push(2).push(3).toList,
-      List(3, 2, 1)
-    )
-  }
-
-  test("Path.from(Stack.empty[DirName]) returns None") {
-    assertEquals(Path.from(Stack.empty[DirName]), None)
+  test("Path.from(Stack.empty) returns None") {
+    assertEquals(Path.from(Stack.empty), None)
   }
 
   test("Path.from returns None on Stack[DirName] representing 'a/b/c'") {

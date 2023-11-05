@@ -4,32 +4,12 @@ import cats._
 import cats.implicits._
 import Day7.Path._
 import Day7.FileSystem._
-import Day7.Stack._
 import Day7.TerminalInfo._
 import Day7.TerminalLsLog._
 import Day7.TerminalOutput._
+import Stack._
 
 object Day7 {
-
-  sealed trait Stack[A] {
-    def push(a: A): Stack[A] = Cons(a, this)
-    def pop: Option[(A, Stack[A])] = this match {
-      case Empty()         => None
-      case Cons(top, tail) => Some((top, tail))
-    }
-    def peek: Option[A] = this match {
-      case Empty()      => None
-      case Cons(top, _) => Some(top)
-    }
-  }
-  object Stack {
-    case class Empty[A]() extends Stack[A]
-    case class Cons[A](top: A, tail: Stack[A]) extends Stack[A]
-
-    def empty[A]: Stack[A] = Empty()
-
-    implicit val foldable: Foldable[Stack] = derived.semiauto.foldable
-  }
 
   case class FileName(value: String)
 

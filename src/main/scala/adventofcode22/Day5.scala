@@ -7,19 +7,6 @@ import ListOps._
 
 object Day5 {
 
-  case class Stack[A] private (as: List[A]) {
-    def push(a: A): Stack[A] = Stack(a :: as)
-    def pop: Option[(A, Stack[A])] = as match {
-      case h :: t => Some((h, Stack(t)))
-      case Nil    => None
-    }
-    def peek: Option[A] = as.headOption
-  }
-  object Stack {
-    def apply[A](as: A*): Stack[A] = Stack.apply[A](as.toList)
-    def empty[A]: Stack[A] = Stack(List.empty)
-  }
-
   sealed trait CrateItem
   object CrateItem {
     case class NoCrate() extends CrateItem
