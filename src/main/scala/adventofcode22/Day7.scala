@@ -131,11 +131,17 @@ object Day7 {
   object TerminalInfo {
     case class CdCmd(dirName: DirName) extends TerminalInfo
     object CdCmd {
-      def from(ccto: CdCmdTermOut): CdCmd = CdCmd(ccto.dirName)
+      def from(c: CdCmdTermOut): CdCmd = CdCmd(c.dirName)
     }
     case class CdUpCmd() extends TerminalInfo
+    object CdUpCmd {
+      def from(c: CdUpCmdTermOut): CdUpCmd = CdUpCmd()
+    }
     case class Ls(logs: List[TerminalLsLog]) extends TerminalInfo {
       def `:+`(termLsLog: TerminalLsLog): Ls = Ls(logs :+ termLsLog)
+    }
+    object Ls {
+      def from(l: LsCmdTermOut): Ls = Ls(List.empty)
     }
   }
 
@@ -149,7 +155,6 @@ object Day7 {
 
   def getTerminalOutputs(input: List[String]): Option[List[TerminalOutput]] = input.traverse(TerminalOutput.from)
 
-  // TODO: find structure to simplify this implementation 🔥🔥🔥
   def getTerminalInfos(terminalOutputs: TerminalOutput*): Option[List[TerminalInfo]] =
     terminalOutputs
       .foldLeft(List.empty[Option[TerminalInfo]]) { case (acc, termOut) =>
@@ -157,27 +162,27 @@ object Day7 {
           acc.lastOption
             .flatMap[Option[TerminalInfo]] { last =>
               last.map {
-                case CdCmd(_)   => None
-                case CdUpCmd()  => None
-                case ls @ Ls(_) => Some(ls :+ newLsLog)
+                case CdCmd(_) | CdUpCmd() => None
+                case ls @ Ls(_)           => Some(ls :+ newLsLog)
               }
             }
             .flatTraverse(newLast => acc.dropRight(1) :+ newLast)
 
         termOut match {
-          case ccto @ CdCmdTermOut(_)  => acc :+ Some(CdCmd.from(ccto))
-          case CdUpCmdTermOut()        => acc :+ Some(CdUpCmd())
-          case LsCmdTermOut()          => acc :+ Some(Ls(List.empty))
+          case c @ CdCmdTermOut(_)     => acc :+ Some(CdCmd.from(c))
+          case c @ CdUpCmdTermOut()    => acc :+ Some(CdUpCmd.from(c))
+          case l @ LsCmdTermOut()      => acc :+ Some(Ls.from(l))
           case dto @ DirTermOut(_)     => getNewAccAux(newLsLog = DirLsLog.from(dto))
           case fto @ FileTermOut(_, _) => getNewAccAux(newLsLog = FileLsLog.from(fto))
         }
       }
       .sequence
 
-  def getFileSystem(terminalInfos: TerminalInfo*): Option[FileSystem[Size]] = {
-    type LsLogsByPath = Map[Path, List[TerminalLsLog]]
-    val (_, lsLogsByPath) = terminalInfos.foldLeft[(Stack[DirName], LsLogsByPath)]((Stack.empty, Map.empty)) {
-      case ((dirStack, lsLogsByPath), termInfo) =>
+  type LsLogsByPath = Map[Path, List[TerminalLsLog]]
+
+  def getLsLogsByPath(terminalInfos: TerminalInfo*): LsLogsByPath =
+    terminalInfos
+      .foldLeft[(Stack[DirName], LsLogsByPath)]((Stack.empty, Map.empty)) { case ((dirStack, lsLogsByPath), termInfo) =>
         termInfo match {
           case CdCmd(dirName) =>
             val newDirStack = dirStack.push(dirName)
@@ -187,7 +192,8 @@ object Day7 {
                 .map(newPath =>
                   lsLogsByPath
                     .get(newPath)
-                    .fold(ifEmpty = lsLogsByPath.updated(newPath, List.empty))(_ => lsLogsByPath)
+                    .map(_ => lsLogsByPath)
+                    .getOrElse(lsLogsByPath.updated(newPath, List.empty))
                 )
                 .getOrElse(lsLogsByPath) // ignoring Path.from(dirStack) == None
             (newDirStack, newLsLogsByPath)
@@ -202,8 +208,11 @@ object Day7 {
                 .getOrElse(lsLogsByPath) // ignoring Path.from(dirStack) == None
             (dirStack, newLsLogsByPath)
         }
-    }
+      }
+      ._2
 
+  def getFileSystem(terminalInfos: TerminalInfo*): Option[FileSystem[Size]] = {
+    val lsLogsByPath = getLsLogsByPath(terminalInfos: _*)
     def getFileSystemFromPath(path: Path): Option[FileSystem[Size]] =
       lsLogsByPath
         .getOrElse(path, List.empty)
@@ -212,7 +221,6 @@ object Day7 {
           case FileLsLog(fileName, size) => Some(File(fileName, size))
         }
         .map(content => Dir(path.getDirName, content))
-
     getFileSystemFromPath(Path.Root)
   }
 
