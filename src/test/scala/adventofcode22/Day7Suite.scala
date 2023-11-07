@@ -143,19 +143,19 @@ class Day7Suite extends ScalaCheckSuite {
   }
 
   test("directory 'a' total size is 94853") {
-    assertEquals(a.sumAll, Size(94853))
+    assertEquals(a.fold, Size(94853))
   }
 
   test("directory 'e' total size is 584") {
-    assertEquals(e.sumAll, Size(584))
+    assertEquals(e.fold, Size(584))
   }
 
   test("directory 'd' total size is 24933642") {
-    assertEquals(d.sumAll, Size(24933642))
+    assertEquals(d.fold, Size(24933642))
   }
 
   test("directory '/' total size is 48381165") {
-    assertEquals(root.sumAll, Size(48381165))
+    assertEquals(root.fold, Size(48381165))
   }
 
   test("getAllDirSizes(root) returns all directory sizes") {

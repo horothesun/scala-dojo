@@ -42,6 +42,7 @@ object Day7 {
   }
   object Size {
     implicit val order: Order[Size] = Order.by(_.value)
+    implicit val monoid: Monoid[Size] = derived.semiauto.monoid
     implicit val numeric: Numeric[Size] = Numeric[Long].imap(Size.apply)(_.value)
   }
 
@@ -206,7 +207,7 @@ object Day7 {
 
   def getAllDirSizes(fs: FileSystem[Size]): List[Size] = fs match {
     case File(_, _)      => List.empty
-    case Dir(_, content) => fs.sumAll :: content.flatMap(getAllDirSizes)
+    case Dir(_, content) => fs.fold :: content.flatMap(getAllDirSizes)
   }
 
   def getAllDirSizesAtMost(maxSize: Size, fs: FileSystem[Size]): List[Size] =
@@ -221,7 +222,7 @@ object Day7 {
   val TOTAL_DISK_SPACE: Size = Size(70_000_000)
   val REQUIRED_UNUSED_DISK_SPACE: Size = Size(30_000_000)
 
-  def getUnusedDiskSpace(fs: FileSystem[Size]): Size = TOTAL_DISK_SPACE - fs.sumAll
+  def getUnusedDiskSpace(fs: FileSystem[Size]): Size = TOTAL_DISK_SPACE - fs.fold
 
   def getSmallestDirSizeToDelete(fs: FileSystem[Size]): Option[Size] = {
     val unusedDiskSpace = getUnusedDiskSpace(fs)
