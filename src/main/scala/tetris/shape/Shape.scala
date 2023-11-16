@@ -4,6 +4,7 @@ import cats._
 import cats.implicits._
 import scala.annotation.tailrec
 import scala.math._
+import scala.math.Numeric.Implicits._
 import Models._
 import Shape._
 

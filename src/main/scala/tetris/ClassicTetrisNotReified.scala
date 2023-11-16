@@ -4,6 +4,8 @@ import cats._
 import cats.data.NonEmptyList
 import cats.implicits._
 import scala.annotation.tailrec
+import scala.math.Numeric.Implicits._
+import scala.math.Ordering.Implicits._
 import shape.Models._
 import ClassicTetrisNotReified.MergedIntersection._
 import ClassicTetrisNotReified.Shape._

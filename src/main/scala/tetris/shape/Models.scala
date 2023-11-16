@@ -6,21 +6,13 @@ object Models {
 
   type Row[A] = List[Option[A]]
 
-  case class Width(value: Int) extends AnyVal {
-    def `+`(that: Width): Width = Numeric[Width].plus(this, that)
-    def `-`(that: Width): Width = Numeric[Width].minus(this, that)
-    def `-` : Width = Numeric[Width].negate(this)
-  }
+  case class Width(value: Int) extends AnyVal
   object Width {
     implicit val ordering: Ordering[Width] = Ordering[Int].contramap(_.value)
     implicit val numeric: Numeric[Width] = Numeric[Int].imap(Width.apply)(_.value)
   }
 
-  case class Height(value: Int) extends AnyVal {
-    def `-`(that: Height): Height = Numeric[Height].minus(this, that)
-    def `-` : Height = Numeric[Height].negate(this)
-    def `>=`(that: Height): Boolean = this.value >= that.value
-  }
+  case class Height(value: Int) extends AnyVal
   object Height {
     implicit val ordering: Ordering[Height] = Ordering[Int].contramap(_.value)
     implicit val numeric: Numeric[Height] = Numeric[Int].imap(Height.apply)(_.value)

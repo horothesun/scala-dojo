@@ -1,6 +1,7 @@
 package adventofcode22
 
 import cats.implicits._
+import scala.math.Numeric.Implicits._
 import Day2.Shape._
 import Day2.Winner._
 
@@ -56,9 +57,7 @@ object Day2 {
     case object Draw extends Winner
   }
 
-  case class Score(value: Int) {
-    def `+`(that: Score): Score = Numeric[Score].plus(this, that)
-  }
+  case class Score(value: Int)
   object Score {
     implicit val numeric: Numeric[Score] = Numeric[Int].imap(Score.apply)(_.value)
   }

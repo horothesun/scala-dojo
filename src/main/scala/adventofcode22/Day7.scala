@@ -2,6 +2,7 @@ package adventofcode22
 
 import cats._
 import cats.implicits._
+import scala.math.Numeric.Implicits._
 import Day7.Path._
 import Day7.FileSystem._
 import Day7.TerminalInfo._
@@ -37,9 +38,7 @@ object Day7 {
       }
   }
 
-  case class Size(value: Long) {
-    def `-`(that: Size): Size = Numeric[Size].minus(this, that)
-  }
+  case class Size(value: Long)
   object Size {
     implicit val order: Order[Size] = Order.by(_.value)
     implicit val monoid: Monoid[Size] = derived.semiauto.monoid
