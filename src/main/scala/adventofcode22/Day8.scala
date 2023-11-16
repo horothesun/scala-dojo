@@ -1,8 +1,9 @@
 package adventofcode22
 
 import cats._
-import cats.data.NonEmptyList
+import cats.data.{Nested, NonEmptyList}
 import cats.implicits._
+
 import scala.annotation.tailrec
 import scala.math.Numeric.Implicits._
 import Day8.NonEmptyMatrix._
@@ -69,6 +70,19 @@ object Day8 {
       override def product[A, B](fa: NonEmptyMatrix[A], fb: NonEmptyMatrix[B]): NonEmptyMatrix[(A, B)] =
         NonEmptyMatrix(fa.rows.zip(fb.rows).map { case (as, bs) => as.zip(bs) })
     }
+
+//    implicit def applicative: Applicative[NonEmptyMatrix] = new Applicative[NonEmptyMatrix] {
+//      type NestedNelNel[T] = Nested[NonEmptyList, NonEmptyList, T]
+//      override def pure[A](x: A): NonEmptyMatrix[A] = NonEmptyMatrix(NonEmptyList.one(NonEmptyList.one(x)))
+//      override def ap[A, B](ff: NonEmptyMatrix[A => B])(fa: NonEmptyMatrix[A]): NonEmptyMatrix[B] =
+//        NonEmptyMatrix(Applicative[NestedNelNel].ap[A, B](Nested(ff.rows))(Nested(fa.rows)).value)
+//    }
+
+//    implicit def applicative: Applicative[NonEmptyMatrix] = new Applicative[NonEmptyMatrix] {
+//      override def pure[A](x: A): NonEmptyMatrix[A] = NonEmptyMatrix(NonEmptyList.one(NonEmptyList.one(x)))
+//      override def ap[A, B](ff: NonEmptyMatrix[A => B])(fa: NonEmptyMatrix[A]): NonEmptyMatrix[B] =
+//        NonEmptyMatrix(ff.rows.zip(fa.rows).map { case (fs, as) => fs.zip(as).map { case (f, a) => f(a) } })
+//    }
 
     def transpose[A](rows: NonEmptyList[NonEmptyList[A]]): NonEmptyList[NonEmptyList[A]] = {
       def heads(rows: NonEmptyList[NonEmptyList[A]]): NonEmptyList[A] = rows.map(_.head)
