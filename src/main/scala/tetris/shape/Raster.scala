@@ -5,7 +5,6 @@ import scala.math.Numeric.Implicits._
 import scala.math.Ordering.Implicits._
 import Models._
 
-
 case class Raster[A](value: List[Row[A]]) extends AnyVal {
 
   def width: Width = value match {
