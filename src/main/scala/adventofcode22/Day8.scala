@@ -41,6 +41,22 @@ object Day8 {
     lazy val transposed: NonEmptyMatrix[A] = NonEmptyMatrix(transpose(rows))
     lazy val vFlipped: NonEmptyMatrix[A] = NonEmptyMatrix(rows.map(_.reverse))
     lazy val hFlipped: NonEmptyMatrix[A] = NonEmptyMatrix(rows.reverse)
+
+    def getLeftTopRightBottomTransform[B](
+      transformRowLeft: NonEmptyList[A] => NonEmptyList[B],
+      transformRowRight: NonEmptyList[A] => NonEmptyList[B]
+    ): NonEmptyMatrix[(B, B, B, B)] = {
+      def getLeftNemB(nemA: NonEmptyMatrix[A]): NonEmptyMatrix[B] = NonEmptyMatrix(nemA.rows.map(transformRowLeft))
+      def getRightNemB(nemA: NonEmptyMatrix[A]): NonEmptyMatrix[B] = NonEmptyMatrix(nemA.rows.map(transformRowRight))
+      def getTopNemB(nemA: NonEmptyMatrix[A]): NonEmptyMatrix[B] = getRightNemB(nemA.rotatedCW).rotatedCCW
+      def getBottomNemB(nemA: NonEmptyMatrix[A]): NonEmptyMatrix[B] = getLeftNemB(nemA.rotatedCW).rotatedCCW
+      (
+        getLeftNemB(this),
+        getTopNemB(this),
+        getRightNemB(this),
+        getBottomNemB(this)
+      ).tupled
+    }
   }
   object NonEmptyMatrix {
 
@@ -48,6 +64,7 @@ object Day8 {
     implicit def functor: Functor[NonEmptyMatrix] = derived.semiauto.functor
     implicit def foldable: Foldable[NonEmptyMatrix] = derived.semiauto.foldable
 
+    // TODO: replace with Applicative[NonEmptyMatrix] instance!!! 🔥🔥🔥
     implicit def semigroupal: Semigroupal[NonEmptyMatrix] = new Semigroupal[NonEmptyMatrix] {
       override def product[A, B](fa: NonEmptyMatrix[A], fb: NonEmptyMatrix[B]): NonEmptyMatrix[(A, B)] =
         NonEmptyMatrix(fa.rows.zip(fb.rows).map { case (as, bs) => as.zip(bs) })
@@ -98,25 +115,13 @@ object Day8 {
   def getVisibilityFromRight(row: NonEmptyList[Tree]): NonEmptyList[Visibility] =
     getVisibilityFromLeft(row.reverse).reverse
 
-  def getLeftTreeVisibilities(forest: Forest): NonEmptyMatrix[Visibility] =
-    NonEmptyMatrix(forest.rows.map(getVisibilityFromLeft))
-
-  def getRightTreeVisibilities(forest: Forest): NonEmptyMatrix[Visibility] =
-    NonEmptyMatrix(forest.rows.map(getVisibilityFromRight))
-
-  def getTopTreeVisibilities(forest: Forest): NonEmptyMatrix[Visibility] =
-    getRightTreeVisibilities(forest.rotatedCW).rotatedCCW
-
-  def getBottomTreeVisibilities(forest: Forest): NonEmptyMatrix[Visibility] =
-    getLeftTreeVisibilities(forest.rotatedCW).rotatedCCW
-
   def getTreeVisibilities(forest: Forest): NonEmptyMatrix[TreeVisibility] =
-    (
-      getLeftTreeVisibilities(forest),
-      getTopTreeVisibilities(forest),
-      getRightTreeVisibilities(forest),
-      getBottomTreeVisibilities(forest)
-    ).mapN(TreeVisibility.apply)
+    forest
+      .getLeftTopRightBottomTransform(
+        transformRowLeft = getVisibilityFromLeft,
+        transformRowRight = getVisibilityFromRight
+      )
+      .map((TreeVisibility.apply _).tupled)
 
   def getTreesVisibleFromOutsideCount(forest: Forest): Long =
     getTreeVisibilities(forest).count(_ != hiddenFromAllSides)
@@ -154,25 +159,13 @@ object Day8 {
   def getVisibleTreesCountOnRight(row: NonEmptyList[Tree]): NonEmptyList[Count] =
     getVisibleTreesCountOnLeft(row.reverse).reverse
 
-  def getLeftVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
-    NonEmptyMatrix(forest.rows.map(getVisibleTreesCountOnLeft))
-
-  def getRightVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
-    NonEmptyMatrix(forest.rows.map(getVisibleTreesCountOnRight))
-
-  def getTopVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
-    getRightVisibleTreeCounts(forest.rotatedCW).rotatedCCW
-
-  def getBottomVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
-    getLeftVisibleTreeCounts(forest.rotatedCW).rotatedCCW
-
   def getVisibleTreeCounts(forest: Forest): NonEmptyMatrix[VisibleTreesCount] =
-    (
-      getLeftVisibleTreeCounts(forest),
-      getTopVisibleTreeCounts(forest),
-      getRightVisibleTreeCounts(forest),
-      getBottomVisibleTreeCounts(forest)
-    ).mapN(VisibleTreesCount.apply)
+    forest
+      .getLeftTopRightBottomTransform(
+        transformRowLeft = getVisibleTreesCountOnLeft,
+        transformRowRight = getVisibleTreesCountOnRight
+      )
+      .map((VisibleTreesCount.apply _).tupled)
 
   def getMaxVisibleTreeCount(forest: Forest): Option[Count] =
     getVisibleTreeCounts(forest).map(_.getScenicScore).maximumOption
