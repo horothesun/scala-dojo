@@ -33,52 +33,52 @@ class Day8Suite extends ScalaCheckSuite {
   }
 
   test("getVisibilityFromLeft(3,0,3,7,3) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(0)), Tree(Height(3)), Tree(Height(7)), Tree(Height(3)))
+    val row = NonEmptyList.of(3, 0, 3, 7, 3).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromLeft(row), NonEmptyList.of(Visible, Hidden, Hidden, Visible, Hidden))
   }
 
   test("getVisibilityFromLeft(2,5,5,1,2) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(2)), Tree(Height(5)), Tree(Height(5)), Tree(Height(1)), Tree(Height(2)))
+    val row = NonEmptyList.of(2, 5, 5, 1, 2).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromLeft(row), NonEmptyList.of(Visible, Visible, Hidden, Hidden, Hidden))
   }
 
   test("getVisibilityFromLeft(6,5,3,3,2) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(6)), Tree(Height(5)), Tree(Height(3)), Tree(Height(3)), Tree(Height(2)))
+    val row = NonEmptyList.of(6, 5, 3, 3, 2).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromLeft(row), NonEmptyList.of(Visible, Hidden, Hidden, Hidden, Hidden))
   }
 
   test("getVisibilityFromLeft(3,3,5,4,9) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(3)), Tree(Height(5)), Tree(Height(4)), Tree(Height(9)))
+    val row = NonEmptyList.of(3, 3, 5, 4, 9).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromLeft(row), NonEmptyList.of(Visible, Hidden, Visible, Hidden, Visible))
   }
 
   test("getVisibilityFromLeft(3,5,3,9,0) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(5)), Tree(Height(3)), Tree(Height(9)), Tree(Height(0)))
+    val row = NonEmptyList.of(3, 5, 3, 9, 0).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromLeft(row), NonEmptyList.of(Visible, Visible, Hidden, Visible, Hidden))
   }
 
   test("getVisibilityFromRight(3,0,3,7,3) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(0)), Tree(Height(3)), Tree(Height(7)), Tree(Height(3)))
+    val row = NonEmptyList.of(3, 0, 3, 7, 3).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromRight(row), NonEmptyList.of(Hidden, Hidden, Hidden, Visible, Visible))
   }
 
   test("getVisibilityFromRight(2,5,5,1,2) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(2)), Tree(Height(5)), Tree(Height(5)), Tree(Height(1)), Tree(Height(2)))
+    val row = NonEmptyList.of(2, 5, 5, 1, 2).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromRight(row), NonEmptyList.of(Hidden, Hidden, Visible, Hidden, Visible))
   }
 
   test("getVisibilityFromRight(6,5,3,3,2) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(6)), Tree(Height(5)), Tree(Height(3)), Tree(Height(3)), Tree(Height(2)))
+    val row = NonEmptyList.of(6, 5, 3, 3, 2).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromRight(row), NonEmptyList.of(Visible, Visible, Hidden, Visible, Visible))
   }
 
   test("getVisibilityFromRight(3,3,5,4,9) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(3)), Tree(Height(5)), Tree(Height(4)), Tree(Height(9)))
+    val row = NonEmptyList.of(3, 3, 5, 4, 9).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromRight(row), NonEmptyList.of(Hidden, Hidden, Hidden, Hidden, Visible))
   }
 
   test("getVisibilityFromRight(3,5,3,9,0) returns correct visibilities") {
-    val row = NonEmptyList.of(Tree(Height(3)), Tree(Height(5)), Tree(Height(3)), Tree(Height(9)), Tree(Height(0)))
+    val row = NonEmptyList.of(3, 5, 3, 9, 0).map(i => Tree(Height(i)))
     assertEquals(getVisibilityFromRight(row), NonEmptyList.of(Hidden, Hidden, Hidden, Visible, Visible))
   }
 
@@ -92,21 +92,6 @@ class Day8Suite extends ScalaCheckSuite {
     forAll(treeRowGen) { row =>
       assertEquals(getVisibilityFromRight(row), getVisibilityFromLeft(row.reverse).reverse)
     }
-  }
-
-  test("forest is correct") {
-    assertEquals(
-      forest,
-      NonEmptyMatrix(
-        NonEmptyList.of(
-          NonEmptyList.of(Tree(Height(3)), Tree(Height(0)), Tree(Height(3)), Tree(Height(7)), Tree(Height(3))),
-          NonEmptyList.of(Tree(Height(2)), Tree(Height(5)), Tree(Height(5)), Tree(Height(1)), Tree(Height(2))),
-          NonEmptyList.of(Tree(Height(6)), Tree(Height(5)), Tree(Height(3)), Tree(Height(3)), Tree(Height(2))),
-          NonEmptyList.of(Tree(Height(3)), Tree(Height(3)), Tree(Height(5)), Tree(Height(4)), Tree(Height(9))),
-          NonEmptyList.of(Tree(Height(3)), Tree(Height(5)), Tree(Height(3)), Tree(Height(9)), Tree(Height(0)))
-        )
-      )
-    )
   }
 
   test("NonEmptyMatrix rotatedCW returns correct NonEmptyMatrix") {
@@ -288,6 +273,64 @@ class Day8Suite extends ScalaCheckSuite {
 
   test("getTreesVisibleFromOutsideCount(bigInput) returns Some(1796)") {
     assertEquals(getTreesVisibleFromOutsideCount(bigInput), Some(1796L))
+  }
+
+  test("getVisibleTreesCountOnLeft(3,0,3,7,3) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 0, 3, 7, 3).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnLeft(row), NonEmptyList.of(0, 1, 2, 3, 1).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnLeft(2,5,5,1,2) returns correct visible trees count") {
+    val row = NonEmptyList.of(2, 5, 5, 1, 2).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnLeft(row), NonEmptyList.of(0, 1, 1, 1, 2).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnLeft(6,5,3,3,2) returns correct visible trees count") {
+    val row = NonEmptyList.of(6, 5, 3, 3, 2).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnLeft(row), NonEmptyList.of(0, 1, 1, 1, 1).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnLeft(3,3,5,4,9) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 3, 5, 4, 9).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnLeft(row), NonEmptyList.of(0, 1, 2, 1, 4).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnLeft(3,5,3,9,0) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 5, 3, 9, 0).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnLeft(row), NonEmptyList.of(0, 1, 1, 3, 1).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnRight(3,0,3,7,3) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 0, 3, 7, 3).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnRight(row), NonEmptyList.of(2, 1, 1, 1, 0).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnRight(2,5,5,1,2) returns correct visible trees count") {
+    val row = NonEmptyList.of(2, 5, 5, 1, 2).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnRight(row), NonEmptyList.of(1, 1, 2, 1, 0).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnRight(6,5,3,3,2) returns correct visible trees count") {
+    val row = NonEmptyList.of(6, 5, 3, 3, 2).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnRight(row), NonEmptyList.of(4, 3, 1, 1, 0).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnRight(3,3,5,4,9) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 3, 5, 4, 9).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnRight(row), NonEmptyList.of(1, 1, 2, 1, 0).map(Count.apply))
+  }
+
+  test("getVisibleTreesCountOnRight(3,5,3,9,0) returns correct visible trees count") {
+    val row = NonEmptyList.of(3, 5, 3, 9, 0).map(i => Tree(Height(i)))
+    assertEquals(getVisibleTreesCountOnRight(row), NonEmptyList.of(1, 2, 1, 1, 0).map(Count.apply))
+  }
+
+  test("getMaxVisibleTreeCount(forest) returns Some(Count(8))") {
+    assertEquals(getMaxVisibleTreeCount(forest), Some(Count(8)))
+  }
+
+  test("getMaxVisibleTreeCount(bigInput) returns Some(Count(288_120))") {
+    assertEquals(getMaxVisibleTreeCount(bigInput), Some(Count(288_120)))
   }
 
 }

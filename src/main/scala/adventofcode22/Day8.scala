@@ -4,6 +4,7 @@ import cats._
 import cats.data.NonEmptyList
 import cats.implicits._
 import scala.annotation.tailrec
+import scala.math.Numeric.Implicits._
 import Day8.NonEmptyMatrix._
 import Day8.TreeVisibility._
 import Day8.Visibility._
@@ -122,5 +123,61 @@ object Day8 {
 
   def getTreesVisibleFromOutsideCount(input: List[String]): Option[Long] =
     getForestFrom(input).map(getTreesVisibleFromOutsideCount)
+
+  case class Count(value: Int)
+  object Count {
+    implicit val order: Order[Count] = Order[Int].imap(Count.apply)(_.value)
+    implicit val numeric: Numeric[Count] = Numeric[Int].imap(Count.apply)(_.value)
+  }
+  case class VisibleTreesCount(left: Count, top: Count, right: Count, bottom: Count) {
+    def getScenicScore: Count = left * top * right * bottom
+  }
+
+  def getVisibleTreesCountOnLeft(row: NonEmptyList[Tree]): NonEmptyList[Count] =
+    row.tail
+      .foldLeft((NonEmptyList.one(row.head), NonEmptyList.one(Count(0)))) { case ((lts, counts), t) =>
+        @tailrec
+        def getCount(done: Boolean, count: Count, reversedLeftTrees: NonEmptyList[Tree]): Count =
+          if (done) count
+          else
+            reversedLeftTrees match {
+              case NonEmptyList(_, Nil) => getCount(done = true, Count(1) + count, reversedLeftTrees)
+              case NonEmptyList(t1, t2 :: ts) =>
+                getCount(done = t1.height >= t.height, Count(1) + count, NonEmptyList(t2, ts))
+            }
+
+        val c = getCount(done = false, Count(0), reversedLeftTrees = lts.reverse)
+        (lts :+ t, counts :+ c)
+      }
+      ._2
+
+  def getVisibleTreesCountOnRight(row: NonEmptyList[Tree]): NonEmptyList[Count] =
+    getVisibleTreesCountOnLeft(row.reverse).reverse
+
+  def getLeftVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
+    NonEmptyMatrix(forest.rows.map(getVisibleTreesCountOnLeft))
+
+  def getRightVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
+    NonEmptyMatrix(forest.rows.map(getVisibleTreesCountOnRight))
+
+  def getTopVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
+    getRightVisibleTreeCounts(forest.rotatedCW).rotatedCCW
+
+  def getBottomVisibleTreeCounts(forest: Forest): NonEmptyMatrix[Count] =
+    getLeftVisibleTreeCounts(forest.rotatedCW).rotatedCCW
+
+  def getVisibleTreeCounts(forest: Forest): NonEmptyMatrix[VisibleTreesCount] =
+    (
+      getLeftVisibleTreeCounts(forest),
+      getTopVisibleTreeCounts(forest),
+      getRightVisibleTreeCounts(forest),
+      getBottomVisibleTreeCounts(forest)
+    ).mapN(VisibleTreesCount.apply)
+
+  def getMaxVisibleTreeCount(forest: Forest): Option[Count] =
+    getVisibleTreeCounts(forest).map(_.getScenicScore).maximumOption
+
+  def getMaxVisibleTreeCount(input: List[String]): Option[Count] =
+    getForestFrom(input).flatMap(getMaxVisibleTreeCount)
 
 }
