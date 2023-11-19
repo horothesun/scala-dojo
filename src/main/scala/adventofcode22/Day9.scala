@@ -30,6 +30,8 @@ object Day9 {
 
     def make2[A](a: A): Rope[A] = fromNel(NonEmptyList.of(a, a))
 
+    def make10[A](a: A): Rope[A] = fromNel(NonEmptyList(a, List.fill[A](9)(a)))
+
     def fromNel[A](nel: NonEmptyList[A]): Rope[A] = {
       @tailrec
       def aux(acc: Rope[A], rest: List[A]): Rope[A] =
@@ -78,8 +80,6 @@ object Day9 {
       case Direction.Down  => Pos(x, y - 1)
     }
 
-    def move(n: Int, d: Direction): Pos = List.fill[Pos => Pos](n)(_.move(d)).foldMap(identity).apply(this)
-
     def getProximity(that: Pos): Proximity =
       if ((Math.abs(x - that.x) <= 1) && (Math.abs(y - that.y) <= 1)) Adjacent else Distant
 
@@ -126,14 +126,9 @@ object Day9 {
 
   case class Motion(direction: Direction, steps: Int)
   object Motion {
-    def from(s: String): Option[Motion] =
-      s.split(" ") match {
-        case Array(motion, steps) =>
-          (
-            Direction.from(motion),
-            steps.toIntOption
-          ).mapN(Motion.apply)
-      }
+    def from(s: String): Option[Motion] = s.split(" ") match {
+      case Array(motion, steps) => (Direction.from(motion), steps.toIntOption).mapN(Motion.apply)
+    }
   }
 
   def getMotions(input: List[String]): Option[List[Motion]] = input.traverse(Motion.from)
@@ -166,16 +161,13 @@ object Day9 {
       }
       ._2
 
-  def getDistinctRopeTailPositionCount(motions: List[Motion]): Int =
-    getAllRopes(
-      singleStepMotions = getSingleSteps(motions),
-      initialRope = Rope.make2(Pos.start)
-    )
+  def getDistinctRopeTailPositionCount(initialRope: Rope[Pos], motions: List[Motion]): Int =
+    getAllRopes(singleStepMotions = getSingleSteps(motions), initialRope)
       .map(_.getLast.a)
       .toSet
       .size
 
-  def getDistinctRopeTailPositionCount(input: List[String]): Option[Int] =
-    getMotions(input).map(getDistinctRopeTailPositionCount)
+  def getDistinctRopeTailPositionCount(initialRope: Rope[Pos], input: List[String]): Option[Int] =
+    getMotions(input).map(motions => getDistinctRopeTailPositionCount(initialRope, motions))
 
 }

@@ -38,12 +38,6 @@ class Day9Suite extends ScalaCheckSuite {
     }
   }
 
-  property("Pos p is distant from p.move(n, d) for any p, d and n >= 2") {
-    forAll(positionGen, Gen.chooseNum(2, 100), directionGen) { case (p, n, d) =>
-      assertEquals(p.getProximity(p.move(n, d)), Distant)
-    }
-  }
-
   test("Pos(1, 1).getNewFollowerPos(Pos(3, 1)) == Pos(2, 1)") {
     assertEquals(Pos(1, 1).getNewFollowerPos(Pos(3, 1)), Pos(2, 1))
   }
@@ -253,13 +247,21 @@ class Day9Suite extends ScalaCheckSuite {
     )
   }
 
-  test("getDistinctRopeTailPositionCount(motions) == 13 (small input)") {
-    assertEquals(getDistinctRopeTailPositionCount(motions), 13)
+  test("getDistinctRopeTailPositionCount(Rope.make2(Pos.start), motions) == 13 (small input)") {
+    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make2(Pos.start), motions), 13)
   }
 
-  test("getDistinctRopeTailPositionCount(bigInput) == Some(6284)") {
-    assertEquals(getDistinctRopeTailPositionCount(bigInput), Some(6284))
+  test("getDistinctRopeTailPositionCount(Rope.make2(Pos.start), bigInput) == Some(6284)") {
+    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make2(Pos.start), bigInput), Some(6284))
   }
+
+  test("getDistinctRopeTailPositionCount(Rope.make10(Pos.start), motions) == 1 (small input)") {
+    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), motions), 1)
+  }
+
+//  test("getDistinctRopeTailPositionCount(bigInput, Rope.make10(Pos.start)) == Some(???)") {
+//    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), bigInput), Some(1234))
+//  }
 
 }
 object Day9Suite {
