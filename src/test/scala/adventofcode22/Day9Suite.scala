@@ -41,6 +41,36 @@ class Day9Suite extends ScalaCheckSuite {
     assertEquals(rope.getLast, 3)
   }
 
+  test("Knot(1).toNel == NEL(1)") {
+    assertEquals(Knot(1).toNel, NonEmptyList.one(1))
+  }
+
+  test("Segment(1, Segment(2, Knot(3))).toNel == NEL(1, 2, 3)") {
+    assertEquals(Segment(1, Segment(2, Knot(3))).toNel, NonEmptyList.of(1, 2, 3))
+  }
+
+  property("Rope.fromNel(nel).toNel == nel") {
+    forAll(nelGen(Gen.alphaChar)) { nel =>
+      assertEquals(Rope.fromNel(nel).toNel, nel)
+    }
+  }
+
+  test("Knot(1).scanLeft(10)(_ + _) == Knot(11)") {
+    val rope: Rope[Int] = Knot(1)
+    assertEquals(rope.scanLeft[Int](10)(_ + _), Knot(11))
+  }
+
+  test("Segment(1, Segment(2, Knot(3))).scanLeft(10)(_ + _) == Segment(11, Segment(13, Knot(16)))") {
+    val rope: Rope[Int] = Segment(1, Segment(2, Knot(3)))
+    assertEquals(rope.scanLeft[Int](10)(_ + _), Segment(11, Segment(13, Knot(16))))
+  }
+
+  property("Rope scanLeft preserves length") {
+    forAll(ropeGen(Gen.posNum[Int])) { r =>
+      assertEquals(r.scanLeft(0)(_ + _).length, r.length)
+    }
+  }
+
   property("Pos p is adjacent to p.move(d) for any p and d") {
     forAll(positionGen, directionGen) { case (p, d) =>
       assertEquals(p.getProximity(p.move(d)), Adjacent)
@@ -312,6 +342,10 @@ object Day9Suite {
   def knotGen[A](aGen: Gen[A]): Gen[Knot[A]] = aGen.map(Knot.apply)
   def segmentGen[A](aGen: Gen[A]): Gen[Segment[A]] =
     Gen.zip(aGen, ropeGen(aGen)).map { case (a, r) => Segment(head = a, tail = r) }
+
+  def nelGen[A](aGen: Gen[A]): Gen[NonEmptyList[A]] = Gen.posNum[Int].flatMap(n => nelGen(n, aGen))
+  def nelGen[A](n: Int, aGen: Gen[A]): Gen[NonEmptyList[A]] =
+    Gen.zip(aGen, Gen.listOfN(n - 1, aGen)).map { case (a, as) => NonEmptyList(a, as) }
 
   def directionGen: Gen[Direction] = Gen.oneOf(Direction.values.toSeq)
 
