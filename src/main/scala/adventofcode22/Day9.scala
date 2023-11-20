@@ -4,9 +4,12 @@ import cats._
 import cats.data.NonEmptyList
 import cats.derived
 import cats.implicits._
+
 import scala.annotation.tailrec
 import Day9.Proximity._
 import Day9.Rope._
+
+import scala.collection.immutable
 
 object Day9 {
 
@@ -18,6 +21,8 @@ object Day9 {
     }
 
     def getLast: Knot[A] = Knot(this.foldLeft(getHead.a) { case (_, a) => a })
+
+    def length: Int = this.map(_ => 1).sumAll
 
   }
   object Rope {
@@ -87,29 +92,10 @@ object Day9 {
       getProximity(leader) match {
         case Adjacent => this
         case Distant =>
-          if (x == leader.x) {
-            Pos(
-              x,
-              leader.y + (if (y < leader.y) -1 else 1)
-            )
-          } else if (y == leader.y) {
-            Pos(
-              leader.x + (if (x < leader.x) -1 else 1),
-              y
-            )
-          } else {
-            if (Math.abs(x - leader.x) > Math.abs(y - leader.y)) {
-              Pos(
-                leader.x + (if (x < leader.x) -1 else 1),
-                leader.y
-              )
-            } else {
-              Pos(
-                leader.x,
-                leader.y + (if (y < leader.y) -1 else 1)
-              )
-            }
-          }
+          Pos(
+            x = if (x < leader.x) x + 1 else if (x > leader.x) x - 1 else x,
+            y = if (y < leader.y) y + 1 else if (y > leader.y) y - 1 else y
+          )
       }
 
   }

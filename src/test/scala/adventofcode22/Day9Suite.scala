@@ -22,6 +22,18 @@ class Day9Suite extends ScalaCheckSuite {
     assertEquals(Rope.make2(0), Segment(Knot(0), Knot(0)))
   }
 
+  test("Rope.make2(0).length == 2") {
+    assertEquals(Rope.make2(0).length, 2)
+  }
+
+  test("Rope.make10(0) == Segment(Knot(0), ...) 10 times") {
+    assertEquals(Rope.make10(0), Rope.fromNel[Int](NonEmptyList.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+  }
+
+  test("Rope.make10(0).length == 10") {
+    assertEquals(Rope.make10(0).length, 10)
+  }
+
   test("Segment(Knot(1), Segment(Knot(2), Knot(3))).getHead == Knot(1)") {
     val rope: Rope[Int] = Segment(Knot(1), Segment(Knot(2), Knot(3)))
     assertEquals(rope.getHead, Knot(1))
@@ -57,12 +69,6 @@ class Day9Suite extends ScalaCheckSuite {
   property("p.getNewFollowerPos(p.move(d)) == p for any Pos p and Direction d") {
     forAll(positionGen, directionGen) { case (p, d) =>
       assertEquals(p.getNewFollowerPos(p.move(d)), p)
-    }
-  }
-
-  property("f.getNewFollowerPos(h) is adjacent to h for any Pos f and h") {
-    forAll(positionGen, positionGen) { case (f, h) =>
-      assertEquals(f.getNewFollowerPos(h).getProximity(h), Adjacent)
     }
   }
 
@@ -255,13 +261,28 @@ class Day9Suite extends ScalaCheckSuite {
     assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make2(Pos.start), bigInput), Some(6284))
   }
 
+  test(
+    "getRopeAfterHeadMoves(Up, H(4,1)~1(3,0)~2(2,0)~3(1,0)~4(0,0)~5(0,0))" +
+      " == H(4,2)~1(4,1)~2(3,1)~3(2,1)~4(1,1)~5(0,0)"
+  ) {
+    val rope = Rope.fromNel[Pos](NonEmptyList.of(Pos(4, 1), Pos(3, 0), Pos(2, 0), Pos(1, 0), Pos(0, 0), Pos(0, 0)))
+    assertEquals(
+      getRopeAfterHeadMoves(Direction.Up, rope),
+      Rope.fromNel[Pos](NonEmptyList.of(Pos(4, 2), Pos(4, 1), Pos(3, 1), Pos(2, 1), Pos(1, 1), Pos(0, 0)))
+    )
+  }
+
   test("getDistinctRopeTailPositionCount(Rope.make10(Pos.start), motions) == 1 (small input)") {
     assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), motions), 1)
   }
 
-//  test("getDistinctRopeTailPositionCount(bigInput, Rope.make10(Pos.start)) == Some(???)") {
-//    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), bigInput), Some(1234))
-//  }
+  test("getDistinctRopeTailPositionCount(Rope.make10(Pos.start), motionsMedium) == 123") {
+    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), motionsMedium), 36)
+  }
+
+  test("getDistinctRopeTailPositionCount(bigInput, Rope.make10(Pos.start)) == Some(2661)") {
+    assertEquals(getDistinctRopeTailPositionCount(initialRope = Rope.make10(Pos.start), bigInput), Some(2661))
+  }
 
 }
 object Day9Suite {
@@ -277,6 +298,17 @@ object Day9Suite {
     Motion(Direction.Down, 1),
     Motion(Direction.Left, 5),
     Motion(Direction.Right, 2)
+  )
+
+  val motionsMedium: List[Motion] = List(
+    Motion(Direction.Right, 5),
+    Motion(Direction.Up, 8),
+    Motion(Direction.Left, 8),
+    Motion(Direction.Down, 3),
+    Motion(Direction.Right, 17),
+    Motion(Direction.Down, 10),
+    Motion(Direction.Left, 25),
+    Motion(Direction.Up, 20)
   )
 
   def ropeGen[A](aGen: Gen[A]): Gen[Rope[A]] = Gen.lzy(Gen.oneOf(knotGen(aGen), segmentGen(aGen)))
