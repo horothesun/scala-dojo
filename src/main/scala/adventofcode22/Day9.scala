@@ -4,33 +4,29 @@ import cats._
 import cats.data.NonEmptyList
 import cats.derived
 import cats.implicits._
-
 import scala.annotation.tailrec
 import Day9.Proximity._
 import Day9.Rope._
-
-import scala.collection.immutable
 
 object Day9 {
 
   sealed trait Rope[A] {
 
-    def getHead: Knot[A] = this match {
-      case k @ Knot(_)      => k
+    def getHead: A = this match {
+      case Knot(a)          => a
       case Segment(head, _) => head
     }
 
-    def getLast: Knot[A] = Knot(this.foldLeft(getHead.a) { case (_, a) => a })
+    def getLast: A = this.foldLeft(getHead) { case (_, a) => a }
 
-    def length: Int = this.map(_ => 1).sumAll
+    def length: Int = this.toList.length
 
   }
   object Rope {
 
     case class Knot[A](a: A) extends Rope[A]
-    case class Segment[A](head: Knot[A], tail: Rope[A]) extends Rope[A]
+    case class Segment[A](head: A, tail: Rope[A]) extends Rope[A]
 
-    implicit val functor: Functor[Rope] = derived.semiauto.functor
     implicit val foldable: Foldable[Rope] = derived.semiauto.foldable
 
     def make2[A](a: A): Rope[A] = fromNel(NonEmptyList.of(a, a))
@@ -42,7 +38,7 @@ object Day9 {
       def aux(acc: Rope[A], rest: List[A]): Rope[A] =
         rest match {
           case Nil     => acc
-          case a :: as => aux(Segment(head = Knot(a), tail = acc), as)
+          case a :: as => aux(Segment(head = a, tail = acc), as)
         }
 
       val NonEmptyList(reversedHead, reversedTail) = nel.reverse
@@ -123,7 +119,7 @@ object Day9 {
     motions.flatMap { case Motion(direction, steps) => List.fill[Direction](steps)(direction) }
 
   def getRopeAfterHeadMoves(direction: Direction, rope: Rope[Pos]): Rope[Pos] = {
-    val newHeadPos = rope.getHead.a.move(direction)
+    val newHeadPos = rope.getHead.move(direction)
     rope match {
       case Knot(_) => Knot(newHeadPos)
       case Segment(_, tail) =>
@@ -148,10 +144,7 @@ object Day9 {
       ._2
 
   def getDistinctRopeTailPositionCount(initialRope: Rope[Pos], motions: List[Motion]): Int =
-    getAllRopes(singleStepMotions = getSingleSteps(motions), initialRope)
-      .map(_.getLast.a)
-      .toSet
-      .size
+    getAllRopes(singleStepMotions = getSingleSteps(motions), initialRope).map(_.getLast).toSet.size
 
   def getDistinctRopeTailPositionCount(initialRope: Rope[Pos], input: List[String]): Option[Int] =
     getMotions(input).map(motions => getDistinctRopeTailPositionCount(initialRope, motions))

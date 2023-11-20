@@ -11,15 +11,12 @@ import Day9Suite._
 
 class Day9Suite extends ScalaCheckSuite {
 
-  test("Rope.fromNel(NEL(1, 2, 3)) == Segment(Knot(1), Segment(Knot(2), Knot(3)))") {
-    assertEquals(
-      Rope.fromNel(NonEmptyList.of(1, 2, 3)),
-      Segment(Knot(1), Segment(Knot(2), Knot(3)))
-    )
+  test("Rope.fromNel(NEL(1, 2, 3)) == Segment(1, Segment(2, Knot(3)))") {
+    assertEquals(Rope.fromNel(NonEmptyList.of(1, 2, 3)), Segment(1, Segment(2, Knot(3))))
   }
 
-  test("Rope.make2(0) == Segment(Knot(0), Knot(0))") {
-    assertEquals(Rope.make2(0), Segment(Knot(0), Knot(0)))
+  test("Rope.make2(0) == Segment(0, Knot(0))") {
+    assertEquals(Rope.make2(0), Segment(0, Knot(0)))
   }
 
   test("Rope.make2(0).length == 2") {
@@ -34,14 +31,14 @@ class Day9Suite extends ScalaCheckSuite {
     assertEquals(Rope.make10(0).length, 10)
   }
 
-  test("Segment(Knot(1), Segment(Knot(2), Knot(3))).getHead == Knot(1)") {
-    val rope: Rope[Int] = Segment(Knot(1), Segment(Knot(2), Knot(3)))
-    assertEquals(rope.getHead, Knot(1))
+  test("Segment(Knot(1), Segment(2, Knot(3))).getHead == 1") {
+    val rope: Rope[Int] = Segment(1, Segment(2, Knot(3)))
+    assertEquals(rope.getHead, 1)
   }
 
-  test("Segment(Knot(1), Segment(Knot(2), Knot(3))).getLast == Knot(3)") {
-    val rope: Rope[Int] = Segment(Knot(1), Segment(Knot(2), Knot(3)))
-    assertEquals(rope.getLast, Knot(3))
+  test("Segment(1, Segment(2, Knot(3))).getLast == 3") {
+    val rope: Rope[Int] = Segment(1, Segment(2, Knot(3)))
+    assertEquals(rope.getLast, 3)
   }
 
   property("Pos p is adjacent to p.move(d) for any p and d") {
@@ -129,127 +126,127 @@ class Day9Suite extends ScalaCheckSuite {
     val rope: Rope[Pos] = Rope.make2(Pos.start)
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(1, 0)), tail = Knot(Pos(0, 0)))
+      Segment(head = Pos(1, 0), tail = Knot(Pos(0, 0)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(1,0)~T(0,0)) == H(2,0)~T(1,0)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(1, 0)), tail = Knot(Pos(0, 0)))
+    val rope: Rope[Pos] = Segment(head = Pos(1, 0), tail = Knot(Pos(0, 0)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(2, 0)), tail = Knot(Pos(1, 0)))
+      Segment(head = Pos(2, 0), tail = Knot(Pos(1, 0)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(2,0)~T(1,0)) == H(3,0)~T(2,0)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(2, 0)), tail = Knot(Pos(1, 0)))
+    val rope: Rope[Pos] = Segment(head = Pos(2, 0), tail = Knot(Pos(1, 0)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(3, 0)), tail = Knot(Pos(2, 0)))
+      Segment(head = Pos(3, 0), tail = Knot(Pos(2, 0)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(3,0)~T(2,0)) == H(4,0)~T(3,0)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(3, 0)), tail = Knot(Pos(2, 0)))
+    val rope: Rope[Pos] = Segment(head = Pos(3, 0), tail = Knot(Pos(2, 0)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(4, 0)), tail = Knot(Pos(3, 0)))
+      Segment(head = Pos(4, 0), tail = Knot(Pos(3, 0)))
     )
   }
 
   test("getRopeAfterHeadMoves(Up, H(4,0)~T(3,0)) == H(4,1)~T(3,0)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 0)), tail = Knot(Pos(3, 0)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 0), tail = Knot(Pos(3, 0)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Up, rope),
-      Segment(head = Knot(Pos(4, 1)), tail = Knot(Pos(3, 0)))
+      Segment(head = Pos(4, 1), tail = Knot(Pos(3, 0)))
     )
   }
 
   test("getRopeAfterHeadMoves(Up, H(4,1)~T(3,0)) == H(4,2)~T(4,1)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 1)), tail = Knot(Pos(3, 0)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 1), tail = Knot(Pos(3, 0)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Up, rope),
-      Segment(head = Knot(Pos(4, 2)), tail = Knot(Pos(4, 1)))
+      Segment(head = Pos(4, 2), tail = Knot(Pos(4, 1)))
     )
   }
 
   test("getRopeAfterHeadMoves(Up, H(4,2)~T(4,1)) == H(4,3)~T(4,2)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 2)), tail = Knot(Pos(4, 1)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 2), tail = Knot(Pos(4, 1)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Up, rope),
-      Segment(head = Knot(Pos(4, 3)), tail = Knot(Pos(4, 2)))
+      Segment(head = Pos(4, 3), tail = Knot(Pos(4, 2)))
     )
   }
 
   test("getRopeAfterHeadMoves(Up, H(4,3)~T(4,2)) == H(4,4)~T(4,3)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 3)), tail = Knot(Pos(4, 2)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 3), tail = Knot(Pos(4, 2)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Up, rope),
-      Segment(head = Knot(Pos(4, 4)), tail = Knot(Pos(4, 3)))
+      Segment(head = Pos(4, 4), tail = Knot(Pos(4, 3)))
     )
   }
 
   test("getRopeAfterHeadMoves(Left, H(4,4)~T(4,3)) == H(3,4)~T(4,3)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 4)), tail = Knot(Pos(4, 3)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 4), tail = Knot(Pos(4, 3)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Left, rope),
-      Segment(head = Knot(Pos(3, 4)), tail = Knot(Pos(4, 3)))
+      Segment(head = Pos(3, 4), tail = Knot(Pos(4, 3)))
     )
   }
 
   test("getRopeAfterHeadMoves(Left, H(3,4)~T(4,3)) == H(2,4)~T(3,4)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(3, 4)), tail = Knot(Pos(4, 3)))
+    val rope: Rope[Pos] = Segment(head = Pos(3, 4), tail = Knot(Pos(4, 3)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Left, rope),
-      Segment(head = Knot(Pos(2, 4)), tail = Knot(Pos(3, 4)))
+      Segment(head = Pos(2, 4), tail = Knot(Pos(3, 4)))
     )
   }
 
   test("getRopeAfterHeadMoves(Left, H(2,4)~T(3,4)) == H(1,4)~T(2,4)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(2, 4)), tail = Knot(Pos(3, 4)))
+    val rope: Rope[Pos] = Segment(head = Pos(2, 4), tail = Knot(Pos(3, 4)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Left, rope),
-      Segment(head = Knot(Pos(1, 4)), tail = Knot(Pos(2, 4)))
+      Segment(head = Pos(1, 4), tail = Knot(Pos(2, 4)))
     )
   }
 
   test("getRopeAfterHeadMoves(Down, H(1,4)~T(2,4)) == H(1,3)~T(2,4)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(1, 4)), tail = Knot(Pos(2, 4)))
+    val rope: Rope[Pos] = Segment(head = Pos(1, 4), tail = Knot(Pos(2, 4)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Down, rope),
-      Segment(head = Knot(Pos(1, 3)), tail = Knot(Pos(2, 4)))
+      Segment(head = Pos(1, 3), tail = Knot(Pos(2, 4)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(1,3)~T(2,4)) == H(2,3)~T(2,4)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(1, 3)), tail = Knot(Pos(2, 4)))
+    val rope: Rope[Pos] = Segment(head = Pos(1, 3), tail = Knot(Pos(2, 4)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(2, 3)), tail = Knot(Pos(2, 4)))
+      Segment(head = Pos(2, 3), tail = Knot(Pos(2, 4)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(2,3)~T(2,4)) == H(3,3)~T(2,4)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(2, 3)), tail = Knot(Pos(2, 4)))
+    val rope: Rope[Pos] = Segment(head = Pos(2, 3), tail = Knot(Pos(2, 4)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(3, 3)), tail = Knot(Pos(2, 4)))
+      Segment(head = Pos(3, 3), tail = Knot(Pos(2, 4)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(3,3)~T(2,4)) == H(4,3)~T(3,3)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(3, 3)), tail = Knot(Pos(2, 4)))
+    val rope: Rope[Pos] = Segment(head = Pos(3, 3), tail = Knot(Pos(2, 4)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(4, 3)), tail = Knot(Pos(3, 3)))
+      Segment(head = Pos(4, 3), tail = Knot(Pos(3, 3)))
     )
   }
 
   test("getRopeAfterHeadMoves(Right, H(4,3)~T(3,3)) == H(5,3)~T(4,3)") {
-    val rope: Rope[Pos] = Segment(head = Knot(Pos(4, 3)), tail = Knot(Pos(3, 3)))
+    val rope: Rope[Pos] = Segment(head = Pos(4, 3), tail = Knot(Pos(3, 3)))
     assertEquals(
       getRopeAfterHeadMoves(Direction.Right, rope),
-      Segment(head = Knot(Pos(5, 3)), tail = Knot(Pos(4, 3)))
+      Segment(head = Pos(5, 3), tail = Knot(Pos(4, 3)))
     )
   }
 
@@ -314,7 +311,7 @@ object Day9Suite {
   def ropeGen[A](aGen: Gen[A]): Gen[Rope[A]] = Gen.lzy(Gen.oneOf(knotGen(aGen), segmentGen(aGen)))
   def knotGen[A](aGen: Gen[A]): Gen[Knot[A]] = aGen.map(Knot.apply)
   def segmentGen[A](aGen: Gen[A]): Gen[Segment[A]] =
-    Gen.zip(knotGen(aGen), ropeGen(aGen)).map { case (k, r) => Segment(head = k, tail = r) }
+    Gen.zip(aGen, ropeGen(aGen)).map { case (a, r) => Segment(head = a, tail = r) }
 
   def directionGen: Gen[Direction] = Gen.oneOf(Direction.values.toSeq)
 
