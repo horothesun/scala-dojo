@@ -26,10 +26,10 @@ object Day9 {
       case Segment(head, tail) => NonEmptyList(head, tail.toList)
     }
 
-    def scanLeft[B](b: B)(f: (B, A) => B): Rope[B] = {
-      val NonEmptyList(a, as) = toNel
-      fromNel(as.scanLeftNel(f(b, a))(f))
-    }
+    def scanLeft[B](b: B)(f: (B, A) => B): Rope[B] =
+//      val NonEmptyList(a, as) = toNel
+//      fromNel(as.scanLeftNel(f(b, a))(f))
+      fromNel(this.toList.scanLeftNel(b)(f))
 
   }
   object Rope {
@@ -126,17 +126,11 @@ object Day9 {
   def getSingleSteps(motions: List[Motion]): List[Direction] =
     motions.flatMap { case Motion(direction, steps) => List.fill[Direction](steps)(direction) }
 
-  def getRopeAfterHeadMoves(direction: Direction, rope: Rope[Pos]): Rope[Pos] = {
-    val newHead = rope.getHead.move(direction)
+  def getRopeAfterHeadMoves(d: Direction, rope: Rope[Pos]): Rope[Pos] =
     rope match {
-      case Knot(_) => Knot(newHead)
-      case Segment(_, tail) =>
-        Segment(
-          newHead,
-          tail.scanLeft(newHead) { case (leaderPos, p) => p.getNewFollowerPos(leaderPos) }
-        )
+      case Knot(a)             => Knot(a.move(d))
+      case Segment(head, tail) => tail.scanLeft(head.move(d)) { case (leaderPos, p) => p.getNewFollowerPos(leaderPos) }
     }
-  }
 
   def getAllRopes(initialRope: Rope[Pos], singleStepMotions: List[Direction]): List[Rope[Pos]] =
     singleStepMotions.scanLeft(initialRope) { case (prevRope, d) => getRopeAfterHeadMoves(d, prevRope) }

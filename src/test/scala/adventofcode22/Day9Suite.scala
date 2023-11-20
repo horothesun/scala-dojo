@@ -55,19 +55,19 @@ class Day9Suite extends ScalaCheckSuite {
     }
   }
 
-  test("Knot(1).scanLeft(10)(_ + _) == Knot(11)") {
+  test("Knot(1).scanLeft(10)(_ + _) == Segment(10, Knot(11))") {
     val rope: Rope[Int] = Knot(1)
-    assertEquals(rope.scanLeft[Int](10)(_ + _), Knot(11))
+    assertEquals(rope.scanLeft[Int](10)(_ + _), Segment(10, Knot(11)))
   }
 
-  test("Segment(1, Segment(2, Knot(3))).scanLeft(10)(_ + _) == Segment(11, Segment(13, Knot(16)))") {
+  test("Segment(1, Segment(2, Knot(3))).scanLeft(10)(_ + _) == Segment(10, Segment(11, Segment(13, Knot(16))))") {
     val rope: Rope[Int] = Segment(1, Segment(2, Knot(3)))
-    assertEquals(rope.scanLeft[Int](10)(_ + _), Segment(11, Segment(13, Knot(16))))
+    assertEquals(rope.scanLeft[Int](10)(_ + _), Segment(10, Segment(11, Segment(13, Knot(16)))))
   }
 
-  property("Rope scanLeft preserves length") {
+  property("Rope scanLeft increases length by 1") {
     forAll(ropeGen(Gen.posNum[Int])) { r =>
-      assertEquals(r.scanLeft(0)(_ + _).length, r.length)
+      assertEquals(r.scanLeft(0)(_ + _).length, 1 + r.length)
     }
   }
 
