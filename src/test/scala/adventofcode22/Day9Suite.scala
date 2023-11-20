@@ -24,7 +24,7 @@ class Day9Suite extends ScalaCheckSuite {
   }
 
   test("Rope.make10(0) == Segment(Knot(0), ...) 10 times") {
-    assertEquals(Rope.make10(0), Rope.fromNel[Int](NonEmptyList.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+    assertEquals(Rope.make10(0), Rope.fromNel(NonEmptyList.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
   }
 
   test("Rope.make10(0).length == 10") {
