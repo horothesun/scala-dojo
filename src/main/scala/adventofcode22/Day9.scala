@@ -56,14 +56,13 @@ object Day9 {
 
     def values: Array[Direction] = Array(Left, Right, Up, Down)
 
-    def from(s: String): Option[Direction] =
-      s match {
-        case "L" => Some(Left)
-        case "R" => Some(Right)
-        case "U" => Some(Up)
-        case "D" => Some(Down)
-        case _   => None
-      }
+    def from(s: String): Option[Direction] = s match {
+      case "L" => Some(Left)
+      case "R" => Some(Right)
+      case "U" => Some(Up)
+      case "D" => Some(Down)
+      case _   => None
+    }
   }
 
   sealed trait Proximity
@@ -84,15 +83,14 @@ object Day9 {
     def getProximity(that: Pos): Proximity =
       if ((Math.abs(x - that.x) <= 1) && (Math.abs(y - that.y) <= 1)) Adjacent else Distant
 
-    def getNewFollowerPos(leader: Pos): Pos =
-      getProximity(leader) match {
-        case Adjacent => this
-        case Distant =>
-          Pos(
-            x = if (x < leader.x) x + 1 else if (x > leader.x) x - 1 else x,
-            y = if (y < leader.y) y + 1 else if (y > leader.y) y - 1 else y
-          )
-      }
+    def getNewFollowerPos(leader: Pos): Pos = getProximity(leader) match {
+      case Adjacent => this
+      case Distant =>
+        Pos(
+          x = if (x < leader.x) x + 1 else if (x > leader.x) x - 1 else x,
+          y = if (y < leader.y) y + 1 else if (y > leader.y) y - 1 else y
+        )
+    }
 
   }
   object Pos {
