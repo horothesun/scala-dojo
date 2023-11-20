@@ -26,10 +26,7 @@ object Day9 {
       case Segment(head, tail) => NonEmptyList(head, tail.toList)
     }
 
-    def scanLeft[B](b: B)(f: (B, A) => B): Rope[B] =
-//      val NonEmptyList(a, as) = toNel
-//      fromNel(as.scanLeftNel(f(b, a))(f))
-      fromNel(this.toList.scanLeftNel(b)(f))
+    def scanLeft[B](b: B)(f: (B, A) => B): Rope[B] = fromNel(this.toList.scanLeftNel(b)(f))
 
   }
   object Rope {
