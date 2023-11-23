@@ -1,10 +1,15 @@
 pull_request_rules:
-- name: Automatically merge Scala Steward PRs
-  conditions:
+- name: Automatically approve Scala Steward PRs
+  conditions: &base_merge_conditions
   - author=horothesun-scala-steward[bot]
   - "#approved-reviews-by>=1"
   - status-success=test
   - status-success=lint
+  actions:
+    review:
+      type: APPROVE
+- name: Automatically merge Scala Steward PRs
+  conditions: *base_merge_conditions
   actions:
     merge:
       method: squash
