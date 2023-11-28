@@ -2,6 +2,7 @@ package adventofcode22
 
 import cats.implicits._
 import Day10.Instruction._
+import Day10.Pixel._
 
 object Day10 {
 
@@ -49,7 +50,10 @@ object Day10 {
   def getSteps(start: Registers, ins: Instruction): List[Registers] = List.fill(ins.getRequiredCycles.value)(start)
 
   def getRegistersByCycleWithStart(start: Registers, instructions: List[Instruction]): List[Registers] =
-    start :: instructions
+    start :: getRegistersByCycle(start, instructions)
+
+  def getRegistersByCycle(start: Registers, instructions: List[Instruction]): List[Registers] =
+    instructions
       .foldLeft[(List[Registers], Registers)]((List.empty, start)) { case ((acc, prevRegister), ins) =>
         (
           acc ++ getSteps(prevRegister, ins),
@@ -71,5 +75,26 @@ object Day10 {
 
   def getSignalStrengthAtCyclesOfInterestSum(input: List[String]): Option[SignalStrength] =
     getInstructions(input).map(getSignalStrengthAtCyclesOfInterestSum)
+
+  val CRT_WIDTH: Int = 40
+  val CRT_HEIGHT: Int = 6
+
+  sealed trait Pixel {
+    def encoded: Char = this match {
+      case On  => '#'
+      case Off => '.'
+    }
+  }
+  object Pixel {
+    case object On extends Pixel
+    case object Off extends Pixel
+  }
+
+  def allOffRow: Array[Pixel] = Array.fill[Pixel](CRT_WIDTH)(Off)
+
+  def getSpriteRow(spriteMidX0Based: Int): Array[Pixel] = {
+    val visibleXs = ((spriteMidX0Based - 1) to (spriteMidX0Based + 1)).filter(x => 0 <= x && x < CRT_WIDTH)
+    visibleXs.foldLeft[Array[Pixel]](allOffRow) { case (row, i) => row.updated(i, On) }
+  }
 
 }
