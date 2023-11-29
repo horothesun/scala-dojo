@@ -13,9 +13,9 @@ class Day10Suite extends ScalaCheckSuite {
     assertEquals(getSignalStrengthAtCyclesOfInterestSum(bigInput), Some(SignalStrength(17_020)))
   }
 
-  property("getSpriteRow(spriteMidX0Based = x) == allOffRow when x < -1") {
+  property("getSpriteRow(spriteMidX0Based = x) == Crt.allOffRow when x < -1") {
     forAll(Gen.chooseNum(-100, -2)) { x =>
-      assertEquals(getSpriteRow(x).toSeq, allOffRow.toSeq)
+      assertEquals(getSpriteRow(x).toSeq, Crt.allOffRow.toSeq)
     }
   }
 
@@ -67,10 +67,72 @@ class Day10Suite extends ScalaCheckSuite {
     )
   }
 
-  property("getSpriteRow(spriteMidX0Based = x) == allOffRow when x > 40") {
+  property("getSpriteRow(spriteMidX0Based = x) == Crt.allOffRow when x > 40") {
     forAll(Gen.chooseNum(41, 100)) { x =>
-      assertEquals(getSpriteRow(x).toSeq, allOffRow.toSeq)
+      assertEquals(getSpriteRow(x).toSeq, Crt.allOffRow.toSeq)
     }
+  }
+
+  test("Crt.allOff.encoded returns the correct value") {
+    assertEquals(
+      Crt.allOff.encoded,
+      """
+        |........................................
+        |........................................
+        |........................................
+        |........................................
+        |........................................
+        |........................................
+        |""".stripMargin.drop(1).dropRight(1)
+    )
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(1)) == (0, 0)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(1)), (0, 0))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(40)) == (0, 39)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(40)), (0, 39))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(41)) == (1, 0)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(41)), (1, 0))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(80)) == (1, 39)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(80)), (1, 39))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(81)) == (2, 0)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(81)), (2, 0))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(201)) == (5, 0)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(201)), (5, 0))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(240)) == (5, 39)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(240)), (5, 39))
+  }
+
+  test("Crt.getPixelRowAndColumn(NumberOfCycles(241)) == (0, 0)") {
+    assertEquals(Crt.getPixelRowAndColumn(NumberOfCycles(241)), (0, 0))
+  }
+
+  test("getFinalCrt(bigInput) returns correct value") {
+    assertEquals(
+      getFinalCrt(bigInput).map(_.encoded),
+      Some(
+        """
+          |###..#....####.####.####.#.....##..####.
+          |#..#.#....#.......#.#....#....#..#.#....
+          |#..#.#....###....#..###..#....#....###..
+          |###..#....#.....#...#....#....#.##.#....
+          |#.#..#....#....#....#....#....#..#.#....
+          |#..#.####.####.####.#....####..###.####.
+          |""".stripMargin.drop(1).dropRight(1)
+      )
+    )
   }
 
 }
