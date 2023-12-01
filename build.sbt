@@ -1,3 +1,19 @@
+val catsVersion = "2.10.0"
+
+val kittensVersion = "3.1.0"
+
+val catsEffectVersion = "3.5.2"
+
+val betterMonadicForVersion = "0.3.1"
+
+val fs2Version = "3.9.3"
+
+val munitVersion = "0.7.29"
+
+val disciplineMunitVersion = "1.0.9"
+
+val munitCatsEffectVersion = "1.0.7"
+
 lazy val root = (project in file(".")).settings(
   inThisBuild(
     List(
@@ -8,15 +24,6 @@ lazy val root = (project in file(".")).settings(
   name := "scala-dojo",
   scalacOptions := Seq("-unchecked", "-deprecation")
 )
-
-val catsVersion = "2.10.0"
-val kittensVersion = "3.1.0"
-val catsEffectVersion = "3.5.2"
-val betterMonadicForVersion = "0.3.1"
-val fs2Version = "3.9.3"
-val munitVersion = "0.7.29"
-val disciplineMunitVersion = "1.0.9"
-val munitCatsEffectVersion = "1.0.7"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
