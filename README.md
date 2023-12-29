@@ -1,4 +1,4 @@
-# Postgres queue
+# Scala dojo
 
 [![CI](https://github.com/horothesun/scala-dojo/actions/workflows/ci.yml/badge.svg)](https://github.com/horothesun/scala-dojo/actions/workflows/ci.yml)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg?style=flat-square)](https://renovatebot.com)
