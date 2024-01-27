@@ -51,6 +51,14 @@ class ExprParsingSuite extends ScalaCheckSuite {
     }
   }
 
+  test("Add(1, Mul(2, 3.0)) encoding is \"1+2*3.0\"") {
+    val expr = Add(
+      Term.numb(1),
+      ETerm(Mul(Factor.numb(2), Term.numb(3.0)))
+    )
+    assertEquals(expr.encode, "1+2*3.0")
+  }
+
 }
 object ExprParsingSuite {
 

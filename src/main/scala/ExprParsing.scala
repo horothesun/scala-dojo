@@ -18,12 +18,28 @@ object ExprParsing {
   nat     = some digit
    */
 
-  sealed trait Expr {
+  trait Evaluable {
+    def eval: Option[Double]
+  }
+
+  trait Encodable {
+    def encode: String
+  }
+
+  sealed trait Expr extends Evaluable with Encodable {
+
     def eval: Option[Double] = this match {
       case Add(l, r) => (l.eval, r.eval).mapN(_ + _)
       case Sub(l, r) => (l.eval, r.eval).mapN(_ - _)
       case ETerm(t)  => t.eval
     }
+
+    def encode: String = this match {
+      case Add(l, r) => s"${l.encode}+${r.encode}"
+      case Sub(l, r) => s"${l.encode}-${r.encode}"
+      case ETerm(t)  => t.encode
+    }
+
   }
   object Expr {
     case class Add(l: Term, r: Expr) extends Expr
@@ -34,12 +50,20 @@ object ExprParsing {
     def numb(d: Double): Expr = ETerm(Term.numb(d))
   }
 
-  sealed trait Term {
+  sealed trait Term extends Evaluable with Encodable {
+
     def eval: Option[Double] = this match {
       case Mul(l, r)  => (l.eval, r.eval).mapN(_ * _)
       case Div(l, r)  => (l.eval, r.eval.filterNot(_ == 0.0)).mapN(_ / _)
       case TFactor(f) => f.eval
     }
+
+    def encode: String = this match {
+      case Mul(l, r)  => s"${l.encode}*${r.encode}"
+      case Div(l, r)  => s"${l.encode}/${r.encode}"
+      case TFactor(f) => f.encode
+    }
+
   }
   object Term {
     case class Mul(l: Factor, r: Term) extends Term
@@ -50,11 +74,18 @@ object ExprParsing {
     def numb(d: Double): Term = TFactor(Factor.numb(d))
   }
 
-  sealed trait Factor {
+  sealed trait Factor extends Evaluable with Encodable {
+
     def eval: Option[Double] = this match {
       case Pow(l, r) => (l.eval, r.eval).mapN(Math.pow)
       case FPower(p) => p.eval
     }
+
+    def encode: String = this match {
+      case Pow(l, r) => s"${l.encode}+${r.encode}"
+      case FPower(p) => p.encode
+    }
+
   }
   object Factor {
     case class Pow(l: Power, r: Factor) extends Factor
@@ -64,11 +95,18 @@ object ExprParsing {
     def numb(d: Double): Factor = FPower(Power.numb(d))
   }
 
-  sealed trait Power {
+  sealed trait Power extends Evaluable with Encodable {
+
     def eval: Option[Double] = this match {
       case Brackets(e) => e.eval
-      case PNumber(n)     => n.eval
+      case PNumber(n)  => n.eval
     }
+
+    def encode: String = this match {
+      case Brackets(e) => s"(${e.encode})"
+      case PNumber(n)  => s"${n.encode}"
+    }
+
   }
   object Power {
     case class Brackets(e: Expr) extends Power
@@ -78,11 +116,18 @@ object ExprParsing {
     def numb(d: Double): Power = PNumber(NDecimal(d))
   }
 
-  sealed trait Number {
+  sealed trait Number extends Evaluable with Encodable {
+
     def eval: Option[Double] = this match {
       case NDecimal(d) => Some(d)
       case NInt(i)     => Some(i)
     }
+
+    def encode: String = this match {
+      case NDecimal(d) => d.toString
+      case NInt(i)     => i.toString
+    }
+
   }
   object Number {
     case class NDecimal(d: Double) extends Number
