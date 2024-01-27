@@ -30,8 +30,8 @@ object ExprParsing {
     case class Sub(l: Term, r: Expr) extends Expr
     case class ETerm(t: Term) extends Expr
 
-    def eNumb(i: Int): Expr = ETerm(tNumb(i))
-    def eNumb(d: Double): Expr = ETerm(tNumb(d))
+    def numb(i: Int): Expr = ETerm(Term.numb(i))
+    def numb(d: Double): Expr = ETerm(Term.numb(d))
   }
 
   sealed trait Term {
@@ -46,8 +46,8 @@ object ExprParsing {
     case class Div(l: Factor, r: Term) extends Term
     case class TFactor(f: Factor) extends Term
 
-    def tNumb(i: Int): Term = TFactor(fNumb(i))
-    def tNumb(d: Double): Term = TFactor(fNumb(d))
+    def numb(i: Int): Term = TFactor(Factor.numb(i))
+    def numb(d: Double): Term = TFactor(Factor.numb(d))
   }
 
   sealed trait Factor {
@@ -60,22 +60,22 @@ object ExprParsing {
     case class Pow(l: Power, r: Factor) extends Factor
     case class FPower(p: Power) extends Factor
 
-    def fNumb(i: Int): Factor = FPower(pNumb(i))
-    def fNumb(d: Double): Factor = FPower(pNumb(d))
+    def numb(i: Int): Factor = FPower(Power.numb(i))
+    def numb(d: Double): Factor = FPower(Power.numb(d))
   }
 
   sealed trait Power {
     def eval: Option[Double] = this match {
       case Brackets(e) => e.eval
-      case Numb(n)     => n.eval
+      case PNumber(n)     => n.eval
     }
   }
   object Power {
     case class Brackets(e: Expr) extends Power
-    case class Numb(n: Number) extends Power
+    case class PNumber(n: Number) extends Power
 
-    def pNumb(i: Int): Power = Numb(NInt(i))
-    def pNumb(d: Double): Power = Numb(NDecimal(d))
+    def numb(i: Int): Power = PNumber(NInt(i))
+    def numb(d: Double): Power = PNumber(NDecimal(d))
   }
 
   sealed trait Number {
