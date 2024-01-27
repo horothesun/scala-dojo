@@ -8,39 +8,20 @@ import cats.implicits._
 object ExprParsing {
 
   /*
-  expr    = term + expr | term - expr | term
-  term    = factor * term | factor / term | factor
-  factor  = power ^ factor | power
-  power   = ( expr ) | number
-  number  = decimal | int
-  decimal = - (some digit).(some digit) | (some digit).(some digit)
-  int     = - nat | nat
-  nat     = some digit
+  Expression pseudo-grammar:
+    expr    = term + expr | term - expr | term
+    term    = factor * term | factor / term | factor
+    factor  = power ^ factor | power
+    power   = ( expr ) | number
+    number  = decimal | int
+    decimal = - (some digit).(some digit) | (some digit).(some digit)
+    int     = - nat | nat
+    nat     = some digit
    */
 
-  trait Evaluable {
-    def eval: Option[Double]
-  }
+  /* model */
 
-  trait Encodable {
-    def encode: String
-  }
-
-  sealed trait Expr extends Evaluable with Encodable {
-
-    def eval: Option[Double] = this match {
-      case Add(l, r) => (l.eval, r.eval).mapN(_ + _)
-      case Sub(l, r) => (l.eval, r.eval).mapN(_ - _)
-      case ETerm(t)  => t.eval
-    }
-
-    def encode: String = this match {
-      case Add(l, r) => s"${l.encode}+${r.encode}"
-      case Sub(l, r) => s"${l.encode}-${r.encode}"
-      case ETerm(t)  => t.encode
-    }
-
-  }
+  sealed trait Expr
   object Expr {
     case class Add(l: Term, r: Expr) extends Expr
     case class Sub(l: Term, r: Expr) extends Expr
@@ -50,21 +31,7 @@ object ExprParsing {
     def numb(d: Double): Expr = ETerm(Term.numb(d))
   }
 
-  sealed trait Term extends Evaluable with Encodable {
-
-    def eval: Option[Double] = this match {
-      case Mul(l, r)  => (l.eval, r.eval).mapN(_ * _)
-      case Div(l, r)  => (l.eval, r.eval.filterNot(_ == 0.0)).mapN(_ / _)
-      case TFactor(f) => f.eval
-    }
-
-    def encode: String = this match {
-      case Mul(l, r)  => s"${l.encode}*${r.encode}"
-      case Div(l, r)  => s"${l.encode}/${r.encode}"
-      case TFactor(f) => f.encode
-    }
-
-  }
+  sealed trait Term
   object Term {
     case class Mul(l: Factor, r: Term) extends Term
     case class Div(l: Factor, r: Term) extends Term
@@ -74,19 +41,7 @@ object ExprParsing {
     def numb(d: Double): Term = TFactor(Factor.numb(d))
   }
 
-  sealed trait Factor extends Evaluable with Encodable {
-
-    def eval: Option[Double] = this match {
-      case Pow(l, r) => (l.eval, r.eval).mapN(Math.pow)
-      case FPower(p) => p.eval
-    }
-
-    def encode: String = this match {
-      case Pow(l, r) => s"${l.encode}+${r.encode}"
-      case FPower(p) => p.encode
-    }
-
-  }
+  sealed trait Factor
   object Factor {
     case class Pow(l: Power, r: Factor) extends Factor
     case class FPower(p: Power) extends Factor
@@ -95,19 +50,7 @@ object ExprParsing {
     def numb(d: Double): Factor = FPower(Power.numb(d))
   }
 
-  sealed trait Power extends Evaluable with Encodable {
-
-    def eval: Option[Double] = this match {
-      case Brackets(e) => e.eval
-      case PNumber(n)  => n.eval
-    }
-
-    def encode: String = this match {
-      case Brackets(e) => s"(${e.encode})"
-      case PNumber(n)  => s"${n.encode}"
-    }
-
-  }
+  sealed trait Power
   object Power {
     case class Brackets(e: Expr) extends Power
     case class PNumber(n: Number) extends Power
@@ -116,22 +59,68 @@ object ExprParsing {
     def numb(d: Double): Power = PNumber(NDecimal(d))
   }
 
-  sealed trait Number extends Evaluable with Encodable {
-
-    def eval: Option[Double] = this match {
-      case NDecimal(d) => Some(d)
-      case NInt(i)     => Some(i)
-    }
-
-    def encode: String = this match {
-      case NDecimal(d) => d.toString
-      case NInt(i)     => i.toString
-    }
-
-  }
+  sealed trait Number
   object Number {
     case class NDecimal(d: Double) extends Number
     case class NInt(i: Int) extends Number
+  }
+
+  /* eval */
+
+  def eval(expr: Expr): Option[Double] = expr match {
+    case Add(l, r) => (eval(l), eval(r)).mapN(_ + _)
+    case Sub(l, r) => (eval(l), eval(r)).mapN(_ - _)
+    case ETerm(t)  => eval(t)
+  }
+
+  def eval(term: Term): Option[Double] = term match {
+    case Mul(l, r)  => (eval(l), eval(r)).mapN(_ * _)
+    case Div(l, r)  => (eval(l), eval(r).filterNot(_ == 0.0)).mapN(_ / _)
+    case TFactor(f) => eval(f)
+  }
+
+  def eval(factor: Factor): Option[Double] = factor match {
+    case Pow(l, r) => (eval(l), eval(r)).mapN(Math.pow)
+    case FPower(p) => eval(p)
+  }
+
+  def eval(power: Power): Option[Double] = power match {
+    case Brackets(e) => eval(e)
+    case PNumber(n)  => eval(n)
+  }
+
+  def eval(number: Number): Option[Double] = number match {
+    case NDecimal(d) => Some(d)
+    case NInt(i)     => Some(i)
+  }
+
+  /* encode */
+
+  def encode(expr: Expr): String = expr match {
+    case Add(l, r) => s"${encode(l)}+${encode(r)}"
+    case Sub(l, r) => s"${encode(l)}-${encode(r)}"
+    case ETerm(t)  => encode(t)
+  }
+
+  def encode(term: Term): String = term match {
+    case Mul(l, r)  => s"${encode(l)}*${encode(r)}"
+    case Div(l, r)  => s"${encode(l)}/${encode(r)}"
+    case TFactor(f) => encode(f)
+  }
+
+  def encode(factor: Factor): String = factor match {
+    case Pow(l, r) => s"${encode(l)}+${encode(r)}"
+    case FPower(p) => encode(p)
+  }
+
+  def encode(power: Power): String = power match {
+    case Brackets(e) => s"(${encode(e)})"
+    case PNumber(n)  => s"${encode(n)}"
+  }
+
+  def encode(number: Number): String = number match {
+    case NDecimal(d) => d.toString
+    case NInt(i)     => i.toString
   }
 
 }

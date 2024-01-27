@@ -5,48 +5,48 @@ import ExprParsing.Term._
 import ExprParsing.Factor._
 import ExprParsing.Power._
 import ExprParsing.Number._
-import ExprParsingSuite.exprGen
+import ExprParsingSuite._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
 
 class ExprParsingSuite extends ScalaCheckSuite {
 
-  test("Add(1, 2.0) evals to Some(2.0)") {
+  test("Add(1, 2.0) evaluates to Some(2.0)") {
     val expr = Add(Term.numb(1), Expr.numb(2.0))
-    assertEqualsDouble(expr.eval.get, 3.0, 1e-9)
+    assertEqualsDouble(eval(expr).get, 3.0, DOUBLE_EQ_DELTA)
   }
 
-  test("Sub(1.0, 2) evals to Some(-1.0)") {
+  test("Sub(1.0, 2) evaluates to Some(-1.0)") {
     val expr = Sub(Term.numb(1.0), Expr.numb(2))
-    assertEqualsDouble(expr.eval.get, -1.0, 1e-9)
+    assertEqualsDouble(eval(expr).get, -1.0, DOUBLE_EQ_DELTA)
   }
 
-  test("Mul(3.0, -2) evals to Some(-6.0)") {
+  test("Mul(3.0, -2) evaluates to Some(-6.0)") {
     val expr = Mul(Factor.numb(3.0), Term.numb(-2))
-    assertEqualsDouble(expr.eval.get, -6.0, 1e-9)
+    assertEqualsDouble(eval(expr).get, -6.0, DOUBLE_EQ_DELTA)
   }
 
-  test("Div(9, 3.0) evals to Some(3.0)") {
+  test("Div(9, 3.0) evaluates to Some(3.0)") {
     val expr = Div(Factor.numb(9), Term.numb(3.0))
-    assertEqualsDouble(expr.eval.get, 3.0, 1e-9)
+    assertEqualsDouble(eval(expr).get, 3.0, DOUBLE_EQ_DELTA)
   }
 
-  test("Div(9, 0.0) evals to None") {
+  test("Div(9, 0.0) evaluates to None") {
     val expr = Div(Factor.numb(9), Term.numb(0.0))
-    assertEquals(expr.eval, None)
+    assertEquals(eval(expr), None)
   }
 
-  test("Pow(2.0, 3) evals to Some(8.0)") {
+  test("Pow(2.0, 3) evaluates to Some(8.0)") {
     val expr = Pow(Power.numb(2.0), Factor.numb(3))
-    assertEqualsDouble(expr.eval.get, 8.0, 1e-9)
+    assertEqualsDouble(eval(expr).get, 8.0, DOUBLE_EQ_DELTA)
   }
 
-  property("Brackets(expr) and expr eval to same result") {
+  property("bracketing an expression does not change its evaluation") {
     forAll(exprGen) { expr =>
-      expr.eval match {
-        case Some(d) => assertEqualsDouble(Brackets(expr).eval.get, d, 1e-9)
-        case None    => assertEquals(Brackets(expr).eval, None)
+      eval(expr) match {
+        case Some(d) => assertEqualsDouble(eval(Brackets(expr)).get, d, DOUBLE_EQ_DELTA)
+        case None    => assertEquals(eval(Brackets(expr)), None)
       }
     }
   }
@@ -56,11 +56,13 @@ class ExprParsingSuite extends ScalaCheckSuite {
       Term.numb(1),
       ETerm(Mul(Factor.numb(2), Term.numb(3.0)))
     )
-    assertEquals(expr.encode, "1+2*3.0")
+    assertEquals(encode(expr), "1+2*3.0")
   }
 
 }
 object ExprParsingSuite {
+
+  val DOUBLE_EQ_DELTA: Double = 1e-9
 
   def exprGen: Gen[Expr] = {
     val lzyTermGen = Gen.lzy(termGen)
