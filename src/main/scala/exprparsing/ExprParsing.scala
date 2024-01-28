@@ -1,14 +1,14 @@
-import ExprParsing.Expr._
-import ExprParsing.Term._
-import ExprParsing.Factor._
-import ExprParsing.Power._
-import ExprParsing.Unary._
-import ExprParsing.NonNegNumber._
-import cats.Functor
-import cats.data.NonEmptyList
-import cats._
+package exprparsing
+
 import cats.implicits._
-import scala.collection.immutable._
+import cats.parse.Parser
+import cats.parse.Parser._
+import exprparsing.ExprParsing.Expr._
+import exprparsing.ExprParsing.Factor._
+import exprparsing.ExprParsing.NonNegNumber._
+import exprparsing.ExprParsing.Power._
+import exprparsing.ExprParsing.Term._
+import exprparsing.ExprParsing.Unary._
 
 object ExprParsing {
 
@@ -44,6 +44,8 @@ object ExprParsing {
 
     def numb(i: Int): Term = TFactor(Factor.numb(i))
     def numb(d: Double): Term = TFactor(Factor.numb(d))
+
+    def expr(e: Expr): Term = TFactor(FPower(PUnary(Brackets(e))))
   }
 
   sealed trait Factor
@@ -53,6 +55,8 @@ object ExprParsing {
 
     def numb(i: Int): Factor = FPower(Power.numb(i))
     def numb(d: Double): Factor = FPower(Power.numb(d))
+
+    def expr(e: Expr): Factor = FPower(PUnary(Brackets(e)))
   }
 
   sealed trait Power
@@ -63,6 +67,8 @@ object ExprParsing {
 
     def numb(i: Int): Power = if (i < 0) Minus(Expr.numb(-i)) else PUnary(Unary.numb(i))
     def numb(d: Double): Power = if (d < 0.0) Minus(Expr.numb(-d)) else PUnary(Unary.numb(d))
+
+    def expr(e: Expr): Power = PUnary(Brackets(e))
   }
 
   sealed trait Unary
@@ -134,24 +140,37 @@ object ExprParsing {
   /* encode */
 
   def encode(expr: Expr): String = expr match {
-    case Add(l, r) => s"${encode(l)}+${encode(r)}"
-    case Sub(l, r) => s"${encode(l)}-${encode(r)}"
-    case ETerm(t)  => encode(t)
+    case Add(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}+${encode(r)}"
+    case Add(TFactor(FPower(l)), r)                         => s"${encode(l)}+(${encode(r)})"
+    case Add(l, ETerm(TFactor(FPower(r))))                  => s"(${encode(l)})+${encode(r)}"
+    case Add(l, r)                                          => s"(${encode(l)})+(${encode(r)})"
+    case Sub(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}-${encode(r)}"
+    case Sub(TFactor(FPower(l)), r)                         => s"${encode(l)}-(${encode(r)})"
+    case Sub(l, ETerm(TFactor(FPower(r))))                  => s"(${encode(l)})-${encode(r)}"
+    case Sub(l, r)                                          => s"(${encode(l)})-(${encode(r)})"
+    case ETerm(t)                                           => encode(t)
   }
 
   def encode(term: Term): String = term match {
-    case Mul(l, r)  => s"${encode(l)}*${encode(r)}"
-    case Div(l, r)  => s"${encode(l)}/${encode(r)}"
-    case TFactor(f) => encode(f)
+    case Mul(FPower(l), TFactor(FPower(r))) => s"${encode(l)}*${encode(r)}"
+    case Mul(FPower(l), r)                  => s"${encode(l)}*(${encode(r)})"
+    case Mul(l, TFactor(FPower(r)))         => s"(${encode(l)})*${encode(r)}"
+    case Mul(l, r)                          => s"(${encode(l)})*(${encode(r)})"
+    case Div(FPower(l), TFactor(FPower(r))) => s"${encode(l)}/${encode(r)}"
+    case Div(FPower(l), r)                  => s"${encode(l)}/(${encode(r)})"
+    case Div(l, TFactor(FPower(r)))         => s"(${encode(l)})/${encode(r)}"
+    case Div(l, r)                          => s"(${encode(l)})/(${encode(r)})"
+    case TFactor(f)                         => encode(f)
   }
 
   def encode(factor: Factor): String = factor match {
-    case Pow(l, r) => s"${encode(l)}+${encode(r)}"
-    case FPower(p) => encode(p)
+    case Pow(l, FPower(r)) => s"${encode(l)}^${encode(r)}"
+    case Pow(l, r)         => s"${encode(l)}^(${encode(r)})"
+    case FPower(p)         => encode(p)
   }
 
   def encode(power: Power): String = power match {
-    case Plus(e) => s"${encode(e)}"
+    case Plus(e) => encode(e)
     case Minus(e) =>
       e match {
         case ETerm(TFactor(FPower(PUnary(UPosNumber(Natural(i))))))       => s"(-$i)"
@@ -163,7 +182,7 @@ object ExprParsing {
 
   def encode(unary: Unary): String = unary match {
     case Brackets(e)   => s"(${encode(e)})"
-    case UPosNumber(n) => s"${encode(n)}"
+    case UPosNumber(n) => encode(n)
   }
 
   def encode(number: NonNegNumber): String = number match {
@@ -173,28 +192,6 @@ object ExprParsing {
 
   /* parser */
 
-  object ParserOps {
-
-    case class Parser[A](run: String => Option[(A, String)]) {
-
-      def map[B](f: A => B): Parser[B] = Functor[Parser].map(this)(f)
-
-    }
-    object Parser {
-      implicit val functor: Functor[Parser] = derived.semiauto.functor
-    }
-
-    def digitChar: Parser[Char] = Parser[Char] {
-      _.toList match {
-        case Nil          => None
-        case head :: tail => s"$head".toIntOption.map(_ => (head, tail.mkString))
-      }
-    }
-
-    def some[A](p: Parser[A]): Parser[NonEmptyList[A]] = ???
-
-    def natural: Parser[Int] = some(digitChar).map(_.toList.mkString.toInt)
-
-  }
+  def parse(s: String): Parser[Expr] = ???
 
 }

@@ -1,12 +1,13 @@
-import ExprParsing._
-import ExprParsing.Expr
-import ExprParsing.Expr._
-import ExprParsing.Term._
-import ExprParsing.Factor._
-import ExprParsing.Power._
-import ExprParsing.Unary._
-import ExprParsing.NonNegNumber._
-import ExprParsingSuite._
+package exprparsing
+
+import exprparsing.ExprParsing.Expr._
+import exprparsing.ExprParsing.Factor._
+import exprparsing.ExprParsing.NonNegNumber._
+import exprparsing.ExprParsing.Power._
+import exprparsing.ExprParsing.Term._
+import exprparsing.ExprParsing.Unary._
+import exprparsing.ExprParsing._
+import exprparsing.ExprParsingSuite._
 import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
 import org.scalacheck.Gen
@@ -105,28 +106,39 @@ class ExprParsingSuite extends ScalaCheckSuite {
     }
   }
 
-  test("Add(1, Mul(2, 3.0)) encoding is \"1+2*3.0\"") {
+  test("Add(1, Mul(2, 3.0)) encoding is \"1+(2*3.0)\"") {
     val expr = Add(
       Term.numb(1),
       ETerm(Mul(Factor.numb(2), Term.numb(3.0)))
     )
-    assertEquals(encode(expr), "1+2*3.0")
+    assertEquals(encode(expr), "1+(2*3.0)")
   }
 
-  test("Add(Mul(2, 3.0), 1) encoding is \"2*3.0+1\"") {
+  test("Add(Mul(2, 3.0), 1) encoding is \"(2*3.0)+1\"") {
     val expr = Add(
       Mul(Factor.numb(2), Term.numb(3.0)),
       Expr.numb(1)
     )
-    assertEquals(encode(expr), "2*3.0+1")
+    assertEquals(encode(expr), "(2*3.0)+1")
   }
 
-  test("Add(Mul(2, 3.0), Minus(1)) encoding is \"2*3.0+(-1)\"") {
+  test("Add(Mul(2, 3.0), Minus(1)) encoding is \"(2*3.0)+(-1)\"") {
     val expr = Add(
       Mul(Factor.numb(2), Term.numb(3.0)),
       Expr.numb(-1)
     )
-    assertEquals(encode(expr), "2*3.0+(-1)")
+    assertEquals(encode(expr), "(2*3.0)+(-1)")
+  }
+
+  test("Mul(2.0, Div(Sub(3.0, 1), 5)) encoding is \"2.0*((3.0-1)/5)\"") {
+    val expr = Mul(
+      Factor.numb(2.0),
+      Div(
+        Factor.expr(Sub(Term.numb(3.0), Expr.numb(1))),
+        Term.numb(5)
+      )
+    )
+    assertEquals(encode(expr), "2.0*((3.0-1)/5)")
   }
 
 }

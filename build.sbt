@@ -2,6 +2,8 @@ val catsVersion = "2.10.0"
 
 val kittensVersion = "3.2.0"
 
+val catsParseVersion = "1.0.0"
+
 val catsEffectVersion = "3.5.3"
 
 val betterMonadicForVersion = "0.3.1"
@@ -28,6 +30,7 @@ lazy val root = (project in file(".")).settings(
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "kittens" % kittensVersion,
+  "org.typelevel" %% "cats-parse" % catsParseVersion,
   "org.typelevel" %% "cats-effect" % catsEffectVersion,
   compilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForVersion),
   "co.fs2" %% "fs2-core" % fs2Version,
