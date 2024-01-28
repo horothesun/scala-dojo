@@ -3,21 +3,21 @@ import ExprParsing.Term._
 import ExprParsing.Factor._
 import ExprParsing.Power._
 import ExprParsing.Unary._
-import ExprParsing.PosNumber._
+import ExprParsing.NonNegNumber._
 import cats.implicits._
 
 object ExprParsing {
 
   /*
   Expression pseudo-grammar:
-    expr       = term + expr | term - expr | term
-    term       = factor * term | factor / term | factor
-    factor     = power ^ factor | power
-    power      = + expr | - expr | unary
-    unary      = ( expr ) | number
-    number     = natural | posDecimal
-    posDecimal = some digit . some digit
-    natural    = some digit
+    expr          = term + expr | term - expr | term
+    term          = factor * term | factor / term | factor
+    factor        = power ^ factor | power
+    power         = + expr | - expr | unary
+    unary         = ( expr ) | number
+    number        = natural | posDecimal
+    nonNegDecimal = some digit . some digit
+    natural       = some digit
    */
 
   /* model */
@@ -64,28 +64,28 @@ object ExprParsing {
   sealed trait Unary
   object Unary {
     case class Brackets(e: Expr) extends Unary
-    case class UPosNumber(n: PosNumber) extends Unary
+    case class UPosNumber(n: NonNegNumber) extends Unary
 
     def numb(i: Int): Unary = UPosNumber(Natural(i))
-    def numb(d: Double): Unary = UPosNumber(PosDecimal(d))
+    def numb(d: Double): Unary = UPosNumber(NonNegDecimal(d))
   }
 
-  sealed trait PosNumber
-  object PosNumber {
-    case class Natural(i: Int) extends PosNumber
+  sealed trait NonNegNumber
+  object NonNegNumber {
+    case class Natural(i: Int) extends NonNegNumber
     object Natural {
       // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
       def apply(x: Int): Natural = {
-        require(x >= 0, "Natural must contain non-negative Int")
+        require(x >= 0, s"Natural must contain non-negative Int (arg: $x)")
         new Natural(x)
       }
     }
-    case class PosDecimal(d: Double) extends PosNumber
-    object PosDecimal {
+    case class NonNegDecimal(d: Double) extends NonNegNumber
+    object NonNegDecimal {
       // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
-      def apply(x: Double): PosDecimal = {
-        require(x >= 0.0, "PosDecimal must contain non-negative Double")
-        new PosDecimal(x)
+      def apply(x: Double): NonNegDecimal = {
+        require(x >= 0.0, s"NonNegDecimal must contain non-negative Double (arg: $x)")
+        new NonNegDecimal(x)
       }
     }
   }
@@ -122,9 +122,9 @@ object ExprParsing {
     case UPosNumber(n) => eval(n)
   }
 
-  def eval(number: PosNumber): Option[Double] = number match {
-    case Natural(i)    => Some(i)
-    case PosDecimal(d) => Some(d)
+  def eval(number: NonNegNumber): Option[Double] = number match {
+    case Natural(i)       => Some(i)
+    case NonNegDecimal(d) => Some(d)
   }
 
   /* encode */
@@ -150,9 +150,9 @@ object ExprParsing {
     case Plus(e) => s"${encode(e)}"
     case Minus(e) =>
       e match {
-        case ETerm(TFactor(FPower(PUnary(UPosNumber(Natural(i))))))    => s"(-$i)"
-        case ETerm(TFactor(FPower(PUnary(UPosNumber(PosDecimal(d)))))) => s"(-$d)"
-        case _                                                         => s"-(${encode(e)})"
+        case ETerm(TFactor(FPower(PUnary(UPosNumber(Natural(i))))))       => s"(-$i)"
+        case ETerm(TFactor(FPower(PUnary(UPosNumber(NonNegDecimal(d)))))) => s"(-$d)"
+        case _                                                            => s"-(${encode(e)})"
       }
     case PUnary(u) => encode(u)
   }
@@ -162,9 +162,9 @@ object ExprParsing {
     case UPosNumber(n) => s"${encode(n)}"
   }
 
-  def encode(number: PosNumber): String = number match {
-    case Natural(i)    => i.toString
-    case PosDecimal(d) => d.toString
+  def encode(number: NonNegNumber): String = number match {
+    case Natural(i)       => i.toString
+    case NonNegDecimal(d) => d.toString
   }
 
   /*

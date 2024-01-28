@@ -5,7 +5,7 @@ import ExprParsing.Term._
 import ExprParsing.Factor._
 import ExprParsing.Power._
 import ExprParsing.Unary._
-import ExprParsing.PosNumber._
+import ExprParsing.NonNegNumber._
 import ExprParsingSuite._
 import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
@@ -92,16 +92,16 @@ class ExprParsingSuite extends ScalaCheckSuite {
     }
   }
 
-  property("PosDecimal(d) throws exception when d < 0") {
+  property("NonNegDecimal(d) throws exception when d < 0") {
     forAll(Gen.negNum[Double]) { d =>
-      intercept[java.lang.IllegalArgumentException](PosDecimal(d))
+      intercept[java.lang.IllegalArgumentException](NonNegDecimal(d))
       ()
     }
   }
 
-  property("PosDecimal(d) correctly created when d >= 0.0") {
+  property("NonNegDecimal(d) correctly created when d >= 0.0") {
     forAll(Gen.oneOf(Gen.const(0.0), Gen.posNum[Double])) { d =>
-      assert(PosDecimal(d).d >= 0.0)
+      assert(NonNegDecimal(d).d >= 0.0)
     }
   }
 
@@ -183,9 +183,9 @@ object ExprParsingSuite {
       5 -> posNumberGen.map(UPosNumber.apply)
     )
   }
-  def posNumberGen: Gen[PosNumber] = Gen.oneOf(
+  def posNumberGen: Gen[NonNegNumber] = Gen.oneOf(
     Gen.oneOf(Gen.const(0), Gen.posNum[Int]).map(Natural.apply),
-    Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(PosDecimal.apply)
+    Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(NonNegDecimal.apply)
   )
 
 }
