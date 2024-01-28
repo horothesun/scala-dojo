@@ -74,11 +74,19 @@ object ExprParsing {
   object PosNumber {
     case class Natural(i: Int) extends PosNumber
     object Natural {
-      def apply(x: Int): Natural = new Natural(Math.abs(x))
+      // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
+      def apply(x: Int): Natural = {
+        require(x >= 0, "Natural must contain non-negative Int")
+        new Natural(x)
+      }
     }
     case class PosDecimal(d: Double) extends PosNumber
     object PosDecimal {
-      def apply(x: Double): PosDecimal = new PosDecimal(Math.abs(x))
+      // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
+      def apply(x: Double): PosDecimal = {
+        require(x >= 0.0, "PosDecimal must contain non-negative Double")
+        new PosDecimal(x)
+      }
     }
   }
 
@@ -158,5 +166,9 @@ object ExprParsing {
     case Natural(i)    => i.toString
     case PosDecimal(d) => d.toString
   }
+
+  /*
+
+   */
 
 }

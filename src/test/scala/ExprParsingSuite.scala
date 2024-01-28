@@ -79,14 +79,28 @@ class ExprParsingSuite extends ScalaCheckSuite {
     }
   }
 
-  property("Natural always contains non-negative Int") {
-    forAll(Gen.oneOf(Gen.negNum[Int], Gen.const(0), Gen.posNum[Int])) { i =>
+  property("Natural(i) throws exception when i < 0") {
+    forAll(Gen.negNum[Int]) { i =>
+      intercept[java.lang.IllegalArgumentException](Natural(i))
+      ()
+    }
+  }
+
+  property("Natural(i) correctly created when i >= 0") {
+    forAll(Gen.oneOf(Gen.const(0), Gen.posNum[Int])) { i =>
       assert(Natural(i).i >= 0)
     }
   }
 
-  property("PosDecimal always contains non-negative Double") {
-    forAll(Gen.oneOf(Gen.negNum[Double], Gen.const(0.0), Gen.posNum[Double])) { d =>
+  property("PosDecimal(d) throws exception when d < 0") {
+    forAll(Gen.negNum[Double]) { d =>
+      intercept[java.lang.IllegalArgumentException](PosDecimal(d))
+      ()
+    }
+  }
+
+  property("PosDecimal(d) correctly created when d >= 0.0") {
+    forAll(Gen.oneOf(Gen.const(0.0), Gen.posNum[Double])) { d =>
       assert(PosDecimal(d).d >= 0.0)
     }
   }
@@ -166,7 +180,7 @@ object ExprParsingSuite {
     val lzyExprGen = Gen.lzy(exprGen)
     Gen.frequency(
       1 -> lzyExprGen.map(Brackets.apply),
-      4 -> posNumberGen.map(UPosNumber.apply)
+      5 -> posNumberGen.map(UPosNumber.apply)
     )
   }
   def posNumberGen: Gen[PosNumber] = Gen.oneOf(
