@@ -4,7 +4,11 @@ import ExprParsing.Factor._
 import ExprParsing.Power._
 import ExprParsing.Unary._
 import ExprParsing.NonNegNumber._
+import cats.Functor
+import cats.data.NonEmptyList
+import cats._
 import cats.implicits._
+import scala.collection.immutable._
 
 object ExprParsing {
 
@@ -74,16 +78,16 @@ object ExprParsing {
   object NonNegNumber {
     case class Natural(i: Int) extends NonNegNumber
     object Natural {
-      // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
       def apply(x: Int): Natural = {
+        // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
         require(x >= 0, s"Natural must contain non-negative Int (arg: $x)")
         new Natural(x)
       }
     }
     case class NonNegDecimal(d: Double) extends NonNegNumber
     object NonNegDecimal {
-      // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
       def apply(x: Double): NonNegDecimal = {
+        // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
         require(x >= 0.0, s"NonNegDecimal must contain non-negative Double (arg: $x)")
         new NonNegDecimal(x)
       }
@@ -167,8 +171,30 @@ object ExprParsing {
     case NonNegDecimal(d) => d.toString
   }
 
-  /*
+  /* parser */
 
-   */
+  object ParserOps {
+
+    case class Parser[A](run: String => Option[(A, String)]) {
+
+      def map[B](f: A => B): Parser[B] = Functor[Parser].map(this)(f)
+
+    }
+    object Parser {
+      implicit val functor: Functor[Parser] = derived.semiauto.functor
+    }
+
+    def digitChar: Parser[Char] = Parser[Char] {
+      _.toList match {
+        case Nil          => None
+        case head :: tail => s"$head".toIntOption.map(_ => (head, tail.mkString))
+      }
+    }
+
+    def some[A](p: Parser[A]): Parser[NonEmptyList[A]] = ???
+
+    def natural: Parser[Int] = some(digitChar).map(_.toList.mkString.toInt)
+
+  }
 
 }
