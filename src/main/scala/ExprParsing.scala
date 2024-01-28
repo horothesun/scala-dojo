@@ -2,21 +2,22 @@ import ExprParsing.Expr._
 import ExprParsing.Term._
 import ExprParsing.Factor._
 import ExprParsing.Power._
-import ExprParsing.Number._
+import ExprParsing.Unary._
+import ExprParsing.PosNumber._
 import cats.implicits._
 
 object ExprParsing {
 
   /*
   Expression pseudo-grammar:
-    expr    = term + expr | term - expr | term
-    term    = factor * term | factor / term | factor
-    factor  = power ^ factor | power
-    power   = ( expr ) | number
-    number  = decimal | int
-    decimal = - (some digit).(some digit) | (some digit).(some digit)
-    int     = - nat | nat
-    nat     = some digit
+    expr       = term + expr | term - expr | term
+    term       = factor * term | factor / term | factor
+    factor     = power ^ factor | power
+    power      = + expr | - expr | unary
+    unary      = ( expr ) | number
+    number     = natural | posDecimal
+    posDecimal = some digit . some digit
+    natural    = some digit
    */
 
   /* model */
@@ -52,20 +53,38 @@ object ExprParsing {
 
   sealed trait Power
   object Power {
-    case class Brackets(e: Expr) extends Power
-    case class PNumber(n: Number) extends Power
+    case class Plus(e: Expr) extends Power
+    case class Minus(e: Expr) extends Power
+    case class PUnary(u: Unary) extends Power
 
-    def numb(i: Int): Power = PNumber(NInt(i))
-    def numb(d: Double): Power = PNumber(NDecimal(d))
+    def numb(i: Int): Power = if (i < 0) Minus(Expr.numb(-i)) else PUnary(Unary.numb(i))
+    def numb(d: Double): Power = if (d < 0.0) Minus(Expr.numb(-d)) else PUnary(Unary.numb(d))
   }
 
-  sealed trait Number
-  object Number {
-    case class NDecimal(d: Double) extends Number
-    case class NInt(i: Int) extends Number
+  sealed trait Unary
+  object Unary {
+    case class Brackets(e: Expr) extends Unary
+    case class UPosNumber(n: PosNumber) extends Unary
+
+    def numb(i: Int): Unary = UPosNumber(Natural(i))
+    def numb(d: Double): Unary = UPosNumber(PosDecimal(d))
   }
 
-  /* eval */
+  sealed trait PosNumber
+  object PosNumber {
+    case class Natural(i: Int) extends PosNumber
+    object Natural {
+      def apply(x: Int): Natural = new Natural(Math.abs(x))
+    }
+    case class PosDecimal(d: Double) extends PosNumber
+    object PosDecimal {
+      def apply(x: Double): PosDecimal = new PosDecimal(Math.abs(x))
+    }
+  }
+
+  /* eval
+    Info: it returns Option[Double] because of the `/` operator.
+   */
 
   def eval(expr: Expr): Option[Double] = expr match {
     case Add(l, r) => (eval(l), eval(r)).mapN(_ + _)
@@ -85,13 +104,19 @@ object ExprParsing {
   }
 
   def eval(power: Power): Option[Double] = power match {
-    case Brackets(e) => eval(e)
-    case PNumber(n)  => eval(n)
+    case Plus(e)   => eval(e)
+    case Minus(e)  => eval(e).map(-_)
+    case PUnary(u) => eval(u)
   }
 
-  def eval(number: Number): Option[Double] = number match {
-    case NDecimal(d) => Some(d)
-    case NInt(i)     => Some(i)
+  def eval(unary: Unary): Option[Double] = unary match {
+    case Brackets(e)   => eval(e)
+    case UPosNumber(n) => eval(n)
+  }
+
+  def eval(number: PosNumber): Option[Double] = number match {
+    case Natural(i)    => Some(i)
+    case PosDecimal(d) => Some(d)
   }
 
   /* encode */
@@ -114,13 +139,24 @@ object ExprParsing {
   }
 
   def encode(power: Power): String = power match {
-    case Brackets(e) => s"(${encode(e)})"
-    case PNumber(n)  => s"${encode(n)}"
+    case Plus(e) => s"${encode(e)}"
+    case Minus(e) =>
+      e match {
+        case ETerm(TFactor(FPower(PUnary(UPosNumber(Natural(i))))))    => s"(-$i)"
+        case ETerm(TFactor(FPower(PUnary(UPosNumber(PosDecimal(d)))))) => s"(-$d)"
+        case _                                                         => s"-(${encode(e)})"
+      }
+    case PUnary(u) => encode(u)
   }
 
-  def encode(number: Number): String = number match {
-    case NDecimal(d) => d.toString
-    case NInt(i)     => i.toString
+  def encode(unary: Unary): String = unary match {
+    case Brackets(e)   => s"(${encode(e)})"
+    case UPosNumber(n) => s"${encode(n)}"
+  }
+
+  def encode(number: PosNumber): String = number match {
+    case Natural(i)    => i.toString
+    case PosDecimal(d) => d.toString
   }
 
 }
