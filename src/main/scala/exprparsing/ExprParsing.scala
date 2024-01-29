@@ -1,27 +1,24 @@
 package exprparsing
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import cats.parse.Parser
 import cats.parse.Parser._
+import cats.parse.Rfc5234.digit
 import exprparsing.ExprParsing.Expr._
 import exprparsing.ExprParsing.Factor._
-import exprparsing.ExprParsing.NonNegNumber._
 import exprparsing.ExprParsing.Power._
 import exprparsing.ExprParsing.Term._
 import exprparsing.ExprParsing.Unary._
 
 object ExprParsing {
 
-  /*
-  Expression pseudo-grammar:
-    expr          = term + expr | term - expr | term
-    term          = factor * term | factor / term | factor
-    factor        = power ^ factor | power
-    power         = + expr | - expr | unary
-    unary         = ( expr ) | number
-    number        = natural | posDecimal
-    nonNegDecimal = some digit . some digit
-    natural       = some digit
+  /* Expression pseudo-grammar:
+    expr   = term + expr | term - expr | term
+    term   = factor * term | factor / term | factor
+    factor = power ^ factor | power
+    power  = ( expr ) | + expr | - expr | unary
+    unary  = natural | nonNegDecimal
    */
 
   /* model */
@@ -34,6 +31,11 @@ object ExprParsing {
 
     def numb(i: Int): Expr = ETerm(Term.numb(i))
     def numb(d: Double): Expr = ETerm(Term.numb(d))
+
+    def neg(e: Expr): Expr = ETerm(Term.neg(e))
+
+    def mul(l: Factor, r: Term): Expr = ETerm(Mul(l, r))
+    def div(l: Factor, r: Term): Expr = ETerm(Div(l, r))
   }
 
   sealed trait Term
@@ -45,7 +47,9 @@ object ExprParsing {
     def numb(i: Int): Term = TFactor(Factor.numb(i))
     def numb(d: Double): Term = TFactor(Factor.numb(d))
 
-    def expr(e: Expr): Term = TFactor(FPower(PUnary(Brackets(e))))
+    def expr(e: Expr): Term = TFactor(Factor.expr(e))
+
+    def neg(e: Expr): Term = TFactor(Factor.neg(e))
   }
 
   sealed trait Factor
@@ -56,7 +60,9 @@ object ExprParsing {
     def numb(i: Int): Factor = FPower(Power.numb(i))
     def numb(d: Double): Factor = FPower(Power.numb(d))
 
-    def expr(e: Expr): Factor = FPower(PUnary(Brackets(e)))
+    def expr(e: Expr): Factor = FPower(Power.expr(e))
+
+    def neg(e: Expr): Factor = FPower(Minus(e))
   }
 
   sealed trait Power
@@ -65,24 +71,16 @@ object ExprParsing {
     case class Minus(e: Expr) extends Power
     case class PUnary(u: Unary) extends Power
 
-    def numb(i: Int): Power = if (i < 0) Minus(Expr.numb(-i)) else PUnary(Unary.numb(i))
-    def numb(d: Double): Power = if (d < 0.0) Minus(Expr.numb(-d)) else PUnary(Unary.numb(d))
+    def numb(i: Int): Power = if (i < 0) Minus(Expr.numb(-i)) else PUnary(Natural(i))
+    def numb(d: Double): Power = if (d < 0.0) Minus(Expr.numb(-d)) else PUnary(NonNegDecimal(d))
 
-    def expr(e: Expr): Power = PUnary(Brackets(e))
+    def expr(e: Expr): Power = Plus(e)
   }
 
   sealed trait Unary
   object Unary {
-    case class Brackets(e: Expr) extends Unary
-    case class UPosNumber(n: NonNegNumber) extends Unary
 
-    def numb(i: Int): Unary = UPosNumber(Natural(i))
-    def numb(d: Double): Unary = UPosNumber(NonNegDecimal(d))
-  }
-
-  sealed trait NonNegNumber
-  object NonNegNumber {
-    case class Natural(i: Int) extends NonNegNumber
+    case class Natural(i: Int) extends Unary
     object Natural {
       def apply(x: Int): Natural = {
         // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
@@ -90,7 +88,8 @@ object ExprParsing {
         new Natural(x)
       }
     }
-    case class NonNegDecimal(d: Double) extends NonNegNumber
+
+    case class NonNegDecimal(d: Double) extends Unary
     object NonNegDecimal {
       def apply(x: Double): NonNegDecimal = {
         // non-negativity runtime guarantee: returning Option[Natural] might be an overkill
@@ -98,6 +97,7 @@ object ExprParsing {
         new NonNegDecimal(x)
       }
     }
+
   }
 
   /* eval
@@ -128,11 +128,6 @@ object ExprParsing {
   }
 
   def eval(unary: Unary): Option[Double] = unary match {
-    case Brackets(e)   => eval(e)
-    case UPosNumber(n) => eval(n)
-  }
-
-  def eval(number: NonNegNumber): Option[Double] = number match {
     case Natural(i)       => Some(i)
     case NonNegDecimal(d) => Some(d)
   }
@@ -170,28 +165,72 @@ object ExprParsing {
   }
 
   def encode(power: Power): String = power match {
-    case Plus(e) => encode(e)
-    case Minus(e) =>
-      e match {
-        case ETerm(TFactor(FPower(PUnary(UPosNumber(Natural(i))))))       => s"(-$i)"
-        case ETerm(TFactor(FPower(PUnary(UPosNumber(NonNegDecimal(d)))))) => s"(-$d)"
-        case _                                                            => s"-(${encode(e)})"
-      }
-    case PUnary(u) => encode(u)
+    case Plus(ETerm(TFactor(FPower(PUnary(u)))))  => encode(u)
+    case Plus(e)                                  => s"(${encode(e)})"
+    case Minus(ETerm(TFactor(FPower(PUnary(u))))) => s"(-${encode(u)})"
+    case Minus(e)                                 => s"(-(${encode(e)}))"
+    case PUnary(u)                                => encode(u)
   }
 
   def encode(unary: Unary): String = unary match {
-    case Brackets(e)   => s"(${encode(e)})"
-    case UPosNumber(n) => encode(n)
-  }
-
-  def encode(number: NonNegNumber): String = number match {
     case Natural(i)       => i.toString
     case NonNegDecimal(d) => d.toString
   }
 
   /* parser */
 
-  def parse(s: String): Parser[Expr] = ???
+  def exprP: Parser[Expr] = termP.flatMap { t =>
+    val add = (char('+') *> exprP).map[Expr](r => Add(t, r))
+    val sub = (char('-') *> exprP).map[Expr](r => Sub(t, r))
+    val eTerm = Parser.pure[Expr](ETerm(t))
+    add.orElse(sub).orElse(eTerm)
+  }
+
+  def termP: Parser[Term] = factorP.flatMap { f =>
+    val mul = (char('*') *> termP).map[Term](r => Mul(f, r))
+    val div = (char('/') *> termP).map[Term](r => Div(f, r))
+    val tFactor = Parser.pure[Term](TFactor(f))
+    mul.orElse(div).orElse(tFactor)
+  }
+
+  def factorP: Parser[Factor] = powerP.flatMap { p =>
+    val pow = (char('^') *> factorP).map[Factor](r => Pow(p, r))
+    val fPower = Parser.pure[Factor](FPower(p))
+    pow.orElse(fPower)
+  }
+
+  def powerP: Parser[Power] = Parser.oneOf(unaryP.map(PUnary.apply) :: minusP :: plusP :: Nil)
+
+  def plusP: Parser[Power] = {
+    val bracketed = (char('(') *> exprP <* char(')')).map[Power](Plus.apply)
+    val plusPrefix = (char('+') *> exprP).map[Power](Plus.apply)
+    bracketed.orElse(plusPrefix)
+  }
+  def minusP: Parser[Power] = (char('-') *> exprP).map(Minus.apply)
+
+  def unaryP: Parser[Unary] = digits.flatMap { ds =>
+    val nonNegDecimal = (charIn('.'), digits).mapN { case (dot, rds) => ds.append(dot).concatNel(rds).mkString_("") }
+      .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
+    val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
+    nonNegDecimal.orElse(natural)
+  }
+
+  def digits: Parser[NonEmptyList[Char]] = digit.rep
+
+  /*
+  1) Will the input expressions follow the PEMDAS convention?
+  Higher to lower priority:
+  - Parenthesis
+  - Exponentiation
+  - Multiplication/Division (same priority, left-to-right)
+  - Addition/Subtraction (same priority, left-to-right)
+
+  E.g.: "-1/2*3-(4/5-3)" means "(((-1)/2)*3)-((4/5)-3)"
+
+  2) Is the `*` symbol going to be always explicit?
+
+  E.g.: no shortcuts like "2(1+3)" instead of "2*(1+3)"
+
+   */
 
 }

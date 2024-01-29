@@ -2,7 +2,6 @@ package exprparsing
 
 import exprparsing.ExprParsing.Expr._
 import exprparsing.ExprParsing.Factor._
-import exprparsing.ExprParsing.NonNegNumber._
 import exprparsing.ExprParsing.Power._
 import exprparsing.ExprParsing.Term._
 import exprparsing.ExprParsing.Unary._
@@ -70,12 +69,12 @@ class ExprParsingSuite extends ScalaCheckSuite {
     assertEqualsOptionDouble(eval(expr), -1.0)
   }
 
-  property("Brackets(expr) and expr evaluate to same value") {
+  property("Plus(expr) and expr evaluate to same value") {
     forAll(exprGen) { expr =>
-      val evaluatedBracketedExpr = eval(Brackets(expr))
+      val evaluatedPlusExpr = eval(Plus(expr))
       eval(expr) match {
-        case Some(d) => assertEqualsOptionDouble(evaluatedBracketedExpr, d)
-        case None    => assertEquals(evaluatedBracketedExpr, None)
+        case Some(d) => assertEqualsOptionDouble(evaluatedPlusExpr, d)
+        case None    => assertEquals(evaluatedPlusExpr, None)
       }
     }
   }
@@ -141,6 +140,36 @@ class ExprParsingSuite extends ScalaCheckSuite {
     assertEquals(encode(expr), "2.0*((3.0-1)/5)")
   }
 
+  test("Add(1.5, Minus(Sub(Minus(2.5), 3))) encoding is \"1.5+(-((-2.5)-3))\"") {
+    val expr = Add(
+      Term.numb(1.5),
+      Expr.neg(
+        Sub(Term.neg(Expr.numb(2.5)), Expr.numb(3))
+      )
+    )
+    assertEquals(encode(expr), "1.5+(-((-2.5)-3))")
+  }
+
+  test("\"1\" parses to Unary.Natural(1)") {
+    assertEquals(unaryP.parse("1"), Right(("", Natural(1))))
+  }
+
+  test("\"1.0\" parses to Unary.NonNegDecimal(1.0)") {
+    assertEquals(unaryP.parse("1.0"), Right(("", NonNegDecimal(1.0))))
+  }
+
+//  test("\"1\" parse to Expr.numb(1)") {
+//    assertEquals(exprP.parse("1"), Right(("", Expr.numb(1))))
+//  }
+
+//  test("\"1+2\" parse to Add(1, 2)") {
+//    assertEquals(exprP.parse("1+2"), Right(("", Add(Term.numb(1), Expr.numb(2)))))
+//  }
+
+//  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
+//    assertEquals(exprP.parse("1+2*3"), Right(("", Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3))))))
+//  }
+
 }
 object ExprParsingSuite {
 
@@ -188,16 +217,8 @@ object ExprParsingSuite {
       5 -> lzyUnaryGen.map(PUnary.apply)
     )
   }
-  def unaryGen: Gen[Unary] = {
-    val lzyExprGen = Gen.lzy(exprGen)
-    Gen.frequency(
-      1 -> lzyExprGen.map(Brackets.apply),
-      5 -> posNumberGen.map(UPosNumber.apply)
-    )
-  }
-  def posNumberGen: Gen[NonNegNumber] = Gen.oneOf(
-    Gen.oneOf(Gen.const(0), Gen.posNum[Int]).map(Natural.apply),
-    Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(NonNegDecimal.apply)
-  )
+  def unaryGen: Gen[Unary] = Gen.oneOf(naturalGen, nonNegDecimalGen)
+  def naturalGen: Gen[Natural] = Gen.oneOf(Gen.const(0), Gen.posNum[Int]).map(Natural.apply)
+  def nonNegDecimalGen: Gen[NonNegDecimal] = Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(NonNegDecimal.apply)
 
 }
