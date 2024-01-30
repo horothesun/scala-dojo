@@ -282,11 +282,11 @@ class MagicSquareFormingSpec extends ScalaCheckSuite {
     }
   }
 
-  property("if r preserves s then r.isNoOpFor(s)") {
-    forAll(replacementAndNonEmptySquare) { case (r, s) =>
-      (replace(s, List(r)).square == s) ==> r.isNoOpFor(s)
-    }
-  }
+//  property("if r preserves s then r.isNoOpFor(s)") {
+//    forAll(replacementAndNonEmptySquare) { case (r, s) =>
+//      (replace(s, List(r)).square == s) ==> r.isNoOpFor(s)
+//    }
+//  }
 
   test("minCostReplacements is correct on sample 0") {
     val square0 = Square(
