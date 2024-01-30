@@ -20,7 +20,7 @@ object ExprCodec {
     term   = factor * term | factor / term | factor
     factor = power ^ factor | power
     power  = ( expr ) | + expr | - expr | unary
-    unary  = natural | nonNegDecimal
+    unary  = nonNegDecimal | natural
    */
 
   /* parser */
