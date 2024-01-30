@@ -1,12 +1,12 @@
 package exprparsing
 
-import exprparsing.ExprParsing.Expr._
-import exprparsing.ExprParsing.Factor._
-import exprparsing.ExprParsing.Power._
-import exprparsing.ExprParsing.Term._
-import exprparsing.ExprParsing.Unary._
-import exprparsing.ExprParsing._
-import exprparsing.ExprParsingSuite._
+import ExprParsing.Expr._
+import ExprParsing.Factor._
+import ExprParsing.Power._
+import ExprParsing.Term._
+import ExprParsing.Unary._
+import ExprParsing._
+import ExprParsingSuite._
 import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
 import org.scalacheck.Gen

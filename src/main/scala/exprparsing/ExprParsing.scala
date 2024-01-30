@@ -5,11 +5,12 @@ import cats.implicits._
 import cats.parse.Parser
 import cats.parse.Parser._
 import cats.parse.Rfc5234.digit
-import exprparsing.ExprParsing.Expr._
-import exprparsing.ExprParsing.Factor._
-import exprparsing.ExprParsing.Power._
-import exprparsing.ExprParsing.Term._
-import exprparsing.ExprParsing.Unary._
+import ExprParsing.Expr._
+import ExprParsing.Factor._
+import ExprParsing.Power._
+import ExprParsing.Term._
+import ExprParsing.Token._
+import ExprParsing.Unary._
 
 object ExprParsing {
 
@@ -22,6 +23,33 @@ object ExprParsing {
    */
 
   /* model */
+
+  sealed trait Token {
+
+    override def toString: String = s"$toChar"
+
+    def toChar: Char = this match {
+      case PlusSign     => '+'
+      case MinusSign    => '-'
+      case TimesSign    => '*'
+      case DivisionSign => '/'
+      case PowerSign    => '^'
+      case LParen       => '('
+      case RParen       => ')'
+      case DecimalDot   => '.'
+    }
+
+  }
+  object Token {
+    case object PlusSign extends Token
+    case object MinusSign extends Token
+    case object TimesSign extends Token
+    case object DivisionSign extends Token
+    case object PowerSign extends Token
+    case object LParen extends Token
+    case object RParen extends Token
+    case object DecimalDot extends Token
+  }
 
   sealed trait Expr
   object Expr {
@@ -135,40 +163,40 @@ object ExprParsing {
   /* encode */
 
   def encode(expr: Expr): String = expr match {
-    case Add(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}+${encode(r)}"
-    case Add(TFactor(FPower(l)), r)                         => s"${encode(l)}+(${encode(r)})"
-    case Add(l, ETerm(TFactor(FPower(r))))                  => s"(${encode(l)})+${encode(r)}"
-    case Add(l, r)                                          => s"(${encode(l)})+(${encode(r)})"
-    case Sub(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}-${encode(r)}"
-    case Sub(TFactor(FPower(l)), r)                         => s"${encode(l)}-(${encode(r)})"
-    case Sub(l, ETerm(TFactor(FPower(r))))                  => s"(${encode(l)})-${encode(r)}"
-    case Sub(l, r)                                          => s"(${encode(l)})-(${encode(r)})"
-    case ETerm(t)                                           => encode(t)
+    case Add(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}$PlusSign${encode(r)}"
+    case Add(TFactor(FPower(l)), r)                         => s"${encode(l)}$PlusSign$LParen${encode(r)}$RParen"
+    case Add(l, ETerm(TFactor(FPower(r))))                  => s"$LParen${encode(l)}$RParen$PlusSign${encode(r)}"
+    case Add(l, r) => s"$LParen${encode(l)}$RParen$PlusSign$LParen${encode(r)}$RParen"
+    case Sub(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}$MinusSign${encode(r)}"
+    case Sub(TFactor(FPower(l)), r)                         => s"${encode(l)}$MinusSign$LParen${encode(r)}$RParen"
+    case Sub(l, ETerm(TFactor(FPower(r))))                  => s"$LParen${encode(l)}$RParen$MinusSign${encode(r)}"
+    case Sub(l, r) => s"$LParen${encode(l)}$RParen$MinusSign$LParen${encode(r)}$RParen"
+    case ETerm(t)  => encode(t)
   }
 
   def encode(term: Term): String = term match {
-    case Mul(FPower(l), TFactor(FPower(r))) => s"${encode(l)}*${encode(r)}"
-    case Mul(FPower(l), r)                  => s"${encode(l)}*(${encode(r)})"
-    case Mul(l, TFactor(FPower(r)))         => s"(${encode(l)})*${encode(r)}"
-    case Mul(l, r)                          => s"(${encode(l)})*(${encode(r)})"
-    case Div(FPower(l), TFactor(FPower(r))) => s"${encode(l)}/${encode(r)}"
-    case Div(FPower(l), r)                  => s"${encode(l)}/(${encode(r)})"
-    case Div(l, TFactor(FPower(r)))         => s"(${encode(l)})/${encode(r)}"
-    case Div(l, r)                          => s"(${encode(l)})/(${encode(r)})"
+    case Mul(FPower(l), TFactor(FPower(r))) => s"${encode(l)}$TimesSign${encode(r)}"
+    case Mul(FPower(l), r)                  => s"${encode(l)}$TimesSign$LParen${encode(r)}$RParen"
+    case Mul(l, TFactor(FPower(r)))         => s"$LParen${encode(l)}$RParen$TimesSign${encode(r)}"
+    case Mul(l, r)                          => s"$LParen${encode(l)}$RParen$TimesSign$LParen${encode(r)}$RParen"
+    case Div(FPower(l), TFactor(FPower(r))) => s"${encode(l)}$DivisionSign${encode(r)}"
+    case Div(FPower(l), r)                  => s"${encode(l)}$DivisionSign$LParen${encode(r)}$RParen"
+    case Div(l, TFactor(FPower(r)))         => s"$LParen${encode(l)}$RParen$DivisionSign${encode(r)}"
+    case Div(l, r)                          => s"$LParen${encode(l)}$RParen$DivisionSign$LParen${encode(r)}$RParen"
     case TFactor(f)                         => encode(f)
   }
 
   def encode(factor: Factor): String = factor match {
-    case Pow(l, FPower(r)) => s"${encode(l)}^${encode(r)}"
-    case Pow(l, r)         => s"${encode(l)}^(${encode(r)})"
+    case Pow(l, FPower(r)) => s"${encode(l)}$PowerSign${encode(r)}"
+    case Pow(l, r)         => s"${encode(l)}$PowerSign$LParen${encode(r)}$RParen"
     case FPower(p)         => encode(p)
   }
 
   def encode(power: Power): String = power match {
     case Plus(ETerm(TFactor(FPower(PUnary(u)))))  => encode(u)
-    case Plus(e)                                  => s"(${encode(e)})"
-    case Minus(ETerm(TFactor(FPower(PUnary(u))))) => s"(-${encode(u)})"
-    case Minus(e)                                 => s"(-(${encode(e)}))"
+    case Plus(e)                                  => s"$LParen${encode(e)}$RParen"
+    case Minus(ETerm(TFactor(FPower(PUnary(u))))) => s"$LParen$MinusSign${encode(u)}$RParen"
+    case Minus(e)                                 => s"$LParen$MinusSign$LParen${encode(e)}$RParen$RParen"
     case PUnary(u)                                => encode(u)
   }
 
@@ -180,21 +208,21 @@ object ExprParsing {
   /* parser */
 
   def exprP: Parser[Expr] = termP.flatMap { t =>
-    val add = (char('+') *> exprP).map[Expr](r => Add(t, r))
-    val sub = (char('-') *> exprP).map[Expr](r => Sub(t, r))
+    val add = (char(PlusSign.toChar) *> exprP).map[Expr](r => Add(t, r))
+    val sub = (char(MinusSign.toChar) *> exprP).map[Expr](r => Sub(t, r))
     val eTerm = Parser.pure[Expr](ETerm(t))
     add.orElse(sub).orElse(eTerm)
   }
 
   def termP: Parser[Term] = factorP.flatMap { f =>
-    val mul = (char('*') *> termP).map[Term](r => Mul(f, r))
-    val div = (char('/') *> termP).map[Term](r => Div(f, r))
+    val mul = (char(TimesSign.toChar) *> termP).map[Term](r => Mul(f, r))
+    val div = (char(DivisionSign.toChar) *> termP).map[Term](r => Div(f, r))
     val tFactor = Parser.pure[Term](TFactor(f))
     mul.orElse(div).orElse(tFactor)
   }
 
   def factorP: Parser[Factor] = powerP.flatMap { p =>
-    val pow = (char('^') *> factorP).map[Factor](r => Pow(p, r))
+    val pow = (char(PowerSign.toChar) *> factorP).map[Factor](r => Pow(p, r))
     val fPower = Parser.pure[Factor](FPower(p))
     pow.orElse(fPower)
   }
@@ -204,15 +232,16 @@ object ExprParsing {
     pUnary.orElse(minusP).orElse(plusP)
   }
 
-  def minusP: Parser[Power] = (char('-') *> exprP).map(Minus.apply)
+  def minusP: Parser[Power] = (char(MinusSign.toChar) *> exprP).map(Minus.apply)
   def plusP: Parser[Power] = {
-    val plusPrefix = (char('+') *> exprP).map[Power](Plus.apply)
-    val bracketed = (char('(') *> exprP <* char(')')).map[Power](Plus.apply)
+    val plusPrefix = (char(PlusSign.toChar) *> exprP).map[Power](Plus.apply)
+    val bracketed = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map[Power](Plus.apply)
     plusPrefix.orElse(bracketed)
   }
 
   def unaryP: Parser[Unary] = digitsP.flatMap { ds =>
-    val nonNegDecimal = (charIn('.'), digitsP).mapN { case (dot, rds) => ds.append(dot).concatNel(rds).mkString_("") }
+    val nonNegDecimal = (char(DecimalDot.toChar) *> digitsP)
+      .map(rds => ds.append(DecimalDot.toChar).concatNel(rds).mkString_(""))
       .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
     val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
