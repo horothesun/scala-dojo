@@ -1,10 +1,11 @@
 package exprparsing
 
-import ExprParsing.Expr._
-import ExprParsing.Factor._
-import ExprParsing.Power._
-import ExprParsing.Term._
-import ExprParsing.Unary._
+import Models._
+import Models.Expr._
+import Models.Factor._
+import Models.Power._
+import Models.Term._
+import Models.Unary._
 import ExprParsing._
 import ExprParsingSuite._
 import munit.Assertions._
