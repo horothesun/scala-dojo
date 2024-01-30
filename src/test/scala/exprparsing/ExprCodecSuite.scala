@@ -6,14 +6,15 @@ import Models.Factor._
 import Models.Power._
 import Models.Term._
 import Models.Unary._
-import ExprParsing._
-import ExprParsingSuite._
+import ExprCodec._
+import ExprCodecSuite._
+import ExprEval._
 import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
 
-class ExprParsingSuite extends ScalaCheckSuite {
+class ExprCodecSuite extends ScalaCheckSuite {
 
   test("Add(1, 2.0) evaluates to Some(3.0)") {
     val expr = Add(Term.numb(1), Expr.numb(2.0))
@@ -175,7 +176,7 @@ class ExprParsingSuite extends ScalaCheckSuite {
   }
 
 }
-object ExprParsingSuite {
+object ExprCodecSuite {
 
   def assertEqualsOptionDouble(
     obtained: Option[Double],
