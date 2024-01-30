@@ -158,17 +158,17 @@ class ExprParsingSuite extends ScalaCheckSuite {
     assertEquals(unaryP.parse("1.0"), Right(("", NonNegDecimal(1.0))))
   }
 
-//  test("\"1\" parse to Expr.numb(1)") {
-//    assertEquals(exprP.parse("1"), Right(("", Expr.numb(1))))
-//  }
+  test("\"1\" parse to Expr.numb(1)") {
+    assertEquals(exprP.parse("1"), Right(("", Expr.numb(1))))
+  }
 
-//  test("\"1+2\" parse to Add(1, 2)") {
-//    assertEquals(exprP.parse("1+2"), Right(("", Add(Term.numb(1), Expr.numb(2)))))
-//  }
+  test("\"1+2\" parse to Add(1, 2)") {
+    assertEquals(exprP.parse("1+2"), Right(("", Add(Term.numb(1), Expr.numb(2)))))
+  }
 
-//  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
-//    assertEquals(exprP.parse("1+2*3"), Right(("", Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3))))))
-//  }
+  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
+    assertEquals(exprP.parse("1+2*3"), Right(("", Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3))))))
+  }
 
 }
 object ExprParsingSuite {

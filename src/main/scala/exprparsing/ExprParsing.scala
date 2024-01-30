@@ -199,14 +199,17 @@ object ExprParsing {
     pow.orElse(fPower)
   }
 
-  def powerP: Parser[Power] = Parser.oneOf(unaryP.map(PUnary.apply) :: minusP :: plusP :: Nil)
-
-  def plusP: Parser[Power] = {
-    val bracketed = (char('(') *> exprP <* char(')')).map[Power](Plus.apply)
-    val plusPrefix = (char('+') *> exprP).map[Power](Plus.apply)
-    bracketed.orElse(plusPrefix)
+  def powerP: Parser[Power] = unaryP.flatMap { u =>
+    val pUnary = Parser.pure[Power](PUnary(u))
+    pUnary.orElse(minusP).orElse(plusP)
   }
+
   def minusP: Parser[Power] = (char('-') *> exprP).map(Minus.apply)
+  def plusP: Parser[Power] = {
+    val plusPrefix = (char('+') *> exprP).map[Power](Plus.apply)
+    val bracketed = (char('(') *> exprP <* char(')')).map[Power](Plus.apply)
+    plusPrefix.orElse(bracketed)
+  }
 
   def unaryP: Parser[Unary] = digits.flatMap { ds =>
     val nonNegDecimal = (charIn('.'), digits).mapN { case (dot, rds) => ds.append(dot).concatNel(rds).mkString_("") }
@@ -216,21 +219,5 @@ object ExprParsing {
   }
 
   def digits: Parser[NonEmptyList[Char]] = digit.rep
-
-  /*
-  1) Will the input expressions follow the PEMDAS convention?
-  Higher to lower priority:
-  - Parenthesis
-  - Exponentiation
-  - Multiplication/Division (same priority, left-to-right)
-  - Addition/Subtraction (same priority, left-to-right)
-
-  E.g.: "-1/2*3-(4/5-3)" means "(((-1)/2)*3)-((4/5)-3)"
-
-  2) Is the `*` symbol going to be always explicit?
-
-  E.g.: no shortcuts like "2(1+3)" instead of "2*(1+3)"
-
-   */
 
 }
