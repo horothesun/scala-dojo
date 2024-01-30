@@ -211,13 +211,13 @@ object ExprParsing {
     plusPrefix.orElse(bracketed)
   }
 
-  def unaryP: Parser[Unary] = digits.flatMap { ds =>
-    val nonNegDecimal = (charIn('.'), digits).mapN { case (dot, rds) => ds.append(dot).concatNel(rds).mkString_("") }
+  def unaryP: Parser[Unary] = digitsP.flatMap { ds =>
+    val nonNegDecimal = (charIn('.'), digitsP).mapN { case (dot, rds) => ds.append(dot).concatNel(rds).mkString_("") }
       .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
     val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
   }
 
-  def digits: Parser[NonEmptyList[Char]] = digit.rep
+  def digitsP: Parser[NonEmptyList[Char]] = digit.rep
 
 }

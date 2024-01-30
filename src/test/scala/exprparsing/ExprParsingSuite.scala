@@ -151,23 +151,26 @@ class ExprParsingSuite extends ScalaCheckSuite {
   }
 
   test("\"1\" parses to Unary.Natural(1)") {
-    assertEquals(unaryP.parse("1"), Right(("", Natural(1))))
+    assertFullyParsed(unaryP.parse("1"), Natural(1))
   }
 
   test("\"1.0\" parses to Unary.NonNegDecimal(1.0)") {
-    assertEquals(unaryP.parse("1.0"), Right(("", NonNegDecimal(1.0))))
+    assertFullyParsed(unaryP.parse("1.0"), NonNegDecimal(1.0))
   }
 
   test("\"1\" parse to Expr.numb(1)") {
-    assertEquals(exprP.parse("1"), Right(("", Expr.numb(1))))
+    assertFullyParsed(exprP.parse("1"), Expr.numb(1))
   }
 
   test("\"1+2\" parse to Add(1, 2)") {
-    assertEquals(exprP.parse("1+2"), Right(("", Add(Term.numb(1), Expr.numb(2)))))
+    assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
   }
 
   test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
-    assertEquals(exprP.parse("1+2*3"), Right(("", Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3))))))
+    assertFullyParsed(
+      exprP.parse("1+2*3"),
+      Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3)))
+    )
   }
 
 }
@@ -180,6 +183,15 @@ object ExprParsingSuite {
   )(implicit loc: Location): Unit = obtained match {
     case None    => fail(s"obtained None but expected Some($expected)")
     case Some(o) => assertEqualsDouble(o, expected, delta)
+  }
+
+  def assertFullyParsed[A](
+    obtained: Either[cats.parse.Parser.Error, (String, A)],
+    expected: A
+  )(implicit loc: Location): Unit = obtained match {
+    case Left(e)        => fail(s"parsing failed: $e")
+    case Right(("", a)) => assertEquals(a, expected)
+    case Right((s, a))  => fail(s"parser did not consume all input (remaining: \"$s\") and produced: $a")
   }
 
   def exprGen: Gen[Expr] = {
