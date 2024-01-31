@@ -41,6 +41,8 @@ object Models {
     case class Sub(l: Term, r: Expr) extends Expr
     case class ETerm(t: Term) extends Expr
 
+    def grouped(e: Expr): Expr = ETerm(Term.grouped(e))
+
     def mul(l: Factor, r: Term): Expr = ETerm(Mul(l, r))
     def div(l: Factor, r: Term): Expr = ETerm(Div(l, r))
 
@@ -60,6 +62,8 @@ object Models {
 
     def expr(e: Expr): Term = TFactor(Factor.expr(e))
 
+    def grouped(e: Expr): Term = TFactor(Factor.grouped(e))
+
     def pow(l: Power, r: Factor): Term = TFactor(Pow(l, r))
 
     def neg(e: Expr): Term = TFactor(Factor.neg(e))
@@ -75,7 +79,9 @@ object Models {
 
     def expr(e: Expr): Factor = FPower(Power.expr(e))
 
-    def neg(e: Expr): Factor = FPower(Minus(Power.expr(e)))
+    def grouped(e: Expr): Factor = FPower(Power.grouped(e))
+
+    def neg(e: Expr): Factor = FPower(Minus(Grouped(e)))
 
     def numb(i: Int): Factor = FPower(Power.numb(i))
     def numb(d: Double): Factor = FPower(Power.numb(d))
@@ -83,14 +89,16 @@ object Models {
 
   sealed trait Power
   object Power {
-    case class Plus(p: Power) extends Power
-    case class Minus(p: Power) extends Power
+    case class Plus(u: Unary) extends Power
+    case class Minus(u: Unary) extends Power
     case class PUnary(u: Unary) extends Power
 
     def expr(e: Expr): Power = PUnary(Grouped(e))
 
-    def numb(i: Int): Power = if (i < 0) Minus(PUnary(Natural(-i))) else PUnary(Natural(i))
-    def numb(d: Double): Power = if (d < 0.0) Minus(PUnary(NonNegDecimal(-d))) else PUnary(NonNegDecimal(d))
+    def grouped(e: Expr): Power = PUnary(Grouped(e))
+
+    def numb(i: Int): Power = if (i < 0) Minus(Natural(-i)) else PUnary(Natural(i))
+    def numb(d: Double): Power = if (d < 0.0) Minus(NonNegDecimal(-d)) else PUnary(NonNegDecimal(d))
   }
 
   sealed trait Unary
@@ -118,6 +126,13 @@ object Models {
     }
 
     case class Grouped(e: Expr) extends Unary
+  }
+
+  sealed trait CalcResult
+  object CalcResult {
+    case class ParsingError(message: String) extends CalcResult
+    case object DivisionByZeroError extends CalcResult
+    case class Success(value: Double) extends CalcResult
   }
 
 }

@@ -38,6 +38,7 @@ object ExprEval {
   def eval(unary: Unary): Option[Double] = unary match {
     case Natural(i)       => Some(i)
     case NonNegDecimal(d) => Some(d)
+    case Grouped(e)       => eval(e)
   }
 
 }

@@ -19,50 +19,53 @@ object ExprCodec {
     expr   = term + expr | term - expr | term
     term   = factor * term | factor / term | factor
     factor = power ^ factor | power
-    power  = + power | - power | unary
+    power  = + unary | - unary | unary
     unary  = nonNegDecimal | natural | ( expr )
    */
 
   /* parser */
 
   def exprP: Parser[Expr] = termP.flatMap { t =>
-    val add = (char(PlusSign.toChar) *> exprP).map[Expr](r => Add(t, r))
-    val sub = (char(MinusSign.toChar) *> exprP).map[Expr](r => Sub(t, r))
+    val add = (char(PlusSign.toChar), exprP).mapN[Expr] { case (_, r) => Add(t, r) }
+    val sub = (char(MinusSign.toChar), exprP).mapN[Expr] { case (_, r) => Sub(t, r) }
     val eTerm = Parser.pure[Expr](ETerm(t))
     add.orElse(sub).orElse(eTerm)
   }
 
   def termP: Parser[Term] = factorP.flatMap { f =>
-    val mul = (char(TimesSign.toChar) *> termP).map[Term](r => Mul(f, r))
-    val div = (char(DivisionSign.toChar) *> termP).map[Term](r => Div(f, r))
+    val mul = (char(TimesSign.toChar), termP).mapN[Term] { case (_, r) => Mul(f, r) }
+    val div = (char(DivisionSign.toChar), termP).mapN[Term] { case (_, r) => Div(f, r) }
     val tFactor = Parser.pure[Term](TFactor(f))
     mul.orElse(div).orElse(tFactor)
   }
 
   def factorP: Parser[Factor] = powerP.flatMap { p =>
-    val pow = (char(PowerSign.toChar) *> factorP).map[Factor](r => Pow(p, r))
+    val pow = (char(PowerSign.toChar), factorP).mapN[Factor] { case (_, r) => Pow(p, r) }
     val fPower = Parser.pure[Factor](FPower(p))
     pow.orElse(fPower)
   }
 
   def powerP: Parser[Power] = {
+    val plusP = char(PlusSign.toChar).flatMap(_ => unaryP).map[Power](u => Plus(u))
+    val minusP = char(MinusSign.toChar).flatMap(_ => unaryP).map[Power](u => Minus(u))
     val pUnary = unaryP.map[Power](PUnary.apply)
     plusP.orElse(minusP).orElse(pUnary)
   }
 
-  def minusP: Parser[Power] = (char(MinusSign.toChar) *> powerP).map(Minus.apply)
-  def plusP: Parser[Power] = (char(PlusSign.toChar) *> powerP).map(Plus.apply)
-
-  def unaryP: Parser[Unary] = groupedP.orElse(numericP)
+  def unaryP: Parser[Unary] = numericP.orElse(defer(groupedP))
 
   def numericP: Parser[Unary] = digitsP.flatMap { ds =>
-    val nonNegDecimal = (char(DecimalDot.toChar) *> digitsP)
+    val nonNegDecimal = char(DecimalDot.toChar)
+      .flatMap(_ => digitsP)
       .map(rds => ds.append(DecimalDot.toChar).concatNel(rds).mkString_(""))
       .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
-    val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
+    val natural = Parser
+      .pure(ds.mkString_(""))
+      .mapFilter[Unary](_.toIntOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
   }
-  def groupedP: Parser[Unary] = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map(Grouped.apply)
+
+  def groupedP: Parser[Unary] = exprP.between(char(LParen.toChar), char(RParen.toChar)).map(Grouped.apply)
 
   def digitsP: Parser[NonEmptyList[Char]] = digit.rep
 
@@ -101,10 +104,9 @@ object ExprCodec {
   }
 
   def encode(power: Power): String = power match {
-    case Plus(p)          => encode(p)
-    case Minus(PUnary(u)) => s"$MinusSign${encode(u)}"
-    case Minus(p)         => s"$MinusSign$LParen${encode(p)}$RParen"
-    case PUnary(u)        => encode(u)
+    case Plus(p)   => encode(p)
+    case Minus(u)  => s"$MinusSign${encode(u)}"
+    case PUnary(u) => encode(u)
   }
 
   def encode(unary: Unary): String = unary match {
