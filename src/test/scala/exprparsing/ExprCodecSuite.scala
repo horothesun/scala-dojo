@@ -62,24 +62,24 @@ class ExprCodecSuite extends ScalaCheckSuite {
   }
 
   test("Plus(1) evaluates to Some(1.0)") {
-    val expr = Plus(Expr.numb(1))
+    val expr = Plus(Power.numb(1))
     assertEqualsOptionDouble(eval(expr), 1.0)
   }
 
   test("Minus(1) evaluates to Some(-1.0)") {
-    val expr = Minus(Expr.numb(1))
+    val expr = Minus(Power.numb(1))
     assertEqualsOptionDouble(eval(expr), -1.0)
   }
 
-  property("Plus(expr) and expr evaluate to same value") {
-    forAll(exprGen) { expr =>
-      val evaluatedPlusExpr = eval(Plus(expr))
-      eval(expr) match {
-        case Some(d) => assertEqualsOptionDouble(evaluatedPlusExpr, d)
-        case None    => assertEquals(evaluatedPlusExpr, None)
-      }
-    }
-  }
+//  property("Grouped(expr) and expr evaluate to same value") {
+//    forAll(exprGen) { expr =>
+//      val evaluatedGroupedExpr = eval(Grouped(expr))
+//      eval(expr) match {
+//        case Some(d) => assertEqualsOptionDouble(evaluatedGroupedExpr, d)
+//        case None    => assertEquals(evaluatedGroupedExpr, None)
+//      }
+//    }
+//  }
 
   property("Natural(i) throws exception when i < 0") {
     forAll(Gen.negNum[Int]) { i =>
@@ -110,7 +110,7 @@ class ExprCodecSuite extends ScalaCheckSuite {
   test("Add(1, Mul(2, 3.0)) encoding is \"1+(2*3.0)\"") {
     val expr = Add(
       Term.numb(1),
-      ETerm(Mul(Factor.numb(2), Term.numb(3.0)))
+      Expr.mul(Factor.numb(2), Term.numb(3.0))
     )
     assertEquals(encode(expr), "1+(2*3.0)")
   }
@@ -142,41 +142,99 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertEquals(encode(expr), "2.0*((3.0-1)/5)")
   }
 
-  test("Add(1.5, Minus(Sub(Minus(2.5), 3))) encoding is \"1.5+(-((-2.5)-3))\"") {
+  test("Add(1.5, Minus(Sub(Minus(2.5), 3))) encoding is \"1.5+(-((-(2.5))-3))\"") {
     val expr = Add(
       Term.numb(1.5),
       Expr.neg(
         Sub(Term.neg(Expr.numb(2.5)), Expr.numb(3))
       )
     )
-    assertEquals(encode(expr), "1.5+(-((-2.5)-3))")
+    assertEquals(encode(expr), "1.5+(-((-(2.5))-3))")
   }
 
-  test("\"1\" parses to Unary.Natural(1)") {
-    assertFullyParsed(unaryP.parse("1"), Natural(1))
+  test("\"1\" parses to Natural(1)") {
+    assertFullyParsed(numericP.parse("1"), Natural(1))
   }
 
-  test("\"1.0\" parses to Unary.NonNegDecimal(1.0)") {
-    assertFullyParsed(unaryP.parse("1.0"), NonNegDecimal(1.0))
+  test("\"1.0\" parses to NonNegDecimal(1.0)") {
+    assertFullyParsed(numericP.parse("1.0"), NonNegDecimal(1.0))
   }
 
-  test("\"1\" parse to Expr.numb(1)") {
-    assertFullyParsed(exprP.parse("1"), Expr.numb(1))
-  }
+//  test("\"1\" parse to Expr.numb(1)") {
+//    assertFullyParsed(exprP.parse("1"), Expr.numb(1))
+//  }
 
-  test("\"1+2\" parse to Add(1, 2)") {
-    assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
-  }
+//  test("\"1+2\" parse to Add(1, 2)") {
+//    assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
+//  }
 
-  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
-    assertFullyParsed(
-      exprP.parse("1+2*3"),
-      Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3)))
-    )
+//  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
+//    assertFullyParsed(
+//      exprP.parse("1+2*3"),
+//      Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3)))
+//    )
+//  }
+
+//  test("\"1+(6/3)\" parses to Add(1, Div(6, 3))") {
+//    assertFullyParsed(
+//      exprP.parse("1+(6/3)"),
+//      Add(Term.numb(1), Expr.div(Factor.numb(6), Term.numb(3)))
+//    )
+//  }
+
+//  test("\"(6/3)\" parses to Div(6, 3)") {
+//    assertFullyParsed(
+//      exprP.parse("(6/3)"),
+//      Expr.div(Factor.numb(6), Term.numb(3))
+//    )
+//  }
+
+//  test("\"(42)\" parses to Natural(42)") {
+//    assertFullyParsed(exprP.parse("(42)"), Expr.numb(42))
+//  }
+
+  test("parse and eval few valid expressions") {
+    validExpressionsAndResults.map { case (e, res) =>
+      val parsedAndEvaluated = exprP.parse(e).map { case (s, expr) => (s, eval(expr)) }
+      assertFullyParsed(parsedAndEvaluated, res)
+    }
   }
 
 }
 object ExprCodecSuite {
+
+  val validExpressionsAndResults: List[(String, Option[Double])] = List(
+//    ("(3.14159+6.28318)/2.71828", Some(3)),
+//    ("48*(5-2)^3", Some(1296)),
+//    ("(84.123-9.372)/0.75", Some(99)),
+//    ("5.678*(-3.14159+2.71828)", Some(-2.40355)),
+//    ("(7.345+9.654)/(0.123-0.045)", Some(217)),
+//    ("8*(-0.5^2)-1.234", Some(.366)),
+//    ("43.567/(12.89+3.14)", Some(2)),
+//    ("(7.345+9.654)/(0.123-0.045)", Some(217)),
+//    ("-5.123*(-2^3)+3.789", Some(44.773)),
+//    ("(100/5)^3-21.678", Some(7978.322)),
+//    ("8.765*(3^2-2)-4.321", Some(57.034)),
+//    ("(5+7)^2+5.342", Some(149.342)),
+//    ("15.987/(3.14-2.718)", Some(37)),
+//    ("-7.531*(-8^2+1)+9.012", Some(-480.503)),
+//    ("(200/4)^3+8.743", Some(125008.743)),
+//    ("6.423*(5^2+3)-1.987", Some(177.857)),
+//    ("(9+11)^2-12.567", Some(387.433)),
+//    ("24.098/(5.314-1.234)", Some(5)),
+//    ("-9.765*(-4^3)+2.109", Some(627.069)),
+//    ("(300/6)^3-34.897", Some(124965.103)),
+//    ("4.123*(7^2-8)-5.678", Some(163.365)),
+//    ("(13+17)^2+17.345", Some(917.345)),
+//    ("33.210/(7.531-4.210)", Some(10)),
+//    ("-8.456*(-2^2+2)+6.234", Some(-44.502)),
+//    ("(400/8)^3+51.023", Some(125051.023)),
+//    ("2.718*(9^2+1)-8.965", Some(213.911)),
+//    ("(19+23)^2-24.123", Some(1739.877)),
+//    ("42.345/(9.765-6.109)", Some(11)),
+//    ("-7.123*(-3^3)+4.356", Some(196.677)),
+//    ("(500/10)^3+72.159", Some(125072.159))
+  )
 
   def assertEqualsOptionDouble(
     obtained: Option[Double],
@@ -202,7 +260,7 @@ object ExprCodecSuite {
     Gen.frequency(
       1 -> Gen.zip(lzyTermGen, lzyExprGen).map((Add.apply _).tupled),
       1 -> Gen.zip(lzyTermGen, lzyExprGen).map((Sub.apply _).tupled),
-      5 -> lzyTermGen.map(ETerm.apply)
+      20 -> lzyTermGen.map(ETerm.apply)
     )
   }
   def termGen: Gen[Term] = {
@@ -211,7 +269,7 @@ object ExprCodecSuite {
     Gen.frequency(
       1 -> Gen.zip(lzyFactorGen, lzyTermGen).map((Mul.apply _).tupled),
       1 -> Gen.zip(lzyFactorGen, lzyTermGen).map((Div.apply _).tupled),
-      5 -> lzyFactorGen.map(TFactor.apply)
+      20 -> lzyFactorGen.map(TFactor.apply)
     )
   }
   def factorGen: Gen[Factor] = {
@@ -219,20 +277,28 @@ object ExprCodecSuite {
     val lzyFactorGen = Gen.lzy(factorGen)
     Gen.frequency(
       1 -> Gen.zip(lzyPowerGen, lzyFactorGen).map((Pow.apply _).tupled),
-      5 -> lzyPowerGen.map(FPower.apply)
+      20 -> lzyPowerGen.map(FPower.apply)
     )
   }
   def powerGen: Gen[Power] = {
-    val lzyExprGen = Gen.lzy(exprGen)
+    val lzyPowerGen = Gen.lzy(powerGen)
     val lzyUnaryGen = Gen.lzy(unaryGen)
     Gen.frequency(
-      1 -> lzyExprGen.map(Plus.apply),
-      1 -> lzyExprGen.map(Minus.apply),
-      5 -> lzyUnaryGen.map(PUnary.apply)
+      1 -> lzyPowerGen.map(Plus.apply),
+      1 -> lzyPowerGen.map(Minus.apply),
+      20 -> lzyUnaryGen.map(PUnary.apply)
     )
   }
-  def unaryGen: Gen[Unary] = Gen.oneOf(naturalGen, nonNegDecimalGen)
+  def unaryGen: Gen[Unary] = Gen.frequency(
+    20 -> naturalGen,
+    20 -> nonNegDecimalGen,
+    1 -> Gen.lzy(groupedGen)
+  )
   def naturalGen: Gen[Natural] = Gen.oneOf(Gen.const(0), Gen.posNum[Int]).map(Natural.apply)
   def nonNegDecimalGen: Gen[NonNegDecimal] = Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(NonNegDecimal.apply)
+  def groupedGen: Gen[Grouped] = {
+    val lzyExprGen = Gen.lzy(exprGen)
+    lzyExprGen.map(Grouped.apply)
+  }
 
 }

@@ -19,8 +19,8 @@ object ExprCodec {
     expr   = term + expr | term - expr | term
     term   = factor * term | factor / term | factor
     factor = power ^ factor | power
-    power  = ( expr ) | + expr | - expr | unary
-    unary  = nonNegDecimal | natural
+    power  = + power | - power | unary
+    unary  = nonNegDecimal | natural | ( expr )
    */
 
   /* parser */
@@ -45,71 +45,72 @@ object ExprCodec {
     pow.orElse(fPower)
   }
 
-  def powerP: Parser[Power] = unaryP.flatMap { u =>
-    val pUnary = Parser.pure[Power](PUnary(u))
-    pUnary.orElse(minusP).orElse(plusP)
+  def powerP: Parser[Power] = {
+    val pUnary = unaryP.map[Power](PUnary.apply)
+    plusP.orElse(minusP).orElse(pUnary)
   }
 
-  def minusP: Parser[Power] = (char(MinusSign.toChar) *> exprP).map(Minus.apply)
-  def plusP: Parser[Power] = {
-    val plusPrefix = (char(PlusSign.toChar) *> exprP).map[Power](Plus.apply)
-    val bracketed = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map[Power](Plus.apply)
-    plusPrefix.orElse(bracketed)
-  }
+  def minusP: Parser[Power] = (char(MinusSign.toChar) *> powerP).map(Minus.apply)
+  def plusP: Parser[Power] = (char(PlusSign.toChar) *> powerP).map(Plus.apply)
 
-  def unaryP: Parser[Unary] = digitsP.flatMap { ds =>
+  def unaryP: Parser[Unary] = groupedP.orElse(numericP)
+
+  def numericP: Parser[Unary] = digitsP.flatMap { ds =>
     val nonNegDecimal = (char(DecimalDot.toChar) *> digitsP)
       .map(rds => ds.append(DecimalDot.toChar).concatNel(rds).mkString_(""))
       .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
     val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
   }
+  def groupedP: Parser[Unary] = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map(Grouped.apply)
 
   def digitsP: Parser[NonEmptyList[Char]] = digit.rep
 
   /* encode */
 
   def encode(expr: Expr): String = expr match {
-    case Add(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}$PlusSign${encode(r)}"
-    case Add(TFactor(FPower(l)), r)                         => s"${encode(l)}$PlusSign$LParen${encode(r)}$RParen"
-    case Add(l, ETerm(TFactor(FPower(r))))                  => s"$LParen${encode(l)}$RParen$PlusSign${encode(r)}"
-    case Add(l, r) => s"$LParen${encode(l)}$RParen$PlusSign$LParen${encode(r)}$RParen"
-    case Sub(TFactor(FPower(l)), ETerm(TFactor(FPower(r)))) => s"${encode(l)}$MinusSign${encode(r)}"
-    case Sub(TFactor(FPower(l)), r)                         => s"${encode(l)}$MinusSign$LParen${encode(r)}$RParen"
-    case Sub(l, ETerm(TFactor(FPower(r))))                  => s"$LParen${encode(l)}$RParen$MinusSign${encode(r)}"
-    case Sub(l, r) => s"$LParen${encode(l)}$RParen$MinusSign$LParen${encode(r)}$RParen"
-    case ETerm(t)  => encode(t)
+    case Add(TFactor(FPower(PUnary(l))), ETerm(TFactor(FPower(PUnary(r))))) => s"${encode(l)}$PlusSign${encode(r)}"
+    case Add(l, ETerm(TFactor(FPower(PUnary(r))))) => s"$LParen${encode(l)}$RParen$PlusSign${encode(r)}"
+    case Add(TFactor(FPower(PUnary(l))), r)        => s"${encode(l)}$PlusSign$LParen${encode(r)}$RParen"
+    case Add(l, r)                                 => s"$LParen${encode(l)}$RParen$PlusSign$LParen${encode(r)}$RParen"
+    case Sub(TFactor(FPower(PUnary(l))), ETerm(TFactor(FPower(PUnary(r))))) => s"${encode(l)}$MinusSign${encode(r)}"
+    case Sub(l, ETerm(TFactor(FPower(PUnary(r))))) => s"$LParen${encode(l)}$RParen$MinusSign${encode(r)}"
+    case Sub(TFactor(FPower(PUnary(l))), r)        => s"${encode(l)}$MinusSign$LParen${encode(r)}$RParen"
+    case Sub(l, r)                                 => s"$LParen${encode(l)}$RParen$MinusSign$LParen${encode(r)}$RParen"
+    case ETerm(t)                                  => encode(t)
   }
 
   def encode(term: Term): String = term match {
-    case Mul(FPower(l), TFactor(FPower(r))) => s"${encode(l)}$TimesSign${encode(r)}"
-    case Mul(FPower(l), r)                  => s"${encode(l)}$TimesSign$LParen${encode(r)}$RParen"
-    case Mul(l, TFactor(FPower(r)))         => s"$LParen${encode(l)}$RParen$TimesSign${encode(r)}"
-    case Mul(l, r)                          => s"$LParen${encode(l)}$RParen$TimesSign$LParen${encode(r)}$RParen"
-    case Div(FPower(l), TFactor(FPower(r))) => s"${encode(l)}$DivisionSign${encode(r)}"
-    case Div(FPower(l), r)                  => s"${encode(l)}$DivisionSign$LParen${encode(r)}$RParen"
-    case Div(l, TFactor(FPower(r)))         => s"$LParen${encode(l)}$RParen$DivisionSign${encode(r)}"
-    case Div(l, r)                          => s"$LParen${encode(l)}$RParen$DivisionSign$LParen${encode(r)}$RParen"
-    case TFactor(f)                         => encode(f)
+    case Mul(FPower(PUnary(l)), TFactor(FPower(PUnary(r)))) => s"${encode(l)}$TimesSign${encode(r)}"
+    case Mul(l, TFactor(FPower(PUnary(r))))                 => s"$LParen${encode(l)}$RParen$TimesSign${encode(r)}"
+    case Mul(FPower(PUnary(l)), r)                          => s"${encode(l)}$TimesSign$LParen${encode(r)}$RParen"
+    case Mul(l, r) => s"$LParen${encode(l)}$RParen$TimesSign$LParen${encode(r)}$RParen"
+    case Div(FPower(PUnary(l)), TFactor(FPower(PUnary(r)))) => s"${encode(l)}$DivisionSign${encode(r)}"
+    case Div(l, TFactor(FPower(PUnary(r))))                 => s"$LParen${encode(l)}$RParen$DivisionSign${encode(r)}"
+    case Div(FPower(PUnary(l)), r)                          => s"${encode(l)}$DivisionSign$LParen${encode(r)}$RParen"
+    case Div(l, r)  => s"$LParen${encode(l)}$RParen$DivisionSign$LParen${encode(r)}$RParen"
+    case TFactor(f) => encode(f)
   }
 
   def encode(factor: Factor): String = factor match {
-    case Pow(l, FPower(r)) => s"${encode(l)}$PowerSign${encode(r)}"
-    case Pow(l, r)         => s"${encode(l)}$PowerSign$LParen${encode(r)}$RParen"
-    case FPower(p)         => encode(p)
+    case Pow(PUnary(l), FPower(PUnary(r))) => s"${encode(l)}$PowerSign${encode(r)}"
+    case Pow(l, FPower(PUnary(r)))         => s"$LParen${encode(l)}$RParen$PowerSign${encode(r)}"
+    case Pow(PUnary(l), r)                 => s"${encode(l)}$PowerSign$LParen${encode(r)}$RParen"
+    case Pow(l, r)                         => s"$LParen${encode(l)}$RParen$PowerSign$LParen${encode(r)}$RParen"
+    case FPower(p)                         => encode(p)
   }
 
   def encode(power: Power): String = power match {
-    case Plus(ETerm(TFactor(FPower(PUnary(u)))))  => encode(u)
-    case Plus(e)                                  => s"$LParen${encode(e)}$RParen"
-    case Minus(ETerm(TFactor(FPower(PUnary(u))))) => s"$LParen$MinusSign${encode(u)}$RParen"
-    case Minus(e)                                 => s"$LParen$MinusSign$LParen${encode(e)}$RParen$RParen"
-    case PUnary(u)                                => encode(u)
+    case Plus(p)          => encode(p)
+    case Minus(PUnary(u)) => s"$MinusSign${encode(u)}"
+    case Minus(p)         => s"$MinusSign$LParen${encode(p)}$RParen"
+    case PUnary(u)        => encode(u)
   }
 
   def encode(unary: Unary): String = unary match {
     case Natural(i)       => i.toString
     case NonNegDecimal(d) => d.toString
+    case Grouped(e)       => s"$LParen${encode(e)}$RParen"
   }
 
 }

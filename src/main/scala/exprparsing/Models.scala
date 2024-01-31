@@ -75,7 +75,7 @@ object Models {
 
     def expr(e: Expr): Factor = FPower(Power.expr(e))
 
-    def neg(e: Expr): Factor = FPower(Minus(e))
+    def neg(e: Expr): Factor = FPower(Minus(Power.expr(e)))
 
     def numb(i: Int): Factor = FPower(Power.numb(i))
     def numb(d: Double): Factor = FPower(Power.numb(d))
@@ -83,19 +83,18 @@ object Models {
 
   sealed trait Power
   object Power {
-    case class Plus(e: Expr) extends Power
-    case class Minus(e: Expr) extends Power
+    case class Plus(p: Power) extends Power
+    case class Minus(p: Power) extends Power
     case class PUnary(u: Unary) extends Power
 
-    def expr(e: Expr): Power = Plus(e)
+    def expr(e: Expr): Power = PUnary(Grouped(e))
 
-    def numb(i: Int): Power = if (i < 0) Minus(Expr.numb(-i)) else PUnary(Natural(i))
-    def numb(d: Double): Power = if (d < 0.0) Minus(Expr.numb(-d)) else PUnary(NonNegDecimal(d))
+    def numb(i: Int): Power = if (i < 0) Minus(PUnary(Natural(-i))) else PUnary(Natural(i))
+    def numb(d: Double): Power = if (d < 0.0) Minus(PUnary(NonNegDecimal(-d))) else PUnary(NonNegDecimal(d))
   }
 
   sealed trait Unary
   object Unary {
-
     /* Non-negativity runtime guarantee
       Both Natural.apply and NonNegDecimal.apply require (at runtime) their argument to be non-negative.
       Since
@@ -103,7 +102,6 @@ object Models {
         - capturing this constraint in the return type (e.g. `Option[Natural]`) would considerably increase code complexity,
       I opted for a less type-safe runtime guarantee.
      */
-
     case class Natural(i: Int) extends Unary
     object Natural {
       def apply(x: Int): Natural = {
@@ -111,7 +109,6 @@ object Models {
         new Natural(x)
       }
     }
-
     case class NonNegDecimal(d: Double) extends Unary
     object NonNegDecimal {
       def apply(x: Double): NonNegDecimal = {
@@ -120,6 +117,7 @@ object Models {
       }
     }
 
+    case class Grouped(e: Expr) extends Unary
   }
 
 }
