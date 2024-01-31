@@ -16,7 +16,7 @@ class CalculatorSuite extends FunSuite {
 //    val expr2 = "((1+0.5^2)/0.1)*2.0"
     val expr2 = "(1+0.5^2)/(0.1*2.0)"
     (calc(expr1), calc(expr2)) match {
-      case (Success(d1), Success(d2)) => assertEqualsDouble(d1, d2, 1e-6)
+      case (Success(d1), Success(d2)) => assertEqualsDouble(d1, d2, delta = 1e-6)
       case (res1, res2)               => fail(s"res1 = $res1 | res2 = $res2")
     }
   }

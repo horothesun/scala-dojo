@@ -6,10 +6,13 @@ import Models.Term._
 import Models.Unary._
 import ExprCodec._
 import ExprCodecSuite._
+import ExprEval._
+import ExprGenerators._
 import munit.Assertions._
-import munit.{FunSuite, Location}
+import munit.{Location, ScalaCheckSuite}
+import org.scalacheck.Prop._
 
-class ExprCodecSuite extends FunSuite {
+class ExprCodecSuite extends ScalaCheckSuite {
 
   /* parser */
 
@@ -21,11 +24,15 @@ class ExprCodecSuite extends FunSuite {
     assertFullyParsed(numericP.parse("1.0"), NonNegDecimal(1.0))
   }
 
-  test("\"1\" parse to Expr.numb(1)") {
+  test("\"1\" parses to Expr.numb(1)") {
     assertFullyParsed(exprP.parse("1"), Expr.numb(1))
   }
 
-  test("\"1+2\" parse to Add(1, 2)") {
+  test("\"1.0\" parses to Expr.numb(1.0)") {
+    assertFullyParsed(exprP.parse("1.0"), Expr.numb(1.0))
+  }
+
+  test("\"1+2\" parses to Add(1, 2)") {
     assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
   }
 
@@ -101,6 +108,17 @@ class ExprCodecSuite extends FunSuite {
     assertEquals(encode(expr), "1.5+(-((-(2.5))-3))")
   }
 
+  property("eval(parse(encode(expr))) == eval(expr), for any expr: Expr") {
+    forAll(exprGen) { expr =>
+      exprP.parse(encode(expr)) match {
+        case Left(err)               => fail(s"parsing failed: $err")
+        case Right(("", parsedExpr)) => assertEqualsOptionsDouble(eval(parsedExpr), eval(expr))
+        case Right((s, parsedExpr)) =>
+          fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
+      }
+    }
+  }
+
 }
 object ExprCodecSuite {
 
@@ -111,6 +129,16 @@ object ExprCodecSuite {
   )(implicit loc: Location): Unit = obtained match {
     case None      => fail(s"obtained None but expected Some($expected)")
     case Some(obt) => assertEqualsDouble(obt, expected, delta)
+  }
+
+  def assertEqualsOptionsDouble(
+    obtained: Option[Double],
+    expected: Option[Double],
+    delta: Double = 1e-12
+  )(implicit loc: Location): Unit = (obtained, expected) match {
+    case (None, None)           => ()
+    case (Some(obt), Some(exp)) => assertEqualsDouble(obt, exp, delta)
+    case _                      => fail(s"$obtained != $expected")
   }
 
   def assertFullyParsed[A](
