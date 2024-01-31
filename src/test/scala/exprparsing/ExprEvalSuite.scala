@@ -60,11 +60,6 @@ class ExprEvalSuite extends ScalaCheckSuite {
     assertEqualsOptionDouble(eval(expr), Double.PositiveInfinity)
   }
 
-  test("Plus(1) evaluates to Some(1.0)") {
-    val expr = Plus(Natural(1))
-    assertEqualsOptionDouble(eval(expr), 1.0)
-  }
-
   test("Minus(1) evaluates to Some(-1.0)") {
     val expr = Minus(Natural(1))
     assertEqualsOptionDouble(eval(expr), -1.0)

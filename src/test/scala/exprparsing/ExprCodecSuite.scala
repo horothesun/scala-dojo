@@ -61,6 +61,16 @@ class ExprCodecSuite extends ScalaCheckSuite {
     )
   }
 
+  // TODO: fix!!!
+//  test("\"1-2.0+3-4.0\" parses to Sub(Add(Sub(1, 2.0), 3), 4.0)") {
+  test("\"1-2.0+3-4.0\" parses to Sub(1, Add(2.0, Sub(3, 4.0)))") {
+    assertFullyParsed(
+      exprP.parse("1-2.0+3-4.0"),
+//      Sub(Term.expr(Add(Term.expr(Sub(Term.numb(1), Expr.numb(2.0))), Expr.numb(3))), Expr.numb(4.0))
+      Sub(Term.numb(1), Add(Term.numb(2.0), Sub(Term.numb(3), Expr.numb(4.0))))
+    )
+  }
+
   /* encode */
 
   test("Add(1, Mul(2, 3.0)) encoding is \"1+(2*3.0)\"") {

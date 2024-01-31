@@ -39,7 +39,6 @@ object ExprGenerators {
   def powerGen: Gen[Power] = {
     val lzyUnaryGen = Gen.lzy(unaryGen)
     Gen.frequency(
-      1 -> lzyUnaryGen.map(Plus.apply),
       1 -> lzyUnaryGen.map(Minus.apply),
       4 -> lzyUnaryGen.map(PUnary.apply)
     )

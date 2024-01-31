@@ -19,7 +19,7 @@ object ExprCodec {
     expr   = term + expr | term - expr | term
     term   = factor * term | factor / term | factor
     factor = power ^ factor | power
-    power  = + unary | - unary | unary
+    power  = - unary | unary
     unary  = nonNegDecimal | natural | ( expr )
    */
 
@@ -46,10 +46,9 @@ object ExprCodec {
   }
 
   def powerP: Parser[Power] = {
-    val plusP = char(PlusSign.toChar) *> unaryP.map[Power](u => Plus(u))
     val minusP = char(MinusSign.toChar) *> unaryP.map[Power](u => Minus(u))
     val pUnary = unaryP.map[Power](PUnary.apply)
-    plusP.orElse(minusP).orElse(pUnary)
+    minusP.orElse(pUnary)
   }
 
   def unaryP: Parser[Unary] = numericP.orElse(defer(groupedP))
@@ -102,7 +101,6 @@ object ExprCodec {
   }
 
   def encode(power: Power): String = power match {
-    case Plus(p)   => encode(p)
     case Minus(u)  => s"$MinusSign${encode(u)}"
     case PUnary(u) => encode(u)
   }

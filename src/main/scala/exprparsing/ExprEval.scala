@@ -30,7 +30,6 @@ object ExprEval {
   }
 
   def eval(power: Power): Option[Double] = power match {
-    case Plus(e)   => eval(e)
     case Minus(e)  => eval(e).map(-_)
     case PUnary(u) => eval(u)
   }
