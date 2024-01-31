@@ -106,7 +106,7 @@ object Models {
     /* Non-negativity runtime guarantee
       Both Natural.apply and NonNegDecimal.apply require (at runtime) their argument to be non-negative.
       Since
-        - this API is meant to be called by the parser, which is supposed to pass proper values, and
+        - this API is meant to be called by parser and by test generators, which are supposed to pass proper values, and
         - capturing this constraint in the return type (e.g. `Option[Natural]`) would considerably increase code complexity,
       I opted for a less type-safe runtime guarantee.
      */

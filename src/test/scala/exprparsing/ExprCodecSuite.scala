@@ -36,6 +36,17 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
   }
 
+  test("\"(42)\" parses to Grouped(Natural(42))") {
+    assertFullyParsed(exprP.parse("(42)"), Expr.grouped(Expr.numb(42)))
+  }
+
+  test("\"(6/3)\" parses to Grouped(Div(6, 3))") {
+    assertFullyParsed(
+      exprP.parse("(6/3)"),
+      Expr.grouped(Expr.div(Factor.numb(6), Term.numb(3)))
+    )
+  }
+
   test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
     assertFullyParsed(
       exprP.parse("1+2*3"),
@@ -48,17 +59,6 @@ class ExprCodecSuite extends ScalaCheckSuite {
       exprP.parse("1+6/3"),
       Add(Term.numb(1), Expr.div(Factor.numb(6), Term.numb(3)))
     )
-  }
-
-  test("\"(6/3)\" parses to Grouped(Div(6, 3))") {
-    assertFullyParsed(
-      exprP.parse("(6/3)"),
-      Expr.grouped(Expr.div(Factor.numb(6), Term.numb(3)))
-    )
-  }
-
-  test("\"(42)\" parses to Grouped(Natural(42))") {
-    assertFullyParsed(exprP.parse("(42)"), Expr.grouped(Expr.numb(42)))
   }
 
   /* encode */
@@ -108,7 +108,8 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertEquals(encode(expr), "1.5+(-((-(2.5))-3))")
   }
 
-  property("eval(parse(encode(expr))) == eval(expr), for any expr: Expr") {
+  // It would be nicer to have an even stronger "parse(encode(expr)) == expr, with expr: Expr"
+  property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") {
     forAll(exprGen) { expr =>
       exprP.parse(encode(expr)) match {
         case Left(err)               => fail(s"parsing failed: $err")
