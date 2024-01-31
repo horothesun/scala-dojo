@@ -2,9 +2,9 @@ package exprparsing
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import cats.parse.Parser
+import cats.parse.{Parser, Parser0}
 import cats.parse.Parser._
-import cats.parse.Rfc5234.digit
+import cats.parse.Rfc5234.{digit, wsp}
 import Models._
 import Models.Expr._
 import Models.Factor._
@@ -25,28 +25,28 @@ object ExprCodec {
 
   /* parser */
 
-  def exprP: Parser[Expr] = termP.flatMap { t =>
-    val add = char(PlusSign.toChar) *> exprP.map[Expr](r => Add(t, r))
-    val sub = char(MinusSign.toChar) *> exprP.map[Expr](r => Sub(t, r))
+  def exprP: Parser[Expr] = (termP <* wspP0).flatMap { t =>
+    val add = (char(PlusSign.toChar) ~ wspP0) *> exprP.map[Expr](r => Add(t, r))
+    val sub = (char(MinusSign.toChar) ~ wspP0) *> exprP.map[Expr](r => Sub(t, r))
     val eTerm = Parser.pure[Expr](ETerm(t))
     add.orElse(sub).orElse(eTerm)
   }
 
-  def termP: Parser[Term] = factorP.flatMap { f =>
-    val mul = char(TimesSign.toChar) *> termP.map[Term](r => Mul(f, r))
-    val div = char(DivisionSign.toChar) *> termP.map[Term](r => Div(f, r))
+  def termP: Parser[Term] = (factorP <* wspP0).flatMap { f =>
+    val mul = (char(TimesSign.toChar) ~ wspP0) *> termP.map[Term](r => Mul(f, r))
+    val div = (char(DivisionSign.toChar) ~ wspP0) *> termP.map[Term](r => Div(f, r))
     val tFactor = Parser.pure[Term](TFactor(f))
     mul.orElse(div).orElse(tFactor)
   }
 
-  def factorP: Parser[Factor] = powerP.flatMap { p =>
-    val pow = char(PowerSign.toChar) *> factorP.map[Factor](r => Pow(p, r))
+  def factorP: Parser[Factor] = (powerP <* wspP0).flatMap { p =>
+    val pow = (char(PowerSign.toChar) ~ wspP0) *> factorP.map[Factor](r => Pow(p, r))
     val fPower = Parser.pure[Factor](FPower(p))
     pow.orElse(fPower)
   }
 
   def powerP: Parser[Power] = {
-    val minusP = char(MinusSign.toChar) *> unaryP.map[Power](u => Minus(u))
+    val minusP = (char(MinusSign.toChar) ~ wspP0) *> unaryP.map[Power](u => Minus(u))
     val pUnary = unaryP.map[Power](PUnary.apply)
     minusP.orElse(pUnary)
   }
@@ -62,9 +62,17 @@ object ExprCodec {
     nonNegDecimal.orElse(natural)
   }
 
-  def groupedP: Parser[Unary] = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map(Grouped.apply)
+  def groupedP: Parser[Unary] = for {
+    _ <- char(LParen.toChar)
+    _ <- wspP0
+    e <- exprP
+    _ <- wspP0
+    _ <- char(RParen.toChar)
+  } yield Grouped(e)
 
   def digitsP: Parser[NonEmptyList[Char]] = digit.rep
+
+  def wspP0: Parser0[Unit] = wsp.rep0.void
 
   /* encode */
 
