@@ -1,10 +1,5 @@
-package exprparsing
+package exprparsingrighttoleft
 
-import cats.data.NonEmptyList
-import cats.implicits._
-import cats.parse.{Parser, Parser0}
-import cats.parse.Parser._
-import cats.parse.Rfc5234.{digit, wsp}
 import Models._
 import Models.Expr._
 import Models.Factor._
@@ -12,6 +7,11 @@ import Models.Power._
 import Models.Term._
 import Models.Token._
 import Models.Unary._
+import cats.data.NonEmptyList
+import cats.implicits._
+import cats.parse.{Parser, Parser0}
+import cats.parse.Parser._
+import cats.parse.Rfc5234.{digit, wsp}
 
 object ExprCodec {
 

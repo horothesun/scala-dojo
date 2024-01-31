@@ -1,4 +1,4 @@
-package exprparsing
+package exprparsingrighttoleft
 
 import cats._
 import scala.annotation.tailrec

@@ -1,4 +1,4 @@
-package exprparsing
+package exprparsingrighttoleft
 
 import cats.laws.discipline.{FunctorTests, MonadTests}
 import munit.DisciplineSuite

@@ -1,4 +1,4 @@
-package exprparsing
+package exprparsingrighttoleft
 
 import Models.Unary._
 import munit.ScalaCheckSuite

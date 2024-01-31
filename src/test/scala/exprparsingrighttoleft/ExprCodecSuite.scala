@@ -1,13 +1,14 @@
-package exprparsing
+package exprparsingrighttoleft
 
-import Models._
-import Models.Expr._
-import Models.Term._
-import Models.Unary._
 import ExprCodec._
 import ExprCodecSuite._
 import ExprEval._
 import ExprGenerators._
+import Models._
+import Models.EvalError._
+import Models.Expr._
+import Models.Term._
+import Models.Unary._
 import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
 import org.scalacheck.Prop._
@@ -61,7 +62,7 @@ class ExprCodecSuite extends ScalaCheckSuite {
     )
   }
 
-  // TODO: fix!!!
+  // TODO: fix associativity!!!
 //  test("\"1-2.0+3-4.0\" parses to Sub(Add(Sub(1, 2.0), 3), 4.0)") {
   test("\"1-2.0+3-4.0\" parses to Sub(1, Add(2.0, Sub(3, 4.0)))") {
     assertFullyParsed(
@@ -133,23 +134,16 @@ class ExprCodecSuite extends ScalaCheckSuite {
 }
 object ExprCodecSuite {
 
-  def assertEqualsOptionDouble(
-    obtained: Option[Double],
-    expected: Double,
-    delta: Double = 1e-12
-  )(implicit loc: Location): Unit = obtained match {
-    case None      => fail(s"obtained None but expected Some($expected)")
-    case Some(obt) => assertEqualsDouble(obt, expected, delta)
-  }
-
   def assertEqualsOptionsDouble(
-    obtained: Option[Double],
-    expected: Option[Double],
+    obtained: Either[EvalError, Double],
+    expected: Either[EvalError, Double],
     delta: Double = 1e-12
   )(implicit loc: Location): Unit = (obtained, expected) match {
-    case (None, None)           => ()
-    case (Some(obt), Some(exp)) => assertEqualsDouble(obt, exp, delta)
-    case _                      => fail(s"$obtained != $expected")
+    case (Left(DivisionByZero), Left(DivisionByZero)) | (Left(DivisionUndefined), Left(DivisionUndefined)) |
+        (Left(PowerWithNegativeBase), Left(PowerWithNegativeBase)) | (Left(PowerUndefined), Left(PowerUndefined)) =>
+      ()
+    case (Right(obt), Right(exp)) => assertEqualsDouble(obt, exp, delta)
+    case _                        => fail(s"$obtained != $expected")
   }
 
   def assertFullyParsed[A](

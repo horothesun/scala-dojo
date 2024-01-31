@@ -1,4 +1,4 @@
-package exprparsing
+package exprparsingrighttoleft
 
 import Models.Factor._
 import Models.Power._
@@ -127,10 +127,18 @@ object Models {
     case class Grouped(e: Expr) extends Unary
   }
 
+  sealed trait EvalError
+  object EvalError {
+    case object DivisionByZero extends EvalError
+    case object DivisionUndefined extends EvalError
+    case object PowerWithNegativeBase extends EvalError
+    case object PowerUndefined extends EvalError
+  }
+
   sealed trait CalcResult
   object CalcResult {
     case class ParsingError(message: String) extends CalcResult
-    case object DivisionByZeroError extends CalcResult
+    case class EvaluationError(error: EvalError) extends CalcResult
     case class Success(value: Double) extends CalcResult
   }
 
