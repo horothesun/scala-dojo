@@ -11,6 +11,51 @@ import munit.{FunSuite, Location}
 
 class ExprCodecSuite extends FunSuite {
 
+  /* parser */
+
+  test("\"1\" parses to Natural(1)") {
+    assertFullyParsed(numericP.parse("1"), Natural(1))
+  }
+
+  test("\"1.0\" parses to NonNegDecimal(1.0)") {
+    assertFullyParsed(numericP.parse("1.0"), NonNegDecimal(1.0))
+  }
+
+  test("\"1\" parse to Expr.numb(1)") {
+    assertFullyParsed(exprP.parse("1"), Expr.numb(1))
+  }
+
+  test("\"1+2\" parse to Add(1, 2)") {
+    assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
+  }
+
+  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
+    assertFullyParsed(
+      exprP.parse("1+2*3"),
+      Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3)))
+    )
+  }
+
+  test("\"1+6/3\" parses to Add(1, Div(6, 3))") {
+    assertFullyParsed(
+      exprP.parse("1+6/3"),
+      Add(Term.numb(1), Expr.div(Factor.numb(6), Term.numb(3)))
+    )
+  }
+
+  test("\"(6/3)\" parses to Grouped(Div(6, 3))") {
+    assertFullyParsed(
+      exprP.parse("(6/3)"),
+      Expr.grouped(Expr.div(Factor.numb(6), Term.numb(3)))
+    )
+  }
+
+  test("\"(42)\" parses to Grouped(Natural(42))") {
+    assertFullyParsed(exprP.parse("(42)"), Expr.grouped(Expr.numb(42)))
+  }
+
+  /* encode */
+
   test("Add(1, Mul(2, 3.0)) encoding is \"1+(2*3.0)\"") {
     val expr = Add(
       Term.numb(1),
@@ -54,47 +99,6 @@ class ExprCodecSuite extends FunSuite {
       )
     )
     assertEquals(encode(expr), "1.5+(-((-(2.5))-3))")
-  }
-
-  test("\"1\" parses to Natural(1)") {
-    assertFullyParsed(numericP.parse("1"), Natural(1))
-  }
-
-  test("\"1.0\" parses to NonNegDecimal(1.0)") {
-    assertFullyParsed(numericP.parse("1.0"), NonNegDecimal(1.0))
-  }
-
-  test("\"1\" parse to Expr.numb(1)") {
-    assertFullyParsed(exprP.parse("1"), Expr.numb(1))
-  }
-
-  test("\"1+2\" parse to Add(1, 2)") {
-    assertFullyParsed(exprP.parse("1+2"), Add(Term.numb(1), Expr.numb(2)))
-  }
-
-  test("\"1+2*3\" parses to Add(1, Mul(2, 3))") {
-    assertFullyParsed(
-      exprP.parse("1+2*3"),
-      Add(Term.numb(1), Expr.mul(Factor.numb(2), Term.numb(3)))
-    )
-  }
-
-  test("\"1+6/3\" parses to Add(1, Div(6, 3))") {
-    assertFullyParsed(
-      exprP.parse("1+6/3"),
-      Add(Term.numb(1), Expr.div(Factor.numb(6), Term.numb(3)))
-    )
-  }
-
-  test("\"(6/3)\" parses to Grouped(Div(6, 3))") {
-    assertFullyParsed(
-      exprP.parse("(6/3)"),
-      Expr.grouped(Expr.div(Factor.numb(6), Term.numb(3)))
-    )
-  }
-
-  test("\"(42)\" parses to Grouped(Natural(42))") {
-    assertFullyParsed(exprP.parse("(42)"), Expr.grouped(Expr.numb(42)))
   }
 
 }
