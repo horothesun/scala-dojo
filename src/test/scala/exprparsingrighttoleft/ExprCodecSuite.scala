@@ -7,6 +7,7 @@ import ExprGenerators._
 import Models._
 import Models.EvalError._
 import Models.Expr._
+import Models.Factor._
 import Models.Term._
 import Models.Unary._
 import munit.Assertions._
@@ -59,6 +60,20 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertFullyParsed(
       exprP.parse("1+6/3"),
       Add(Term.numb(1), Expr.div(Factor.numb(6), Term.numb(3)))
+    )
+  }
+
+  test("\"2^3^2\" parses to Pow(2, Pow(3, 2))") {
+    assertFullyParsed(
+      exprP.parse("2^3^2"),
+      Expr.pow(Power.numb(2), Pow(Power.numb(3), Factor.numb(2)))
+    )
+  }
+
+  test("\"2^3^4^5\" parses to Pow(2, Pow(3, Pow(4, 5)))") {
+    assertFullyParsed(
+      exprP.parse("2^3^4^5"),
+      Expr.pow(Power.numb(2), Pow(Power.numb(3), Pow(Power.numb(4), Factor.numb(5))))
     )
   }
 

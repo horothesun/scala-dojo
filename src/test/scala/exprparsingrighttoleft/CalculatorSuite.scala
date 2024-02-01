@@ -24,6 +24,7 @@ class CalculatorSuite extends FunSuite {
 
   test("calculating few expressions") {
     List[(String, CalcResult)](
+      ("2^3^2", Success(512.0)),
       ("(1+0.5^2) / 0.0*2.0", EvaluationError(DivisionByZero)),
       ("( 3.14159+6.28318 )/2.71828", Success(3.467181)),
       ("48*(5-2) ^ 3", Success(1296)),
