@@ -15,6 +15,50 @@ import cats.parse.Rfc5234.{digit, wsp}
 
 object ExprCodec {
 
+  /* https://bnfplayground.pauliankline.com
+
+BNF grammar
+
+<expr>   ::= <term> "+" <expr> | <term> "-" <expr> | <term>
+<term>   ::= <factor> "*" <term> | <factor> "/" <term> | <factor>
+<factor> ::= <power> "^" <factor> | <power>
+<power>  ::= "-" <unary> | <unary>
+<unary>  ::= <nonNegDecimal> | <natural> | "(" <expr> ")"
+
+<nonNegDecimal> ::= <digits> "." <digits>
+<natural>       ::= <digits>
+<digits>        ::= [0-9]+
+   */
+
+  /* https://www.cs.princeton.edu/courses/archive/spring20/cos320/LL1/
+
+expr   ::= term '+' expr | term '-' expr | term
+term   ::= factor '*' term | factor '/' term | factor
+factor ::= power '^' factor | power
+power  ::= '-' unary | unary
+unary  ::= nonNegDecimal | natural | '(' expr ')'
+
+nonNegDecimal ::= digits '.' digits
+natural ::= digits
+digits ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+   */
+
+  /* https://planetcalc.com/5600/
+
+expr = term,"+",expr | term,"-",expr | term;
+term = factor,"*",term | factor,"/",term | factor;
+factor = power,"^",factor | power;
+power = "-",unary | unary;
+unary = nonNegDecimal | natural | "(",expr,")";
+
+nonNegDecimal = digits,".",digits;
+natural = digits;
+digits = digit,{digit};
+digit = "1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"0";
+
+syntax=expr;
+   */
+
   /* Expression pseudo-grammar:
     expr   = term + expr | term - expr | term
     term   = factor * term | factor / term | factor
@@ -23,7 +67,53 @@ object ExprCodec {
     unary  = nonNegDecimal | natural | ( expr )
    */
 
+  /* left-recursion removed
+
+  e.g.
+    S ⇒ S a | S b | c | d
+  becomes
+    S ⇒ cS' | dS'
+    S' ⇒ ε | aS' | bS'
+
+    -------------------
+
+    // the factor rule won't be inverted because we want ^ to be right-associative
+
+    expr   = expr + term | expr - term | term
+    term   = term * factor | term / factor | factor
+    factor = power ^ factor | power
+    power  = - unary | unary
+    unary  = nonNegDecimal | natural | ( expr )
+
+    becomes
+
+    expr    = term expr'
+    expr'   = ε | + term expr' | - term expr'
+    term    = factor term'
+    term'   = ε | * factor term' | / factor term'
+    factor  = power ^ factor | power
+    power   = - unary | unary
+    unary   = nonNegDecimal | natural | ( expr )
+
+    which in BNF form is
+
+<expr>    ::= <term> <exprR>
+<exprR>   ::= E | "+" <term> <exprR> | "-" <term> <exprR>
+<term>    ::= <factor> <termR>
+<termR>   ::= E | "*" <factor> <termR> | "/" <factor> <termR>
+<factor>  ::= <power> "^" <factor> | <power>
+<power>   ::= "-" <unary> | <unary>
+<unary>   ::= <nonNegDecimal> | <natural> | "(" <expr> ")"
+
+<nonNegDecimal> ::= <digits> "." <digits>
+<natural>       ::= <digits>
+<digits>        ::= [0-9]+
+
+   */
+
   /* parser */
+
+  def epsilonP: Parser0[Unit] = Parser.pure(())
 
   def exprP: Parser[Expr] = (termP <* wspP0).flatMap { t =>
     val add = (char(PlusSign.toChar) ~ wspP0) *> exprP.map[Expr](r => Add(t, r))
