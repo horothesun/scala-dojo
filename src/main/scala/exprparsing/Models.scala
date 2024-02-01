@@ -1,6 +1,10 @@
 package exprparsing
 
+import Models.ExprR._
+import Models.Power._
+import Models.TermR._
 import Models.Token._
+import Models.Unary._
 
 object Models {
 
@@ -32,6 +36,16 @@ object Models {
   }
 
   case class Expr(l: Term, reminder: ExprR)
+  object Expr {
+
+    def grouped(expr: Expr): Expr = Expr(Term.grouped(expr), EEpsilon)
+
+    def neg(expr: Expr): Expr = Expr(Term.neg(expr), EEpsilon)
+
+    def numb(i: Int): Expr = Expr(Term.numb(i), EEpsilon)
+    def numb(d: Double): Expr = Expr(Term.numb(d), EEpsilon)
+
+  }
 
   sealed trait ExprR
   object ExprR {
@@ -41,6 +55,15 @@ object Models {
   }
 
   case class Term(l: Factor, reminder: TermR)
+  object Term {
+
+    def grouped(expr: Expr): Term = Term(Factor.grouped(expr), TEpsilon)
+
+    def neg(expr: Expr): Term = Term(Factor.neg(expr), TEpsilon)
+
+    def numb(i: Int): Term = Term(Factor.numb(i), TEpsilon)
+    def numb(d: Double): Term = Term(Factor.numb(d), TEpsilon)
+  }
 
   sealed trait TermR
   object TermR {
@@ -53,12 +76,26 @@ object Models {
   object Factor {
     case class Pow(l: Power, r: Factor) extends Factor
     case class FPower(p: Power) extends Factor
+
+    def grouped(expr: Expr): Factor = FPower(Power.grouped(expr))
+
+    def neg(expr: Expr): Factor = FPower(Minus(Grouped(expr)))
+
+    def numb(i: Int): Factor = FPower(Power.numb(i))
+    def numb(d: Double): Factor = FPower(Power.numb(d))
+
   }
 
   sealed trait Power
   object Power {
     case class Minus(u: Unary) extends Power
     case class PUnary(u: Unary) extends Power
+
+    def grouped(expr: Expr): Power = PUnary(Grouped(expr))
+
+    def numb(i: Int): Power = if (i < 0) Minus(Natural(-i)) else PUnary(Natural(i))
+    def numb(d: Double): Power = if (d < 0.0) Minus(NonNegDecimal(-d)) else PUnary(NonNegDecimal(d))
+
   }
 
   sealed trait Unary
