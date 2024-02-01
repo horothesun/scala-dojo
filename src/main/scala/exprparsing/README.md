@@ -35,7 +35,7 @@ Since the previous grammar contains _left-recursive_ production rules
 we'll convert them into their `right-recursive` counterparts with the algorithm illustrated in the following
 [example](https://www.geeksforgeeks.org/removing-direct-and-indirect-left-recursion-in-a-grammar).
 
-> ### Left-recursion removal example
+> #### Left-recursion removal example
 > Given the following rules
 >
 > ```
@@ -44,8 +44,8 @@ we'll convert them into their `right-recursive` counterparts with the algorithm 
 > the converted right-recursive rules are
 >
 > ```
-> S ⇒ cS' | dS'
-> S' ⇒ ε | aS' | bS'
+> S  = cS' | dS'
+> S' = ε | aS' | bS'
 > ```
 
 Applying the left-recursion removal procedure just described, the previously defined grammar becomes
@@ -78,7 +78,7 @@ which BNF form is
 
 ## Parsing
 
-The `exprP` expression parser is built on top of the `cats-parse` parsed combinator library.
+The `exprP` expression parser is built on top of the `cats-parse` parser combinator library.
 
 ```scala
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
