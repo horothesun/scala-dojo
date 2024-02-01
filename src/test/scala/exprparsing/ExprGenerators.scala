@@ -22,7 +22,7 @@ object ExprGenerators {
     val lzyExprRGen = Gen.lzy(exprRGen)
     val termExprRGen = Gen.zip(lzyTermGen, lzyExprRGen)
     Gen.frequency(
-      4 -> Gen.const[ExprR](EEpsilon),
+      5 -> Gen.const[ExprR](EEpsilon),
       1 -> termExprRGen.map[ExprR]((Add.apply _).tupled),
       1 -> termExprRGen.map[ExprR]((Sub.apply _).tupled)
     )

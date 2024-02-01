@@ -103,7 +103,40 @@ class ExprCodecSuite extends ScalaCheckSuite {
 
   /* eval - parse - encode */
 
-  // TODO: ...
+  // It would be nicer to have an even stronger "parse(encode(expr)) == expr, with expr: Expr"
+  property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") {
+    forAll(exprGen) { expr =>
+      exprP.parse(encode(expr)) match {
+        case Left(err)               => fail(s"parsing failed: $err")
+        case Right(("", parsedExpr)) => assertEqualsEithersEvalErrorDouble(eval(parsedExpr), eval(expr))
+        case Right((s, parsedExpr)) =>
+          fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
+      }
+    }
+  }
 
 }
-object ExprCodecSuite {}
+object ExprCodecSuite {
+
+  def assertEqualsEithersEvalErrorDouble(
+    obtained: Either[EvalError, Double],
+    expected: Either[EvalError, Double],
+    delta: Double = 1e-12
+  )(implicit loc: Location): Unit = (obtained, expected) match {
+    case (Left(DivisionByZero), Left(DivisionByZero)) | (Left(DivisionUndefined), Left(DivisionUndefined)) |
+        (Left(PowerWithNegativeBase), Left(PowerWithNegativeBase)) | (Left(PowerUndefined), Left(PowerUndefined)) =>
+      ()
+    case (Right(obt), Right(exp)) => assertEqualsDouble(obt, exp, delta)
+    case _                        => fail(s"$obtained != $expected")
+  }
+
+  def assertFullyParsed[A](
+    obtained: Either[cats.parse.Parser.Error, (String, A)],
+    expected: A
+  )(implicit loc: Location): Unit = obtained match {
+    case Left(e)        => fail(s"parsing failed: $e")
+    case Right(("", a)) => assertEquals(a, expected)
+    case Right((s, a))  => fail(s"parser did not consume all input (remaining: \"$s\") and produced: $a")
+  }
+
+}

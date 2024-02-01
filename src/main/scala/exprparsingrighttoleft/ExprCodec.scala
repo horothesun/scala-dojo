@@ -117,27 +117,27 @@ syntax=expr;
   def epsilonP: Parser0[Unit] = Parser.pure(())
 
   def exprP: Parser[Expr] = (termP <* wspP0).flatMap { t =>
-    val add = (char(PlusSign.toChar) ~ wspP0) *> exprP.map[Expr](r => Add(t, r))
-    val sub = (char(MinusSign.toChar) ~ wspP0) *> exprP.map[Expr](r => Sub(t, r))
+    val add = (char(PlusSign.toChar) ~ wspP0) *> exprP.map[Expr](Add(t, _))
+    val sub = (char(MinusSign.toChar) ~ wspP0) *> exprP.map[Expr](Sub(t, _))
     val eTerm = Parser.pure[Expr](ETerm(t))
     add.orElse(sub).orElse(eTerm)
   }
 
   def termP: Parser[Term] = (factorP <* wspP0).flatMap { f =>
-    val mul = (char(TimesSign.toChar) ~ wspP0) *> termP.map[Term](r => Mul(f, r))
-    val div = (char(DivisionSign.toChar) ~ wspP0) *> termP.map[Term](r => Div(f, r))
+    val mul = (char(TimesSign.toChar) ~ wspP0) *> termP.map[Term](Mul(f, _))
+    val div = (char(DivisionSign.toChar) ~ wspP0) *> termP.map[Term](Div(f, _))
     val tFactor = Parser.pure[Term](TFactor(f))
     mul.orElse(div).orElse(tFactor)
   }
 
   def factorP: Parser[Factor] = (powerP <* wspP0).flatMap { p =>
-    val pow = (char(PowerSign.toChar) ~ wspP0) *> factorP.map[Factor](r => Pow(p, r))
+    val pow = (char(PowerSign.toChar) ~ wspP0) *> factorP.map[Factor](Pow(p, _))
     val fPower = Parser.pure[Factor](FPower(p))
     pow.orElse(fPower)
   }
 
   def powerP: Parser[Power] = {
-    val minusP = (char(MinusSign.toChar) ~ wspP0) *> unaryP.map[Power](u => Minus(u))
+    val minusP = (char(MinusSign.toChar) ~ wspP0) *> unaryP.map[Power](Minus.apply)
     val pUnary = unaryP.map[Power](PUnary.apply)
     minusP.orElse(pUnary)
   }

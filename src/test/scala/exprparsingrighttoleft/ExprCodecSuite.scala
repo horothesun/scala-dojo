@@ -141,7 +141,7 @@ class ExprCodecSuite extends ScalaCheckSuite {
     forAll(exprGen) { expr =>
       exprP.parse(encode(expr)) match {
         case Left(err)               => fail(s"parsing failed: $err")
-        case Right(("", parsedExpr)) => assertEqualsOptionsDouble(eval(parsedExpr), eval(expr))
+        case Right(("", parsedExpr)) => assertEqualsEithersEvalErrorDouble(eval(parsedExpr), eval(expr))
         case Right((s, parsedExpr)) =>
           fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
       }
@@ -151,7 +151,7 @@ class ExprCodecSuite extends ScalaCheckSuite {
 }
 object ExprCodecSuite {
 
-  def assertEqualsOptionsDouble(
+  def assertEqualsEithersEvalErrorDouble(
     obtained: Either[EvalError, Double],
     expected: Either[EvalError, Double],
     delta: Double = 1e-12

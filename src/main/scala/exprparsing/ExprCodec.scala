@@ -1,11 +1,9 @@
 package exprparsing
 
 import Models._
-import Models.Expr._
 import Models.ExprR._
 import Models.Factor._
 import Models.Power._
-import Models.Term._
 import Models.TermR._
 import Models.Token._
 import Models.Unary._
@@ -17,34 +15,42 @@ import cats.parse.Parser._
 
 object ExprCodec {
 
-  /*
-expr   = term expr'
-expr'  = ε | + term expr' | - term expr'
-term   = factor term'
-term'  = ε | * factor term' | / factor term'
-factor = power ^ factor | power
-power  = - unary | unary
-unary  = nonNegDecimal | natural | ( expr )
-   */
-
   /* parser */
 
-  def exprP: Parser[Expr] = ???
+  // TODO: check how to move from Parser0 to Parser!!!
+  def exprP: Parser0[Expr] = (termP <* wspP0, exprRP).mapN(Expr.apply)
 
-  def exprRP: Parser[ExprR] = ???
+  // TODO: check how to move from Parser0 to Parser!!!
+  def exprRP: Parser0[ExprR] = {
+    def op(token: Token, apply: (Term, ExprR) => ExprR): Parser[ExprR] =
+      (char(token.toChar) ~ wspP0) *> (termP <* wspP0, defer0(exprRP)).mapN[ExprR](apply)
+    val add = op(PlusSign, Add.apply)
+    val sub = op(MinusSign, Sub.apply)
+    val epsilon = epsilonP0.as[ExprR](EEpsilon)
+    add.orElse(sub).orElse(epsilon)
+  }
 
-  def termP: Parser[Term] = ???
+  // TODO: check how to move from Parser0 to Parser!!!
+  def termP: Parser0[Term] = (factorP <* wspP0, defer0(termRP)).mapN(Term.apply)
 
-  def termRP: Parser[TermR] = ???
+  // TODO: check how to move from Parser0 to Parser!!!
+  def termRP: Parser0[TermR] = {
+    def op(token: Token, apply: (Factor, TermR) => TermR): Parser[TermR] =
+      (char(token.toChar) ~ wspP0) *> (factorP <* wspP0, defer0(termRP)).mapN[TermR](apply)
+    val mul = op(TimesSign, Mul.apply)
+    val div = op(DivisionSign, Div.apply)
+    val epsilon = epsilonP0.as[TermR](TEpsilon)
+    mul.orElse(div).orElse(epsilon)
+  }
 
   def factorP: Parser[Factor] = (powerP <* wspP0).flatMap { p =>
-    val pow = (char(PowerSign.toChar) ~ wspP0) *> factorP.map[Factor](r => Pow(p, r))
+    val pow = (char(PowerSign.toChar) ~ wspP0) *> factorP.map[Factor](Pow(p, _))
     val fPower = Parser.pure[Factor](FPower(p))
     pow.orElse(fPower)
   }
 
   def powerP: Parser[Power] = {
-    val minusP = (char(MinusSign.toChar) ~ wspP0) *> unaryP.map[Power](u => Minus(u))
+    val minusP = (char(MinusSign.toChar) ~ wspP0) *> unaryP.map[Power](Minus.apply)
     val pUnary = unaryP.map[Power](PUnary.apply)
     minusP.orElse(pUnary)
   }
@@ -73,7 +79,7 @@ unary  = nonNegDecimal | natural | ( expr )
   def wspP0: Parser0[Unit] = wsp.rep0.void
 
   // TODO: check!!!
-  def epsilonP: Parser0[Unit] = Parser.pure(())
+  def epsilonP0: Parser0[Unit] = Parser.pure(())
 
   /* encode */
 
