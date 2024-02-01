@@ -134,6 +134,8 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertEquals(encode(expr), "1.5+(-((-(2.5))-3))")
   }
 
+  /* eval - parse - encode */
+
   // It would be nicer to have an even stronger "parse(encode(expr)) == expr, with expr: Expr"
   property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") {
     forAll(exprGen) { expr =>

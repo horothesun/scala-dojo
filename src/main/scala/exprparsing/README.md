@@ -78,7 +78,7 @@ which BNF form is
 
 ## Parsing
 
-The `exprP` expression parser is built on top of the `cats-parse` parser combinator library.
+The `exprP` expression parser is built on top of the [cats-parse](https://typelevel.org/cats-parse) parser combinators library.
 
 ```scala
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")

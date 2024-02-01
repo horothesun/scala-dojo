@@ -30,6 +30,11 @@ class ExprEvalSuite extends ScalaCheckSuite {
     assertEqualsEvalResultDouble(eval(expr), -1.0)
   }
 
+  test("3.0*2 evaluates to Right(6.0)") {
+    val expr = Expr(Term(Factor.numb(3.0), Mul(Factor.numb(2), TEpsilon)), EEpsilon)
+    assertEqualsEvalResultDouble(eval(expr), 6.0)
+  }
+
   test("3.0*(-2) evaluates to Right(-6.0)") {
     val expr = Expr(Term(Factor.numb(3.0), Mul(Factor.numb(-2), TEpsilon)), EEpsilon)
     assertEqualsEvalResultDouble(eval(expr), -6.0)
@@ -82,7 +87,7 @@ class ExprEvalSuite extends ScalaCheckSuite {
   }
 
   test("-1 evaluates to Right(-1.0)") {
-    val expr = Expr.neg(Expr.numb(1))
+    val expr = Expr.numb(-1)
     assertEqualsEvalResultDouble(eval(expr), -1.0)
   }
 
