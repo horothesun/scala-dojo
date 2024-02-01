@@ -67,7 +67,8 @@ syntax=expr;
     unary  = nonNegDecimal | natural | ( expr )
    */
 
-  /* left-recursion removed
+  /* Left-recursion removal
+  https://www.geeksforgeeks.org/removing-direct-and-indirect-left-recursion-in-a-grammar/
 
   e.g.
     S ⇒ S a | S b | c | d
