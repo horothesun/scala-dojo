@@ -1,9 +1,7 @@
 package exprparsing
 
 import Models._
-import Models.Expr._
 import Models.ExprR._
-import Models.Term._
 import Models.TermR._
 import Models.Factor._
 import Models.Power._

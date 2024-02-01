@@ -20,54 +20,92 @@ import org.scalacheck.Prop._
 
 class ExprEvalSuite extends ScalaCheckSuite {
 
-  test("Add(1, 2.0) evaluates to Right(3.0)") {
+  test("1+2.0 evaluates to Right(3.0)") {
     val expr = Expr(Term.numb(1), Add(Term.numb(2.0), EEpsilon))
     assertEqualsEvalResultDouble(eval(expr), 3.0)
   }
 
-  test("Sub(1.0, 2) evaluates to Right(-1.0)") {
+  test("1.0-2 evaluates to Right(-1.0)") {
     val expr = Expr(Term.numb(1.0), Sub(Term.numb(2), EEpsilon))
     assertEqualsEvalResultDouble(eval(expr), -1.0)
   }
 
-  test("Mul(3.0, -2) evaluates to Right(-6.0)") {
+  test("3.0*(-2) evaluates to Right(-6.0)") {
     val expr = Expr(Term(Factor.numb(3.0), Mul(Factor.numb(-2), TEpsilon)), EEpsilon)
     assertEqualsEvalResultDouble(eval(expr), -6.0)
   }
 
-  test("Div(9, 3.0) evaluates to Right(3.0)") {
+  test("9/3.0 evaluates to Right(3.0)") {
     val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(3.0), TEpsilon)), EEpsilon)
     assertEqualsEvalResultDouble(eval(expr), 3.0)
   }
 
-  test("Div(9, 0.0) evaluates to Left(DivisionByZero)") {
+  test("9/0.0 evaluates to Left(DivisionByZero)") {
     val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(0.0), TEpsilon)), EEpsilon)
     assertEquals(eval(expr), Left(DivisionByZero))
   }
 
-  test("Div(9, 0) evaluates to Left(DivisionByZero)") {
+  test("9/0 evaluates to Left(DivisionByZero)") {
     val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(0), TEpsilon)), EEpsilon)
     assertEquals(eval(expr), Left(DivisionByZero))
   }
 
-  test("Div(0, 0.0) evaluates to Left(DivisionUndefined)") {
+  test("0/0.0 evaluates to Left(DivisionUndefined)") {
     val expr = Expr(Term(Factor.numb(0), Div(Factor.numb(0.0), TEpsilon)), EEpsilon)
     assertEquals(eval(expr), Left(DivisionUndefined))
   }
 
-  test("Pow(2.0, 3) evaluates to Right(8.0)") {
+  test("2.0^3 evaluates to Right(8.0)") {
     val expr = Expr(Term(Pow(Power.numb(2.0), Factor.numb(3)), TEpsilon), EEpsilon)
     assertEqualsEvalResultDouble(eval(expr), 8.0)
   }
 
-  test("Pow(2.0, Infinity) evaluates to Right(Infinity)") {
+  test("2.0^Infinity evaluates to Right(Infinity)") {
     val expr = Expr(Term(Pow(Power.numb(2.0), Factor.numb(Double.PositiveInfinity)), TEpsilon), EEpsilon)
     assertEqualsEvalResultDouble(eval(expr), Double.PositiveInfinity)
   }
 
-  test("Minus(1) evaluates to Right(-1.0)") {
+  test("2^3^2 evaluates to Right(512.0)") {
+    val expr = Expr(Term(Pow(Power.numb(2), Pow(Power.numb(3), Factor.numb(2))), TEpsilon), EEpsilon)
+    assertEqualsEvalResultDouble(eval(expr), 512.0)
+  }
+
+  test("(2^3)^2 evaluates to Right(64.0)") {
+    val expr = Expr(
+      Term(
+        Pow(Power.grouped(Expr(Term(Pow(Power.numb(2), Factor.numb(3)), TEpsilon), EEpsilon)), Factor.numb(2)),
+        TEpsilon
+      ),
+      EEpsilon
+    )
+    assertEqualsEvalResultDouble(eval(expr), 64.0)
+  }
+
+  test("-1 evaluates to Right(-1.0)") {
     val expr = Expr.neg(Expr.numb(1))
     assertEqualsEvalResultDouble(eval(expr), -1.0)
+  }
+
+  test("2.0*3+1.0 evaluates to Right(7.0)") {
+    val expr = Expr(Term(Factor.numb(2.0), Mul(Factor.numb(3), TEpsilon)), Add(Term.numb(1.0), EEpsilon))
+    assertEqualsEvalResultDouble(eval(expr), 7.0)
+  }
+
+  test("1.0+2-3.0*(1/5) evaluates to Right(2.4)") {
+    val expr = Expr(
+      Term.numb(1.0),
+      Add(
+        Term.numb(2),
+        Sub(
+          Term(
+            Factor.numb(3.0),
+            Mul(Factor.grouped(Expr(Term(Factor.numb(1), Div(Factor.numb(5), TEpsilon)), EEpsilon)), TEpsilon)
+          ),
+          EEpsilon
+        )
+      )
+    )
+    assertEqualsEvalResultDouble(eval(expr), 2.4)
   }
 
   property("Grouped(expr) and expr evaluate to same value") {
