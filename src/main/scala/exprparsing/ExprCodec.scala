@@ -17,10 +17,8 @@ object ExprCodec {
 
   /* parser */
 
-  // TODO: check how to move from Parser0 to Parser!!!
-  def exprP: Parser0[Expr] = (termP <* wspP0, exprRP).mapN(Expr.apply)
+  def exprP: Parser0[Expr] = (wspP0 *> termP <* wspP0, exprRP).mapN(Expr.apply)
 
-  // TODO: check how to move from Parser0 to Parser!!!
   def exprRP: Parser0[ExprR] = {
     def op(token: Token, apply: (Term, ExprR) => ExprR): Parser[ExprR] =
       (char(token.toChar) ~ wspP0) *> (termP <* wspP0, defer0(exprRP)).mapN[ExprR](apply)
@@ -30,10 +28,8 @@ object ExprCodec {
     add.orElse(sub).orElse(epsilon)
   }
 
-  // TODO: check how to move from Parser0 to Parser!!!
   def termP: Parser0[Term] = (factorP <* wspP0, defer0(termRP)).mapN(Term.apply)
 
-  // TODO: check how to move from Parser0 to Parser!!!
   def termRP: Parser0[TermR] = {
     def op(token: Token, apply: (Factor, TermR) => TermR): Parser[TermR] =
       (char(token.toChar) ~ wspP0) *> (factorP <* wspP0, defer0(termRP)).mapN[TermR](apply)
@@ -63,17 +59,11 @@ object ExprCodec {
       digitsP
         .map(rds => ds.append(DecimalDot.toChar).concatNel(rds).mkString_(""))
         .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
-    val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toIntOption.map(Natural.apply))
+    val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toLongOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
   }
 
-  def groupedP: Parser[Unary] = for {
-    _ <- char(LParen.toChar)
-    _ <- wspP0
-    e <- exprP
-    _ <- wspP0
-    _ <- char(RParen.toChar)
-  } yield Grouped(e)
+  def groupedP: Parser[Unary] = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map[Unary](Grouped.apply)
 
   def digitsP: Parser[NonEmptyList[Char]] = digit.rep
 

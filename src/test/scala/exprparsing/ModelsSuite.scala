@@ -7,16 +7,16 @@ import org.scalacheck.Prop._
 
 class ModelsSuite extends ScalaCheckSuite {
 
-  property("Natural(i) throws exception when i < 0") {
-    forAll(Gen.negNum[Int]) { i =>
-      intercept[java.lang.IllegalArgumentException](Natural(i))
+  property("Natural(l) throws exception when l < 0L") {
+    forAll(Gen.negNum[Long]) { l =>
+      intercept[java.lang.IllegalArgumentException](Natural(l))
       ()
     }
   }
 
-  property("Natural(i) correctly created when i >= 0") {
-    forAll(Gen.oneOf(Gen.const(0), Gen.posNum[Int])) { i =>
-      assert(Natural(i).i >= 0)
+  property("Natural(l) correctly created when l >= 0L") {
+    forAll(Gen.oneOf(Gen.const(0L), Gen.posNum[Long])) { l =>
+      assert(Natural(l).l >= 0L)
     }
   }
 

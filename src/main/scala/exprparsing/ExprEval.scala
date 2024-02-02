@@ -72,7 +72,7 @@ object ExprEval {
   }
 
   def eval(unary: Unary): EvalResult[Double] = unary match {
-    case Natural(i)       => Right(i)
+    case Natural(l)       => Right(l.toDouble)
     case NonNegDecimal(d) => Right(d)
     case Grouped(e)       => eval(e)
   }

@@ -63,6 +63,7 @@ object Models {
 
     def numb(i: Int): Term = Term(Factor.numb(i), TEpsilon)
     def numb(d: Double): Term = Term(Factor.numb(d), TEpsilon)
+
   }
 
   sealed trait TermR
@@ -107,10 +108,10 @@ object Models {
         - capturing this constraint in the return type (e.g. `Option[Natural]`) would considerably increase code complexity,
       I opted for a less type-safe runtime guarantee.
      */
-    case class Natural(i: Int) extends Unary
+    case class Natural(l: Long) extends Unary
     object Natural {
-      def apply(x: Int): Natural = {
-        require(x >= 0, s"Natural must contain non-negative Int (arg: $x)")
+      def apply(x: Long): Natural = {
+        require(x >= 0, s"Natural must contain non-negative Long (arg: $x)")
         new Natural(x)
       }
     }

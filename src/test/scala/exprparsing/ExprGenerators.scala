@@ -67,8 +67,13 @@ object ExprGenerators {
     1 -> Gen.lzy(groupedGen)
   )
 
-  def naturalGen: Gen[Natural] = Gen.oneOf(Gen.const(0), Gen.posNum[Int]).map(Natural.apply)
-  def nonNegDecimalGen: Gen[NonNegDecimal] = Gen.oneOf(Gen.const(0.0), Gen.posNum[Double]).map(NonNegDecimal.apply)
+  def naturalGen: Gen[Natural] = nonNegNum[Long].map(Natural.apply)
+  def nonNegDecimalGen: Gen[NonNegDecimal] = nonNegNum[Double].map(NonNegDecimal.apply)
+
+  def nonNegNum[N](implicit num: Numeric[N], c: Gen.Choose[N]): Gen[N] = Gen.frequency(
+    1 -> Gen.const(num.zero),
+    25 -> Gen.posNum[N]
+  )
 
   def groupedGen: Gen[Grouped] = {
     val lzyExprGen = Gen.lzy(exprGen)
