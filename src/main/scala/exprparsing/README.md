@@ -25,8 +25,8 @@ the operators at different precedence levels in dedicated production rules as fo
 
 ### Operator associativity
 
-- _Left-to-right_ associativity is modelled directly by left-recursive production rules like the `expr` and `term` ones, while
-- _right-to-left_ associativity is modelled directly by right-recursive production rules like the `factor` one.
+- _Left-to-right_ associativity is modelled directly by left-recursive production rules like `expr` (for `+` and binary `-`) and `term` (for `*` and `/`), while
+- _right-to-left_ associativity is modelled directly by right-recursive production rules like `factor` (for `^`).
 
 ## Removing left-recursion
 
