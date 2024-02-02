@@ -84,9 +84,11 @@ The `exprP` expression parser is built on top of the [cats-parse](https://typele
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 ```
 
+TODO: AST Expr, ...
+
 ## Evaluation
 
-...
+TODO: it's important for the eval functions on Expr and Term to perform the operations in the right order to correctly implement left-associativity; ...
 
 - division by `0`
 - `0 / 0`
