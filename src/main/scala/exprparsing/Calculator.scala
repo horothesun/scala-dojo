@@ -13,6 +13,7 @@ object Calculator {
     case Right((s, _))    => ParsingError(s"Input not fully consumed: $s")
   }
 
+  // TODO: capture any leading and trailing spaces with exprP!!!
   def preprocess(expression: String): String = expression.trim
 
 }
