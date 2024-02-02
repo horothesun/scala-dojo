@@ -10,6 +10,7 @@ term   = term * factor | term / factor | factor
 factor = power ^ factor | power
 power  = - unary | unary
 unary  = nonNegDecimal | natural | ( expr )
+// TODO: add nonNegDecimal, natural (and digits)!!!
 ```
 
 ### Operator precedence
@@ -58,6 +59,7 @@ term'  = ε | * factor term' | / factor term'
 factor = power ^ factor | power
 power  = - unary | unary
 unary  = nonNegDecimal | natural | ( expr )
+// TODO: add nonNegDecimal, natural (and digits)!!!
 ```
 
 which BNF form is
@@ -85,11 +87,18 @@ The `exprP` expression parser is built on top of the [cats-parse](https://typele
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 ```
 
-TODO: AST Expr, ...
+// TODO:
+
+- AST Expr
+- ...
 
 ## Evaluation
 
-TODO: it's important for the eval functions on Expr and Term to perform the operations in the right order to correctly implement left-associativity; ...
+// TODO:
+
+- it's important for the eval functions on Expr and Term to perform the operations in the right order to correctly implement left-associativity
+- are Double big enough? (also in NonNegDecimal case class)
+- ...
 
 - division by `0`
 - `0 / 0`
