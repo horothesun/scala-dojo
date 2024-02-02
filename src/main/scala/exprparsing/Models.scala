@@ -149,4 +149,11 @@ object Models {
     case object TermREpsilon extends TermREvalSuccess
   }
 
+  sealed trait CalcResult
+  object CalcResult {
+    case class ParsingError(message: String) extends CalcResult
+    case class EvaluationError(error: EvalError) extends CalcResult
+    case class Success(value: Double) extends CalcResult
+  }
+
 }
