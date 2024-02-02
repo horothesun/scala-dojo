@@ -71,6 +71,7 @@ which BNF form is
 <power>  ::= "-" <unary> | <unary>
 <unary>  ::= <nonNegDecimal> | <natural> | "(" <expr> ")"
 
+// TODO: fix and test!!! nat = 0 | [1-9][0-9]+ ; nonNegDec = nat . [0-9]+
 <nonNegDecimal> ::= <digits> "." <digits>
 <natural>       ::= <digits>
 <digits>        ::= [0-9]+
