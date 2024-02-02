@@ -10,35 +10,27 @@ import munit.Assertions._
 
 class CalculatorSuite extends FunSuite {
 
-  // TODO: fix `+` | `-` precedence!!!
-//  test("\"1-2+3\" evaluates as \"(1-2)+3\"") {
-  test("\"1-2+3\" evaluates as \"1-(2+3)\"") {
-//    (calc("1-2+3"), calc("(1-2)+3")) match {
-    (calc("1-2+3"), calc("1-(2+3)")) match {
-      case (Success(d1), Success(d2)) => assertEqualsDouble(d1, d2, delta = 1e-6)
-      case (res1, res2)               => fail(s"res1 = $res1 | res2 = $res2")
-    }
+  /* `+` and `-` left-associativity */
+
+  test("\"1-2+3\" evaluates as \"(1-2)+3\"") {
+    assertEqualsCalcResult(calc("1-2+3"), calc("(1-2)+3"))
   }
 
-  // TODO: fix `/` | `*` precedence!!!
-//  test("\"1/2*3\" evaluates as \"(1/2)*3\"") {
-  test("\"1/2*3\" evaluates as \"1/(2*3)\"") {
-//    (calc("1/2*3"), calc("(1/2)*3")) match {
-    (calc("1/2*3"), calc("1/(2*3)")) match {
-      case (Success(d1), Success(d2)) => assertEqualsDouble(d1, d2, delta = 1e-6)
-      case (res1, res2)               => fail(s"res1 = $res1 | res2 = $res2")
-    }
+  test("\"1/2*3\" evaluates as \"(1/2)*3\"") {
+    assertEqualsCalcResult(calc("1/2*3"), calc("(1/2)*3"))
   }
 
-  // TODO: fix `/` | `*` precedence!!!
-//  test("\"2*3/4*5\" evaluates as \"((2*3)/4)*5\"") {
-  test("\"2*3/4*5\" evaluates as \"2*(3/(4*5))\"") {
-//    (calc("2*3/4*5"), calc("((2*3)/4)*5")) match {
-    (calc("2*3/4*5"), calc("2*(3/(4*5))")) match {
-      case (Success(d1), Success(d2)) => assertEqualsDouble(d1, d2, delta = 1e-6)
-      case (res1, res2)               => fail(s"res1 = $res1 | res2 = $res2")
-    }
+  /* `*` and `/` left-associativity */
+
+  test("\"2*3/4*5\" evaluates as \"((2*3)/4)*5\"") {
+    assertEqualsCalcResult(calc("2*3/4*5"), calc("((2*3)/4)*5"))
   }
+
+  test("\"(2-1)/2*(1.5*2)\" evaluates as \"((2-1)/2)*(1.5*2)\"") {
+    assertEqualsCalcResult(calc("(2-1)/2*(1.5*2)"), calc("((2-1)/2)*(1.5*2)"))
+  }
+
+  /* mixed tests */
 
   test("calculating few expressions") {
     List[(String, CalcResult)](
@@ -86,14 +78,10 @@ object CalculatorSuite {
     expected: CalcResult,
     delta: Double = 1e-6
   )(implicit loc: Location): Unit = (obtained, expected) match {
-    case (Success(obt), Success(exp))                 => assertEqualsDouble(obt, exp, delta)
-    case (ParsingError(msgObt), ParsingError(msgExp)) => assertEquals(msgObt, msgExp)
-    case (EvaluationError(DivisionByZero), EvaluationError(DivisionByZero)) |
-        (EvaluationError(DivisionUndefined), EvaluationError(DivisionUndefined)) |
-        (EvaluationError(PowerWithNegativeBase), EvaluationError(PowerWithNegativeBase)) |
-        (EvaluationError(PowerUndefined), EvaluationError(PowerUndefined)) =>
-      ()
-    case _ => fail(s"$obtained != $expected")
+    case (Success(obt), Success(exp))                                           => assertEqualsDouble(obt, exp, delta)
+    case (ParsingError(msgObt), ParsingError(msgExp))                           => assertEquals(msgObt, msgExp)
+    case (EvaluationError(errObt), EvaluationError(errExp)) if errObt == errExp => ()
+    case _                                                                      => fail(s"$obtained != $expected")
   }
 
 }

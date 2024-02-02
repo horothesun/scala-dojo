@@ -10,18 +10,19 @@ import Models.EvalError._
 import Models.ExprREvalSuccess._
 import Models.TermREvalSuccess._
 import cats.implicits._
+import scala.annotation.tailrec
 
 object ExprEval {
 
   // `eval` methods return EvalResult[_] because division and power are supported
 
   def eval(expr: Expr): EvalResult[Double] = {
-    def aux(l: Double, reminderRes: ExprREvalSuccess): EvalResult[Double] =
-      reminderRes match {
-        case ExprRAdd(r, reminder) => aux(r, reminder).map(l + _)
-        case ExprRSub(r, reminder) => aux(r, reminder).map(l - _)
-        case ExprREpsilon          => Right(l)
-      }
+    @tailrec
+    def aux(acc: Double, reminderRes: ExprREvalSuccess): EvalResult[Double] = reminderRes match {
+      case ExprRAdd(r, reminder) => aux(acc + r, reminder)
+      case ExprRSub(r, reminder) => aux(acc - r, reminder)
+      case ExprREpsilon          => Right(acc)
+    }
 
     (eval(expr.l), eval(expr.reminder)).flatMapN(aux)
   }
@@ -33,19 +34,17 @@ object ExprEval {
   }
 
   def eval(term: Term): EvalResult[Double] = {
-    def aux(l: Double, reminderRes: TermREvalSuccess): EvalResult[Double] =
-      reminderRes match {
-        case TermRMul(r, reminder) => aux(r, reminder).map(l * _)
-        case TermRDiv(r, reminder) =>
-          aux(r, reminder).flatMap(rRes =>
-            (l, rRes) match {
-              case (0.0, 0.0) => Left(DivisionUndefined)
-              case (_, 0.0)   => Left(DivisionByZero)
-              case (ld, rd)   => Right(ld / rd)
-            }
-          )
-        case TermREpsilon => Right(l)
-      }
+    @tailrec
+    def aux(acc: Double, reminderRes: TermREvalSuccess): EvalResult[Double] = reminderRes match {
+      case TermRMul(r, reminder) => aux(acc * r, reminder)
+      case TermRDiv(r, reminder) =>
+        (acc, r) match {
+          case (0.0, 0.0) => Left(DivisionUndefined)
+          case (_, 0.0)   => Left(DivisionByZero)
+          case (ld, rd)   => aux(ld / rd, reminder)
+        }
+      case TermREpsilon => Right(acc)
+    }
 
     (eval(term.l), eval(term.reminder)).flatMapN(aux)
   }

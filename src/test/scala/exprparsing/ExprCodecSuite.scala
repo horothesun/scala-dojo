@@ -186,11 +186,9 @@ object ExprCodecSuite {
     expected: Either[EvalError, Double],
     delta: Double = 1e-12
   )(implicit loc: Location): Unit = (obtained, expected) match {
-    case (Left(DivisionByZero), Left(DivisionByZero)) | (Left(DivisionUndefined), Left(DivisionUndefined)) |
-        (Left(PowerWithNegativeBase), Left(PowerWithNegativeBase)) | (Left(PowerUndefined), Left(PowerUndefined)) =>
-      ()
-    case (Right(obt), Right(exp)) => assertEqualsDouble(obt, exp, delta)
-    case _                        => fail(s"$obtained != $expected")
+    case (Left(errObt), Left(errExp)) if errObt == errExp => ()
+    case (Right(obt), Right(exp))                         => assertEqualsDouble(obt, exp, delta)
+    case _                                                => fail(s"$obtained != $expected")
   }
 
   def assertFullyParsed[A](
