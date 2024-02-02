@@ -57,7 +57,7 @@ object ExprCodec {
 
   def unaryP: Parser[Unary] = numericP.orElse(defer(groupedP))
 
-  // TODO: fix!!! nat = 0 | [1-9][0-9]+ ; nonNegDec = nat . [0-9]+
+  // TODO: fix and test!!! nat = 0 | [1-9][0-9]+ ; nonNegDec = nat . [0-9]+
   def numericP: Parser[Unary] = digitsP.flatMap { ds =>
     val nonNegDecimal = char(DecimalDot.toChar) *>
       digitsP
