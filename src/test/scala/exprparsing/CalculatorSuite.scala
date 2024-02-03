@@ -2,13 +2,17 @@ package exprparsing
 
 import Calculator._
 import CalculatorSuite._
-import Models.CalcResult
+import ExprCodec._
+import ExprEval._
+import ExprGenerators._
+import Models._
 import Models.CalcResult._
 import Models.EvalError._
-import munit.{FunSuite, Location}
+import munit.{Location, ScalaCheckSuite}
 import munit.Assertions._
+import org.scalacheck.Prop._
 
-class CalculatorSuite extends FunSuite {
+class CalculatorSuite extends ScalaCheckSuite {
 
   /* `+` and `-` left-associativity */
 
@@ -28,6 +32,26 @@ class CalculatorSuite extends FunSuite {
 
   test("\"(2-1)/2*(1.5*2)\" evaluates as \"((2-1)/2)*(1.5*2)\"") {
     assertEqualsCalcResult(calc("(2-1)/2*(1.5*2)"), calc("((2-1)/2)*(1.5*2)"))
+  }
+
+  /* `^` right-associativity */
+
+  test("\"2^3^4^5\" evaluates as \"2^(3^(4^5))\"") {
+    assertEqualsCalcResult(calc("2^3^4^5"), calc("2^(3^(4^5))"))
+  }
+
+  /* eval - parse - encode */
+
+  // It would be nicer to have an even stronger "parse(encode(expr)) == expr, with expr: Expr"
+  property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") {
+    forAll(exprGen) { expr =>
+      exprP.parse(encode(expr)) match {
+        case Left(err)               => fail(s"parsing failed: $err")
+        case Right(("", parsedExpr)) => assertEqualsEvalResultDouble(eval(parsedExpr), eval(expr))
+        case Right((s, parsedExpr)) =>
+          fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
+      }
+    }
   }
 
   /* mixed tests */
@@ -82,6 +106,16 @@ object CalculatorSuite {
     case (ParsingError(msgObt), ParsingError(msgExp))                           => assertEquals(msgObt, msgExp)
     case (EvaluationError(errObt), EvaluationError(errExp)) if errObt == errExp => ()
     case _                                                                      => fail(s"$obtained != $expected")
+  }
+
+  def assertEqualsEvalResultDouble(
+    obtained: EvalResult[Double],
+    expected: EvalResult[Double],
+    delta: Double = 1e-12
+  )(implicit loc: Location): Unit = (obtained, expected) match {
+    case (Left(errObt), Left(errExp)) if errObt == errExp => ()
+    case (Right(obt), Right(exp))                         => assertEqualsDouble(obt, exp, delta)
+    case _                                                => fail(s"$obtained != $expected")
   }
 
 }

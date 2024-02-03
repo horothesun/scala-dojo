@@ -2,19 +2,15 @@ package exprparsing
 
 import ExprCodec._
 import ExprCodecSuite._
-import ExprEval._
-import ExprGenerators._
 import Models._
-import Models.EvalError._
 import Models.ExprR._
 import Models.Factor._
 import Models.TermR._
 import Models.Unary._
 import munit.Assertions._
-import munit.{Location, ScalaCheckSuite}
-import org.scalacheck.Prop._
+import munit.{FunSuite, Location}
 
-class ExprCodecSuite extends ScalaCheckSuite {
+class ExprCodecSuite extends FunSuite {
 
   /* parser */
 
@@ -164,32 +160,8 @@ class ExprCodecSuite extends ScalaCheckSuite {
     assertEquals(encode(expr), "1.0+2-(3.0*(1/5))")
   }
 
-  /* eval - parse - encode */
-
-  // It would be nicer to have an even stronger "parse(encode(expr)) == expr, with expr: Expr"
-  property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") {
-    forAll(exprGen) { expr =>
-      exprP.parse(encode(expr)) match {
-        case Left(err)               => fail(s"parsing failed: $err")
-        case Right(("", parsedExpr)) => assertEqualsEithersEvalErrorDouble(eval(parsedExpr), eval(expr))
-        case Right((s, parsedExpr)) =>
-          fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
-      }
-    }
-  }
-
 }
 object ExprCodecSuite {
-
-  def assertEqualsEithersEvalErrorDouble(
-    obtained: Either[EvalError, Double],
-    expected: Either[EvalError, Double],
-    delta: Double = 1e-12
-  )(implicit loc: Location): Unit = (obtained, expected) match {
-    case (Left(errObt), Left(errExp)) if errObt == errExp => ()
-    case (Right(obt), Right(exp))                         => assertEqualsDouble(obt, exp, delta)
-    case _                                                => fail(s"$obtained != $expected")
-  }
 
   def assertFullyParsed[A](
     obtained: Either[cats.parse.Parser.Error, (String, A)],
