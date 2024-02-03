@@ -87,17 +87,25 @@ which BNF form is
 
 ## Parsing
 
-The `exprP` expression parser is built on top of the [cats-parse](https://typelevel.org/cats-parse) parser combinators library.
+The `ExprCodec.exprP` expression parser is built on top of the [cats-parse](https://typelevel.org/cats-parse) parser combinators library.
 
 ```scala
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 ```
 
-`Expr` values represent the AST returned by successful `exprP.parse` runs.
+`Models.Expr` values represent the AST returned by successful `exprP.parse` runs.
 
 > `exprP` supports input strings with extra white-spaces (e.g. `" 1 +( 2^ 3 )"`).
 
 ## Evaluation
+
+The `ExprEval.eval` functions return `EvalResult[_] = Either[EvalError, _]` to model
+potential errors of the supported operations, e.g.
+
+- division by `0`
+- `0 / 0`
+- `b ^ e`, with negative real `b`
+- `b ^ e`, ... TODO: ...
 
 // TODO:
 
@@ -106,11 +114,9 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 - are Double big enough? (also in NonNegDecimal case class)
 - ...
 
-- division by `0`
-- `0 / 0`
-- `b ^ e`, with `b` negative real
-- `b ^ e`, ...
-
 ## Testing
 
-// TODO: ...
+// TODO:
+
+- `ExprCodec.encode` useful for testing
+- ...

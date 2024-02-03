@@ -14,8 +14,6 @@ import scala.annotation.tailrec
 
 object ExprEval {
 
-  // `eval` methods return EvalResult[_] because division and power are supported
-
   def eval(expr: Expr): EvalResult[Double] = {
     @tailrec
     def aux(acc: Double, reminderRes: ExprREvalSuccess): EvalResult[Double] = reminderRes match {
