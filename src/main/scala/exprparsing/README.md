@@ -96,6 +96,7 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 // TODO:
 
 - AST Expr
+- white-spaces are supported 
 - ...
 
 ## Evaluation

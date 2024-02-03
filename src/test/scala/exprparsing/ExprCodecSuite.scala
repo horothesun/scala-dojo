@@ -30,8 +30,8 @@ class ExprCodecSuite extends FunSuite {
     assertFullyParsed(exprP.parse("1.0"), Expr.numb(1.0))
   }
 
-  test("\"1+2\" parses to Expr(1, Add(2, ε))") {
-    assertFullyParsed(exprP.parse("1+2"), Expr(Term.numb(1), Add(Term.numb(2), EEpsilon)))
+  test("\"1+2.0\" parses to Expr(1, Add(2.0, ε))") {
+    assertFullyParsed(exprP.parse("1+2.0"), Expr(Term.numb(1), Add(Term.numb(2.0), EEpsilon)))
   }
 
   test("\"(42)\" parses to Grouped(Natural(42))") {
@@ -82,47 +82,69 @@ class ExprCodecSuite extends FunSuite {
 
   /* encode */
 
-  test("1+2.0 encoding is \"1+2.0\"") {
+  test("Expr(1, Add(2.0, ε)) encoding is \"1+2.0\"") {
     val expr = Expr(Term.numb(1), Add(Term.numb(2.0), EEpsilon))
     assertEquals(encode(expr), "1+2.0")
   }
 
-  test("1.0-2 encoding is \"1.0-2\"") {
+  test("Expr(1.0, Sub(2, ε)) encoding is \"1.0-2\"") {
     val expr = Expr(Term.numb(1.0), Sub(Term.numb(2), EEpsilon))
     assertEquals(encode(expr), "1.0-2")
   }
 
-  test("1.0+(-2) encoding is \"(1.0)+(-2)\"") {
+  test("Expr(Term(1.0), Add(Term(-2), ε)) encoding is \"(1.0)+(-2)\"") {
+    // 1.0+(-2)
     val expr = Expr(Term.numb(1.0), Add(Term.numb(-2), EEpsilon))
     assertEquals(encode(expr), "(1.0)+(-2)")
   }
 
-  test("3.0*2 encoding is \"3.0*2\"") {
+  test("Expr(Term(3.0, Mul(Factor(2), ε)), ε) encoding is \"3.0*2\"") {
     val expr = Expr(Term(Factor.numb(3.0), Mul(Factor.numb(2), TEpsilon)), EEpsilon)
     assertEquals(encode(expr), "3.0*2")
   }
 
-  test("3.0*(-2) encoding is \"(3.0)*(-2)\"") {
+  test("Expr(Term(Factor(3.0), Mul(Factor(-2), ε)), ε) encoding is \"(3.0)*(-2)\"") {
+    // "3.0*(-2)"
     val expr = Expr(Term(Factor.numb(3.0), Mul(Factor.numb(-2), TEpsilon)), EEpsilon)
     assertEquals(encode(expr), "(3.0)*(-2)")
   }
 
-  test("9/3.0 encoding is \"9/3.0\"") {
+  test("Expr(Term(Factor(9), Div(Factor(3.0), ε)), ε) encoding is \"9/3.0\"") {
     val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(3.0), TEpsilon)), EEpsilon)
     assertEquals(encode(expr), "9/3.0")
   }
 
-  test("2.0^3 encoding is \"2.0^3\"") {
+  test("Expr(Term(Factor(9), Div(Factor(0.0), ε)), ε) encoding is \"9/0.0\"") {
+    val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(0.0), TEpsilon)), EEpsilon)
+    assertEquals(encode(expr), "9/0.0")
+  }
+
+  test("Expr(Term(Factor(9), Div(Factor(0), ε)), ε) encoding is \"9/0\"") {
+    val expr = Expr(Term(Factor.numb(9), Div(Factor.numb(0), TEpsilon)), EEpsilon)
+    assertEquals(encode(expr), "9/0")
+  }
+
+  test("Expr(Term(Factor(0), Div(Factor(0.0), ε)), ε) encoding is \"0/0.0\"") {
+    val expr = Expr(Term(Factor.numb(0), Div(Factor.numb(0.0), TEpsilon)), EEpsilon)
+    assertEquals(encode(expr), "0/0.0")
+  }
+
+  test("Expr(Term(Pow(Power(2.0), Factor(3)), ε), ε) encoding is \"2.0^3\"") {
     val expr = Expr(Term(Pow(Power.numb(2.0), Factor.numb(3)), TEpsilon), EEpsilon)
     assertEquals(encode(expr), "2.0^3")
   }
 
-  test("2^3^2 encoding is \"2^(3^2)\"") {
+  test("Expr(Term(Pow(Power(2), Pow(Power(3), Factor(2))), ε), ε) encoding is \"2^(3^2)\"") {
+    // 2^(3^2)
     val expr = Expr(Term(Pow(Power.numb(2), Pow(Power.numb(3), Factor.numb(2))), TEpsilon), EEpsilon)
     assertEquals(encode(expr), "2^(3^2)")
   }
 
-  test("(2^3)^2 encoding is \"(2^3)^2\"") {
+  test(
+    "Expr(Term(Pow(Power.grouped(Expr(Term(Pow(Power(2), Factor(3)), ε), ε)), Factor(2)), ε), ε)" +
+      " encoding is \"(2^3)^2\""
+  ) {
+    // (2^3)^2
     val expr = Expr(
       Term(
         Pow(Power.grouped(Expr(Term(Pow(Power.numb(2), Factor.numb(3)), TEpsilon), EEpsilon)), Factor.numb(2)),
@@ -133,17 +155,22 @@ class ExprCodecSuite extends FunSuite {
     assertEquals(encode(expr), "(2^3)^2")
   }
 
-  test("-1 encoding is \"-1\"") {
+  test("Expr(-1) encoding is \"-1\"") {
     val expr = Expr.numb(-1)
     assertEquals(encode(expr), "-1")
   }
 
-  test("2.0*3+1.0 encoding is \"2.0*3+1.0\"") {
+  test("Expr(Term(Factor(2.0), Mul(Factor(3), ε)), Add(Term(1.0), ε)) encoding is \"2.0*3+1.0\"") {
+    // "2.0*3+1.0"
     val expr = Expr(Term(Factor.numb(2.0), Mul(Factor.numb(3), TEpsilon)), Add(Term.numb(1.0), EEpsilon))
     assertEquals(encode(expr), "2.0*3+1.0")
   }
 
-  test("1.0+2-3.0*(1/5) encoding is \"1.0+2-(3.0*(1/5))\"") {
+  test(
+    "Expr(Term(1.0), Add(Term(2), Sub(Term(Factor(3.0), Mul(Factor.grouped(Expr(Term(Factor(1), Div(Factor(5), ε)), ε)), ε)), ε)))" +
+      " encoding is \"1.0+2-(3.0*(1/5))\""
+  ) {
+    // "1.0+2-3.0*(1/5)"
     val expr = Expr(
       Term.numb(1.0),
       Add(
