@@ -93,11 +93,9 @@ The `exprP` expression parser is built on top of the [cats-parse](https://typele
 val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 ```
 
-// TODO:
+`Expr` values represent the AST returned by successful `exprP.parse` runs.
 
-- AST Expr
-- white-spaces are supported 
-- ...
+> `exprP` supports input strings with extra white-spaces (e.g. `" 1 +( 2^ 3 )"`).
 
 ## Evaluation
 
@@ -112,3 +110,7 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 - `0 / 0`
 - `b ^ e`, with `b` negative real
 - `b ^ e`, ...
+
+## Testing
+
+// TODO: ...
