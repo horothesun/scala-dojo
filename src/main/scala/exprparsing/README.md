@@ -10,13 +10,16 @@ term   = term * factor | term / factor | factor
 factor = power ^ factor | power
 power  = - unary | unary
 unary  = nonNegDecimal | natural | ( expr )
-// TODO: add nonNegDecimal, natural (and digits)!!!
+
+nonNegDecimal = natural.digit
+natural       = 0 | [1-9]<digit*
+digit         = [0-9]
 ```
 
 ### Operator precedence
 
-Operator precedence (`()` grouping **>** unary `-` **>** `^` **>** `*`, `/` **>** `+`, binary `-`) is modelled by 'layering'
-the operators at different precedence levels in dedicated production rules as follows
+Operator precedence (`()` grouping **>** unary `-` **>** `^` **>** `*`, `/` **>** `+`, binary `-`) is modelled by
+'layering' the operators at different precedence levels in dedicated production rules as follows
 
 - `expr` for `+` and binary `-`,
 - `term` for `*` and `/`,
@@ -26,7 +29,8 @@ the operators at different precedence levels in dedicated production rules as fo
 
 ### Operator associativity
 
-- _Left-to-right_ associativity is modelled directly by left-recursive production rules like `expr` (for `+` and binary `-`) and `term` (for `*` and `/`), while
+- _Left-to-right_ associativity is modelled directly by left-recursive production rules
+  like `expr` (for `+` and binary `-`) and `term` (for `*` and `/`), while
 - _right-to-left_ associativity is modelled directly by right-recursive production rules like `factor` (for `^`).
 
 ## Removing left-recursion
@@ -40,7 +44,7 @@ we'll convert them into their `right-recursive` counterparts with the algorithm 
 > Given the following rules
 >
 > ```
-> S ⇒ S a | S b | c | d
+> S = S a | S b | c | d
 > ```
 > the converted right-recursive rules are
 >
@@ -59,7 +63,10 @@ term'  = ε | * factor term' | / factor term'
 factor = power ^ factor | power
 power  = - unary | unary
 unary  = nonNegDecimal | natural | ( expr )
-// TODO: add nonNegDecimal, natural (and digits)!!!
+
+nonNegDecimal = natural.digit
+natural       = 0 | [1-9]<digit*
+digit         = [0-9]
 ```
 
 which BNF form is
@@ -73,10 +80,9 @@ which BNF form is
 <power>  ::= "-" <unary> | <unary>
 <unary>  ::= <nonNegDecimal> | <natural> | "(" <expr> ")"
 
-// TODO: fix and test!!! nat = 0 | [1-9][0-9]+ ; nonNegDec = nat . [0-9]+
-<nonNegDecimal> ::= <digits> "." <digits>
-<natural>       ::= <digits>
-<digits>        ::= [0-9]+
+<nonNegDecimal> ::= <natural> "." <digit>+
+<natural>       ::= "0" | [1-9] <digit>*
+<digit>         ::= [0-9]
 ```
 
 ## Parsing
@@ -96,7 +102,8 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 
 // TODO:
 
-- it's important for the eval functions on Expr and Term to perform the operations in the right order to correctly implement left-associativity
+- it's important for the eval functions on Expr and Term to perform the operations in the right order
+  to correctly implement left-associativity
 - are Double big enough? (also in NonNegDecimal case class)
 - ...
 

@@ -1,5 +1,6 @@
 package exprparsing
 
+import ExprGenerators.nonNegNum
 import Models.Unary._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
@@ -15,12 +16,10 @@ class ModelsSuite extends ScalaCheckSuite {
   }
 
   property("Natural(l) correctly created when l >= 0L") {
-    forAll(Gen.oneOf(Gen.const(0L), Gen.posNum[Long])) { l =>
-      assert(Natural(l).l >= 0L)
-    }
+    forAll(nonNegNum[Long])(l => assert(Natural(l).l >= 0L))
   }
 
-  property("NonNegDecimal(d) throws exception when d < 0") {
+  property("NonNegDecimal(d) throws exception when d < 0.0") {
     forAll(Gen.negNum[Double]) { d =>
       intercept[java.lang.IllegalArgumentException](NonNegDecimal(d))
       ()
@@ -28,9 +27,7 @@ class ModelsSuite extends ScalaCheckSuite {
   }
 
   property("NonNegDecimal(d) correctly created when d >= 0.0") {
-    forAll(Gen.oneOf(Gen.const(0.0), Gen.posNum[Double])) { d =>
-      assert(NonNegDecimal(d).d >= 0.0)
-    }
+    forAll(nonNegNum[Double])(d => assert(NonNegDecimal(d).d >= 0.0))
   }
 
 }

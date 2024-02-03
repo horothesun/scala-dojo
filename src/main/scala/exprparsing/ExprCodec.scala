@@ -7,9 +7,9 @@ import Models.Power._
 import Models.TermR._
 import Models.Token._
 import Models.Unary._
-import cats.data.NonEmptyList
 import cats.implicits._
-import cats.parse.Rfc5234.{digit, wsp}
+import cats.parse.Numbers.{digits, nonNegativeIntString}
+import cats.parse.Rfc5234.wsp
 import cats.parse.{Parser, Parser0}
 import cats.parse.Parser._
 
@@ -17,6 +17,7 @@ object ExprCodec {
 
   /* parser */
 
+  // TODO: move from Parser0 to Parser
   def exprP: Parser0[Expr] = (wspP0 *> termP <* wspP0, exprRP).mapN(Expr.apply)
 
   def exprRP: Parser0[ExprR] = {
@@ -28,7 +29,7 @@ object ExprCodec {
     add.orElse(sub).orElse(epsilon)
   }
 
-  def termP: Parser0[Term] = (factorP <* wspP0, defer0(termRP)).mapN(Term.apply)
+  def termP: Parser[Term] = (factorP <* wspP0).flatMap(l => defer0(termRP).map(Term(l, _)))
 
   def termRP: Parser0[TermR] = {
     def op(token: Token, apply: (Factor, TermR) => TermR): Parser[TermR] =
@@ -53,23 +54,19 @@ object ExprCodec {
 
   def unaryP: Parser[Unary] = numericP.orElse(defer(groupedP))
 
-  // TODO: fix and test!!! nat = 0 | [1-9][0-9]+ ; nonNegDec = nat . [0-9]+
-  def numericP: Parser[Unary] = digitsP.flatMap { ds =>
+  def numericP: Parser[Unary] = nonNegativeIntString.flatMap { nni =>
     val nonNegDecimal = char(DecimalDot.toChar) *>
-      digitsP
-        .map(rds => ds.append(DecimalDot.toChar).concatNel(rds).mkString_(""))
+      digits
+        .map(dec => s"$nni${DecimalDot.toChar}$dec")
         .mapFilter[Unary](_.toDoubleOption.map(NonNegDecimal.apply))
-    val natural = Parser.pure(ds.mkString_("")).mapFilter[Unary](_.toLongOption.map(Natural.apply))
+    val natural = Parser.pure(nni).mapFilter[Unary](_.toLongOption.map(Natural.apply))
     nonNegDecimal.orElse(natural)
   }
 
   def groupedP: Parser[Unary] = (char(LParen.toChar) *> exprP <* char(RParen.toChar)).map[Unary](Grouped.apply)
 
-  def digitsP: Parser[NonEmptyList[Char]] = digit.rep
-
   def wspP0: Parser0[Unit] = wsp.rep0.void
 
-  // TODO: check!!!
   def epsilonP0: Parser0[Unit] = Parser.pure(())
 
   /* encode */

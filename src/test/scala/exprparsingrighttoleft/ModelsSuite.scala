@@ -20,7 +20,7 @@ class ModelsSuite extends ScalaCheckSuite {
     }
   }
 
-  property("NonNegDecimal(d) throws exception when d < 0") {
+  property("NonNegDecimal(d) throws exception when d < 0.0") {
     forAll(Gen.negNum[Double]) { d =>
       intercept[java.lang.IllegalArgumentException](NonNegDecimal(d))
       ()
