@@ -37,9 +37,9 @@ object ExprEval {
       case TermRMul(r, reminder) => aux(acc * r, reminder)
       case TermRDiv(r, reminder) =>
         (acc, r) match {
-          case (0.0, 0.0) => Left(DivisionUndefined)
-          case (_, 0.0)   => Left(DivisionByZero)
-          case (ld, rd)   => aux(ld / rd, reminder)
+          case (0.0, 0.0)       => Left(DivisionUndefined)
+          case (numerator, 0.0) => Left(DivisionByZero(numerator))
+          case (ld, rd)         => aux(ld / rd, reminder)
         }
       case TermREpsilon => Right(acc)
     }
@@ -53,13 +53,12 @@ object ExprEval {
     case Div(r, reminder) => (eval(r), eval(reminder)).mapN(TermRDiv.apply)
   }
 
-  // TODO: check Left-returning cases!!!
   def eval(factor: Factor): EvalResult[Double] = factor match {
     case Pow(l, r) =>
       (eval(l), eval(r)).flatMapN {
-        case (0.0, rd) if rd < 0.0 => Left(PowerUndefined)
-        case (ld, _) if ld < 0.0   => Left(PowerWithNegativeBase)
-        case (ld, rd)              => Right(Math.pow(ld, rd))
+        case (0.0, exponent) if exponent <= 0.0 => Left(PowerUndefined(base = 0.0, exponent))
+        case (base, exponent) if base < 0.0     => Left(PowerWithNegativeBase(base, exponent))
+        case (base, exponent)                   => Right(Math.pow(base, exponent))
       }
     case FPower(p) => eval(p)
   }

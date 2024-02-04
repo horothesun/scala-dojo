@@ -130,10 +130,10 @@ object Models {
 
   sealed trait EvalError
   object EvalError {
-    case object DivisionByZero extends EvalError
+    case class DivisionByZero(numerator: Double) extends EvalError
     case object DivisionUndefined extends EvalError
-    case object PowerWithNegativeBase extends EvalError
-    case object PowerUndefined extends EvalError
+    case class PowerWithNegativeBase(base: Double, exponent: Double) extends EvalError
+    case class PowerUndefined(base: Double, exponent: Double) extends EvalError
   }
 
   sealed trait ExprREvalSuccess

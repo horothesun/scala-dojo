@@ -56,8 +56,8 @@ class ExprEvalSuite extends ScalaCheckSuite {
     assertEqualsEitherEvalErrorDouble(eval(expr), 8.0)
   }
 
-  test("Pow(2.0, Infinity) evaluates to Right(Infinity)") {
-    val expr = Pow(Power.numb(2.0), Factor.numb(Double.PositiveInfinity))
+  test("Pow(2.0, MaxValue) evaluates to Right(∞)") {
+    val expr = Pow(Power.numb(2.0), Factor.numb(Double.MaxValue))
     assertEqualsEitherEvalErrorDouble(eval(expr), Double.PositiveInfinity)
   }
 
@@ -70,8 +70,9 @@ class ExprEvalSuite extends ScalaCheckSuite {
     forAll(exprGen) { expr =>
       val evaluatedGroupedExpr = eval(Expr.grouped(expr))
       eval(expr) match {
-        case Right(d)    => assertEqualsEitherEvalErrorDouble(evaluatedGroupedExpr, d)
-        case l @ Left(_) => assertEquals(evaluatedGroupedExpr, l)
+        case Right(d) => assertEqualsEitherEvalErrorDouble(evaluatedGroupedExpr, d)
+        // TODO: improve String-based comparison for the Left case!!!
+        case l @ Left(_) => assertEquals(s"$evaluatedGroupedExpr", s"$l")
       }
     }
   }

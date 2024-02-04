@@ -102,17 +102,17 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 The `ExprEval.eval` functions return `EvalResult[_] = Either[EvalError, _]` to model
 potential errors of the supported operations, e.g.
 
-- division by `0`
-- `0 / 0`
-- `b ^ e`, with negative real `b`
-- `b ^ e`, ... TODO: ...
+- `0 / 0`: `EvalError.DivisionUndefined`
+- `n / 0`, with `n ≠ 0`: `EvalError.DivisionByZero(n)`
+- `b ^ e`, with `b < 0`: `EvalError.PowerWithNegativeBase(b, e)`
+- `0 ^ e`, with `e ≤ 0`: `EvalError.PowerUndefined(b, e)`
+
+> Note: it's important for the `eval(expr: Expr)` and `eval(term: Term)` to perform the operations
+> in the right order to correctly implement `+`/`-` and `*`/`/` left-associativity.
 
 // TODO:
 
-- it's important for the eval functions on Expr and Term to perform the operations in the right order
-  to correctly implement left-associativity
 - are Double big enough? (also in NonNegDecimal case class)
-- ...
 
 ## Testing
 
