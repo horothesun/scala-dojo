@@ -102,9 +102,9 @@ object Models {
   sealed trait Unary
   object Unary {
     /* Non-negativity runtime guarantee
-      Both Natural.apply and NonNegDecimal.apply require (at runtime) their argument to be non-negative.
+      Both Natural and NonNegDecimal require their internal values to be non-negative.
       Since
-        - this API is meant to be called by parser and test generators, which are supposed to pass proper values, and
+        - these APIs are meant to be called by parser and test generators, which are supposed to pass proper values, and
         - capturing this constraint in the return type (e.g. `Option[Natural]`) would considerably increase code complexity,
       I opted for a less type-safe runtime guarantee.
      */

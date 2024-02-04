@@ -22,6 +22,10 @@ class ExprCodecSuite extends FunSuite {
     assertFullyParsed(numericP.parse("1.0"), NonNegDecimal(1.0))
   }
 
+  test("Long.MaxValue parses to Natural(Long.MaxValue)") {
+    assertFullyParsed(numericP.parse(s"${Long.MaxValue}"), Natural(Long.MaxValue))
+  }
+
   test("\"1\" parses to Expr.numb(1)") {
     assertFullyParsed(exprP.parse("1"), Expr.numb(1))
   }

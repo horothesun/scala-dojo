@@ -41,6 +41,7 @@ we'll convert them into their `right-recursive` counterparts with the algorithm 
 [example](https://www.geeksforgeeks.org/removing-direct-and-indirect-left-recursion-in-a-grammar).
 
 > #### Left-recursion removal example
+>
 > Given the following rules
 >
 > ```
@@ -95,7 +96,17 @@ val parsedExpr: Either[Parser.Error, Expr] = exprP.parse("1-2.0*3")
 
 `Models.Expr` values represent the AST returned by successful `exprP.parse` runs.
 
-> `exprP` supports input strings with extra white-spaces (e.g. `" 1 +( 2^ 3 )"`).
+> Note: `exprP` supports input strings with extra white-spaces (e.g. `" 1 +( 2^ 3 )"`).
+
+### `Natural` and `NonNegDecimal` non-negativity guarantee
+
+Both `Models.Unary.Natural` and `Models.Unary.NonNegDecimal` require their internal values to be non-negative.
+Since
+
+- these APIs are meant to be called by parser and test generators (`ExprGenerators`), which are supposed to pass proper values, and
+- capturing this constraint in the return type (e.g. `Option[Natural]`) would considerably increase code complexity,
+
+I opted for a less type-safe runtime guarantee.
 
 ## Evaluation
 
@@ -110,13 +121,25 @@ potential errors of the supported operations, e.g.
 > Note: it's important for the `eval(expr: Expr)` and `eval(term: Term)` to perform the operations
 > in the right order to correctly implement `+`/`-` and `*`/`/` left-associativity.
 
-// TODO:
-
-- are Double big enough? (also in NonNegDecimal case class)
-
 ## Testing
 
-// TODO:
+The code has been extensively tested in its distinct parsing, encoding and evaluation components,
+in `ExprCodecSuite` and `ExprEvalSuite` respectively.
 
-- `ExprCodec.encode` useful for testing
-- ...
+The `Natural` and `NonNegDecimal` non-negativity runtime guarantee has been tested in `ModelsSuite`.
+
+The `ExprCodec.encode` function, even if not strictly required in order to implement the solution, is actually
+quite useful for testing purposes, because it allows to write property-based tests like `CalculatorSuite`'s
+
+```scala
+property("eval(parse(encode(expr))) == eval(expr), with expr: Expr") { /* ... */ }
+```
+
+`CalculatorSuite` also contains example tests for
+
+- operator's associativity and
+- few dozens mixed expression calculation. 
+
+## Improvements
+
+- Error handling and testing around big number parsing and evaluations resulting in values at the edge of `Double`'s range.
