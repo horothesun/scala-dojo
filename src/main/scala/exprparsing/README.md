@@ -33,7 +33,7 @@ Operator precedence (`()` grouping **>** unary `-` **>** `^` **>** `*`, `/` **>*
   like `expr` (for `+` and binary `-`) and `term` (for `*` and `/`), while
 - _right-to-left_ associativity is modelled directly by right-recursive production rules like `factor` (for `^`).
 
-## Removing left-recursion
+### Removing left-recursion
 
 Since the previous grammar contains _left-recursive_ production rules
 (`expr` and `term`, which can lead to a non-terminating parser),
