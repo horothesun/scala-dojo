@@ -14,7 +14,7 @@ val munitVersion = "1.0.0"
 
 val disciplineMunitVersion = "2.0.0"
 
-val munitCatsEffectVersion = "1.0.7"
+val munitCatsEffectVersion = "2.0.0"
 
 lazy val root = (project in file(".")).settings(
   inThisBuild(
@@ -38,5 +38,5 @@ libraryDependencies ++= Seq(
   "org.scalameta" %% "munit" % munitVersion % Test,
   "org.scalameta" %% "munit-scalacheck" % munitVersion % Test,
   "org.typelevel" %% "discipline-munit" % disciplineMunitVersion % Test,
-  "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
+  "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
 )
