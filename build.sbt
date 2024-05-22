@@ -12,7 +12,7 @@ val fs2Version = "3.10.2"
 
 val munitVersion = "0.7.29"
 
-val disciplineMunitVersion = "1.0.9"
+val disciplineMunitVersion = "2.0.0"
 
 val munitCatsEffectVersion = "1.0.7"
 
