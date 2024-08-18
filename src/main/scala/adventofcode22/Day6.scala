@@ -1,7 +1,7 @@
 package adventofcode22
 
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import cats.Order
 
 object Day6 {

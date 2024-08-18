@@ -1,7 +1,7 @@
 package wordle
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import scala.io.Source
 import Models._
 import Models.Char._
@@ -9,6 +9,7 @@ import Models.GuessResult._
 import Models.GuesserFilter._
 import Models.GuesserSort._
 import Models.PositionStatus._
+import Models.Word._
 
 object Wordle {
 
@@ -69,6 +70,7 @@ object Wordle {
         val (allDistinct, withDuplicates) = suggestions.partition(_.hasAllDistinct)
         List(withDuplicates, allDistinct)
     }
+    implicit val orderingA: Ordering[A] = Order[A].toOrdering
     val sortedGroups = guesserConfig.sort match {
       case Ascending  => filteredGroups.map(g => g.toList.sorted)
       case Descending => filteredGroups.map(g => g.toList.sorted.reverse)

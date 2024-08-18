@@ -1,6 +1,6 @@
 package adventofcode22
 
-import cats.implicits._
+import cats.syntax.all._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._

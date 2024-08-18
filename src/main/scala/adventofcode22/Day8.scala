@@ -2,7 +2,7 @@ package adventofcode22
 
 import cats._
 import cats.data.{Nested, NonEmptyList}
-import cats.implicits._
+import cats.syntax.all._
 
 import scala.annotation.tailrec
 import scala.math.Numeric.Implicits._

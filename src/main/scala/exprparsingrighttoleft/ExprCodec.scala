@@ -8,7 +8,7 @@ import Models.Term._
 import Models.Token._
 import Models.Unary._
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import cats.parse.{Parser, Parser0}
 import cats.parse.Parser._
 import cats.parse.Rfc5234.{digit, wsp}

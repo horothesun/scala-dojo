@@ -3,7 +3,7 @@ package adventofcode22
 import cats._
 import cats.data.NonEmptyList
 import cats.derived
-import cats.implicits._
+import cats.syntax.all._
 import scala.annotation.tailrec
 import Day9.Proximity._
 import Day9.Rope._

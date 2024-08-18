@@ -1,5 +1,5 @@
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 
 object AggregateWithZipper {
 

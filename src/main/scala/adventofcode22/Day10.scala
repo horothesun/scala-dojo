@@ -1,6 +1,6 @@
 package adventofcode22
 
-import cats.implicits._
+import cats.syntax.all._
 import Day10.Crt._
 import Day10.Instruction._
 import Day10.Pixel._

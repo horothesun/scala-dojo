@@ -2,7 +2,7 @@ package tetris
 
 import cats._
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import scala.annotation.tailrec
 import scala.math.Numeric.Implicits._
 import scala.math.Ordering.Implicits._

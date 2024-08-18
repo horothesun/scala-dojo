@@ -7,7 +7,7 @@ import Models.Factor._
 import Models.Power._
 import Models.Term._
 import Models.Unary._
-import cats.implicits._
+import cats.syntax.all._
 
 object ExprEval {
 

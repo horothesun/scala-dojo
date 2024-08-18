@@ -1,7 +1,7 @@
 package tetris
 
 import cats.data.NonEmptyList
-import cats.implicits._
+import cats.syntax.all._
 import EndoOps._
 import Models._
 import Models.MergedIntersection._

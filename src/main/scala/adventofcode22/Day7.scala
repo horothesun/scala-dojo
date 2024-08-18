@@ -1,7 +1,7 @@
 package adventofcode22
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import scala.math.Numeric.Implicits._
 import Day7.Path._
 import Day7.FileSystem._

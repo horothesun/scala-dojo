@@ -9,7 +9,7 @@ import Models.Unary._
 import Models.EvalError._
 import Models.ExprREvalSuccess._
 import Models.TermREvalSuccess._
-import cats.implicits._
+import cats.syntax.all._
 import scala.annotation.tailrec
 
 object ExprEval {

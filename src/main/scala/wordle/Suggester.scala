@@ -2,7 +2,7 @@ package wordle
 
 import cats._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import Models._
 import Models.WordPos._
 

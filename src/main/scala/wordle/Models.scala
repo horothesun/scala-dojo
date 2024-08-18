@@ -2,7 +2,7 @@ package wordle
 
 import cats._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import Models.GuessResult._
 import Models.PositionStatus._
 import Models.WordPos._
@@ -51,7 +51,7 @@ object Models {
     }
 
     implicit def ordering[A: Ordering]: Ordering[Word[A]] = Ordering[String].on[Word[A]](_.toString)
-    implicit def order[A: Order]: Order[Word[A]] = Order.fromOrdering[Word[A]]
+    implicit def order[A: Order]: Order[Word[A]] = Order[String].contramap[Word[A]](_.toString)
 
     implicit def show[A: Show]: Show[Word[A]] =
       Show.show[Word[A]](_.map(Show[A].show).toNel.mkString_("Word(", ",", ")"))

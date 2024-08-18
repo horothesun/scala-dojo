@@ -1,6 +1,6 @@
 package tetris.shape
 
-import cats.implicits._
+import cats.syntax.all._
 
 object Models {
 
