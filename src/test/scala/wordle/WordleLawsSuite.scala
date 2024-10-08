@@ -1,11 +1,11 @@
 package wordle
 
-import cats.laws.discipline.FunctorTests
-import munit.DisciplineSuite
-import org.scalacheck.Arbitrary._
-import org.scalacheck._
 import Models._
 import WordleLawsSuite._
+import cats.laws.discipline.FunctorTests
+import munit.DisciplineSuite
+import org.scalacheck._
+import org.scalacheck.Arbitrary._
 
 class WordleLawsSuite extends DisciplineSuite {
 

@@ -1,11 +1,11 @@
 package tetris.shape
 
-import cats.Endo
-import org.scalacheck.Gen
-import Generators.PrimaryColor._
 import Generators.FilledState._
+import Generators.PrimaryColor._
 import Models._
 import Shape._
+import cats.Endo
+import org.scalacheck.Gen
 
 object Generators {
 

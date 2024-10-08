@@ -1,7 +1,7 @@
+import ExtraLongFactorials._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import ExtraLongFactorials._
 
 class ExtraLongFactorialsSpec extends ScalaCheckSuite {
 

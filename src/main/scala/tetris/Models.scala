@@ -1,7 +1,7 @@
 package tetris
 
-import shape.Shape
 import Models.MergedIntersection._
+import shape.Shape
 
 object Models {
 

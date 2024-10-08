@@ -1,12 +1,12 @@
 package tetris
 
+import ClassicTetris._
+import Models._
+import Models.MergedIntersection._
 import munit.ScalaCheckSuite
 import shape.Generators.PrimaryColor
 import shape.Generators.PrimaryColor._
 import shape.Shape._
-import ClassicTetris._
-import Models._
-import Models.MergedIntersection._
 
 class ClassicTetrisSuite extends ScalaCheckSuite {
 

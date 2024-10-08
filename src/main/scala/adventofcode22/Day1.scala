@@ -1,8 +1,8 @@
 package adventofcode22
 
+import ListOps._
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import ListOps._
 
 object Day1 {
 

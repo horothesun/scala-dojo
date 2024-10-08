@@ -1,11 +1,11 @@
 package adventofcode22
 
-import munit.ScalaCheckSuite
-import org.scalacheck.Gen
-import org.scalacheck.Prop.forAll
 import Day10._
 import Day10.Pixel._
 import Day10Suite._
+import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop.forAll
 
 class Day10Suite extends ScalaCheckSuite {
 

@@ -1,9 +1,9 @@
 package adventofcode22
 
-import cats.syntax.all._
-import scala.math.Numeric.Implicits._
 import Day2.Shape._
 import Day2.Winner._
+import cats.syntax.all._
+import scala.math.Numeric.Implicits._
 
 object Day2 {
 

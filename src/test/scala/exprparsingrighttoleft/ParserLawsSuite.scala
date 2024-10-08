@@ -1,10 +1,10 @@
 package exprparsingrighttoleft
 
+import ParserLawsSuite._
 import cats.laws.discipline.{FunctorTests, MonadTests}
 import munit.DisciplineSuite
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
-import ParserLawsSuite._
 //import exprparsing.ExprParsing.ParserOps
 
 class ParserLawsSuite extends DisciplineSuite {

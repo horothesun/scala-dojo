@@ -1,8 +1,8 @@
 package adventofcode22
 
-import munit.ScalaCheckSuite
 import Day1._
 import Day1Suite._
+import munit.ScalaCheckSuite
 
 class Day1Suite extends ScalaCheckSuite {
 

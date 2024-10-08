@@ -1,9 +1,9 @@
 package adventofcode22
 
-import cats.data.NonEmptyList
-import cats.syntax.all._
 import Day5.CrateItem._
 import ListOps._
+import cats.data.NonEmptyList
+import cats.syntax.all._
 
 object Day5 {
 

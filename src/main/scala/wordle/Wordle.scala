@@ -1,15 +1,15 @@
 package wordle
 
+import Models._
+import Models.Char._
+import Models.GuesserFilter._
+import Models.GuesserSort._
+import Models.GuessResult._
+import Models.PositionStatus._
+import Models.Word._
 import cats._
 import cats.syntax.all._
 import scala.io.Source
-import Models._
-import Models.Char._
-import Models.GuessResult._
-import Models.GuesserFilter._
-import Models.GuesserSort._
-import Models.PositionStatus._
-import Models.Word._
 
 object Wordle {
 

@@ -1,8 +1,8 @@
+import AggregateWithZipperSpec._
 import cats.data.NonEmptyList
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import AggregateWithZipperSpec._
 
 class AggregateWithZipperSpec extends ScalaCheckSuite {
 

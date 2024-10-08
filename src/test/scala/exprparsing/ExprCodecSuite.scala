@@ -7,8 +7,8 @@ import Models.ExprR._
 import Models.Factor._
 import Models.TermR._
 import Models.Unary._
-import munit.Assertions._
 import munit.{FunSuite, Location}
+import munit.Assertions._
 
 class ExprCodecSuite extends FunSuite {
 

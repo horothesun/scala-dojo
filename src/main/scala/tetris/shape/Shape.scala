@@ -1,12 +1,12 @@
 package tetris.shape
 
+import Models._
+import Shape._
 import cats._
 import cats.syntax.all._
 import scala.annotation.tailrec
 import scala.math._
 import scala.math.Numeric.Implicits._
-import Models._
-import Shape._
 
 sealed trait Shape[A] {
 

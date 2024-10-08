@@ -10,8 +10,8 @@ import Models.Expr._
 import Models.Factor._
 import Models.Term._
 import Models.Unary._
-import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
+import munit.Assertions._
 import org.scalacheck.Prop._
 
 class ExprCodecSuite extends ScalaCheckSuite {

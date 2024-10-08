@@ -1,8 +1,8 @@
 package adventofcode22
 
+import Day3.Item._
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import Day3.Item._
 
 object Day3 {
 

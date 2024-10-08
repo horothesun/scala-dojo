@@ -1,9 +1,5 @@
 package wordle
 
-import cats.Order
-import munit.ScalaCheckSuite
-import org.scalacheck.Gen
-import org.scalacheck.Prop._
 import Models._
 import Models.Char._
 import Models.PositionStatus._
@@ -11,6 +7,10 @@ import Models.WordPos._
 import Suggester._
 import WordleSpec._
 import WordleSpec.TestChar._
+import cats.Order
+import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop._
 
 class WordleSpec extends ScalaCheckSuite {
 

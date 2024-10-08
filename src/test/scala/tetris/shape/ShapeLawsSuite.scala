@@ -1,11 +1,11 @@
 package tetris.shape
 
+import Generators._
+import ShapeLawsSuite._
 import cats.laws.discipline.FunctorTests
 import munit.DisciplineSuite
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
-import Generators._
-import ShapeLawsSuite._
 
 class ShapeLawsSuite extends DisciplineSuite {
 

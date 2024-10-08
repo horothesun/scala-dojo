@@ -1,14 +1,14 @@
 package tetris.shape
 
-import cats.Endo
-import munit.ScalaCheckSuite
-import org.scalacheck.Prop._
-import tetris.EndoOps._
 import Generators._
 import Generators.FilledState._
 import Generators.PrimaryColor._
 import Models._
 import Shape._
+import cats.Endo
+import munit.ScalaCheckSuite
+import org.scalacheck.Prop._
+import tetris.EndoOps._
 
 class ShapeSuite extends ScalaCheckSuite {
 

@@ -1,15 +1,15 @@
 package adventofcode22
 
-import cats.syntax.all._
-import munit.ScalaCheckSuite
-import org.scalacheck.Gen
-import org.scalacheck.Prop._
 import Day7._
 import Day7.FileSystem._
 import Day7.TerminalInfo._
 import Day7.TerminalLsLog._
 import Day7.TerminalOutput._
 import Day7Suite._
+import cats.syntax.all._
+import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop._
 
 class Day7Suite extends ScalaCheckSuite {
 

@@ -1,12 +1,12 @@
 package adventofcode22
 
+import Day6._
+import Day6Suite._
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import Day6._
-import Day6Suite._
 
 class Day6Suite extends ScalaCheckSuite {
 

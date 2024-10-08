@@ -1,11 +1,11 @@
 package adventofcode22
 
+import ListOps._
+import ListOpsSuite._
 import cats.data.NonEmptyList
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import ListOps._
-import ListOpsSuite._
 
 class ListOpsSuite extends ScalaCheckSuite {
 

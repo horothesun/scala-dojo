@@ -1,13 +1,13 @@
 package adventofcode22
 
-import cats.data.NonEmptyList
-import munit.ScalaCheckSuite
-import org.scalacheck.Gen
-import org.scalacheck.Prop._
 import Day9._
 import Day9.Proximity._
 import Day9.Rope._
 import Day9Suite._
+import cats.data.NonEmptyList
+import munit.ScalaCheckSuite
+import org.scalacheck.Gen
+import org.scalacheck.Prop._
 
 class Day9Suite extends ScalaCheckSuite {
 

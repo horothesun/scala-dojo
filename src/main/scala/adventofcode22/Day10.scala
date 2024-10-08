@@ -1,9 +1,9 @@
 package adventofcode22
 
-import cats.syntax.all._
 import Day10.Crt._
 import Day10.Instruction._
 import Day10.Pixel._
+import cats.syntax.all._
 
 object Day10 {
 

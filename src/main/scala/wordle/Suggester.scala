@@ -1,10 +1,10 @@
 package wordle
 
+import Models._
+import Models.WordPos._
 import cats._
 import cats.data._
 import cats.syntax.all._
-import Models._
-import Models.WordPos._
 
 sealed trait Suggester[A] {
   def getSuggestions(d: Dictionary[A]): Set[Word[A]]

@@ -7,11 +7,11 @@ import Models.Power._
 import Models.TermR._
 import Models.Token._
 import Models.Unary._
-import cats.syntax.all._
-import cats.parse.Numbers.{digits, nonNegativeIntString}
-import cats.parse.Rfc5234.wsp
 import cats.parse.{Parser, Parser0}
+import cats.parse.Numbers.{digits, nonNegativeIntString}
 import cats.parse.Parser._
+import cats.parse.Rfc5234.wsp
+import cats.syntax.all._
 
 object ExprCodec {
 

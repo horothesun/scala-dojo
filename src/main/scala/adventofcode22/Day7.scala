@@ -1,14 +1,14 @@
 package adventofcode22
 
-import cats._
-import cats.syntax.all._
-import scala.math.Numeric.Implicits._
-import Day7.Path._
 import Day7.FileSystem._
+import Day7.Path._
 import Day7.TerminalInfo._
 import Day7.TerminalLsLog._
 import Day7.TerminalOutput._
 import Stack._
+import cats._
+import cats.syntax.all._
+import scala.math.Numeric.Implicits._
 
 object Day7 {
 

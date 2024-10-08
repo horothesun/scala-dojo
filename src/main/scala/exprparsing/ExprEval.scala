@@ -1,14 +1,14 @@
 package exprparsing
 
 import Models._
+import Models.EvalError._
 import Models.ExprR._
-import Models.TermR._
+import Models.ExprREvalSuccess._
 import Models.Factor._
 import Models.Power._
-import Models.Unary._
-import Models.EvalError._
-import Models.ExprREvalSuccess._
+import Models.TermR._
 import Models.TermREvalSuccess._
+import Models.Unary._
 import cats.syntax.all._
 import scala.annotation.tailrec
 

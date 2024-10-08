@@ -2,8 +2,8 @@ package exprparsing
 
 import Models._
 import Models.EvalError._
-import munit.Location
 import munit.Assertions._
+import munit.Location
 
 object TestUtils {
 

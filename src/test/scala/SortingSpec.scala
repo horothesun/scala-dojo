@@ -1,7 +1,7 @@
 import Sorting.isSorted
 import munit.ScalaCheckSuite
-import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Prop.{forAll, propBoolean}
 
 final class SortingSpec extends ScalaCheckSuite {
 

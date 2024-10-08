@@ -1,14 +1,14 @@
 package adventofcode22
 
+import Day8._
+import Day8.TreeVisibility._
+import Day8.Visibility._
+import Day8Suite._
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import Day8._
-import Day8.TreeVisibility._
-import Day8.Visibility._
-import Day8Suite._
 
 class Day8Suite extends ScalaCheckSuite {
 

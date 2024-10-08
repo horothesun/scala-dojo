@@ -1,9 +1,9 @@
 package adventofcode22
 
-import cats.data.NonEmptyList
-import munit.ScalaCheckSuite
 import Day4._
 import Day4Suite._
+import cats.data.NonEmptyList
+import munit.ScalaCheckSuite
 
 class Day4Suite extends ScalaCheckSuite {
 

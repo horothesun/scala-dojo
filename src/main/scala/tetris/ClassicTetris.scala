@@ -1,10 +1,10 @@
 package tetris
 
-import cats.data.NonEmptyList
-import cats.syntax.all._
 import EndoOps._
 import Models._
 import Models.MergedIntersection._
+import cats.data.NonEmptyList
+import cats.syntax.all._
 import scala.math._
 import shape._
 import shape.Models._

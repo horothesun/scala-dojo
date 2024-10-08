@@ -1,8 +1,8 @@
+import ZipperSpec._
 import cats.data.NonEmptyList
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-import ZipperSpec._
 
 class ZipperSpec extends ScalaCheckSuite {
 

@@ -1,7 +1,7 @@
 package adventofcode22
 
-import cats._
 import Stack._
+import cats._
 
 sealed trait Stack[A] {
 

@@ -1,12 +1,12 @@
 package adventofcode22
 
+import Day8._
+import Day8LawsSuite._
 import cats.data.NonEmptyList
 import cats.laws.discipline.SemigroupalTests
 import munit.DisciplineSuite
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
-import Day8._
-import Day8LawsSuite._
 
 class Day8LawsSuite extends DisciplineSuite {
 

@@ -1,11 +1,11 @@
 package wordle
 
-import cats._
-import cats.data._
-import cats.syntax.all._
 import Models.GuessResult._
 import Models.PositionStatus._
 import Models.WordPos._
+import cats._
+import cats.data._
+import cats.syntax.all._
 
 object Models {
 

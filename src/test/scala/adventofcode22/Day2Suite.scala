@@ -1,10 +1,10 @@
 package adventofcode22
 
-import munit.ScalaCheckSuite
 import Day2._
 import Day2.Shape._
 import Day2.Winner._
 import Day2Suite._
+import munit.ScalaCheckSuite
 
 class Day2Suite extends ScalaCheckSuite {
 

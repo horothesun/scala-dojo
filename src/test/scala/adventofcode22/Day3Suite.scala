@@ -1,10 +1,10 @@
 package adventofcode22
 
+import Day3._
+import Day3Suite._
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import munit.ScalaCheckSuite
-import Day3._
-import Day3Suite._
 
 class Day3Suite extends ScalaCheckSuite {
 

@@ -1,12 +1,12 @@
 package adventofcode22
 
+import Day9.Proximity._
+import Day9.Rope._
 import cats._
 import cats.data.NonEmptyList
 import cats.derived
 import cats.syntax.all._
 import scala.annotation.tailrec
-import Day9.Proximity._
-import Day9.Rope._
 
 object Day9 {
 

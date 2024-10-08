@@ -1,14 +1,13 @@
 package adventofcode22
 
-import cats._
-import cats.data.{Nested, NonEmptyList}
-import cats.syntax.all._
-
-import scala.annotation.tailrec
-import scala.math.Numeric.Implicits._
 import Day8.NonEmptyMatrix._
 import Day8.TreeVisibility._
 import Day8.Visibility._
+import cats._
+import cats.data.{Nested, NonEmptyList}
+import cats.syntax.all._
+import scala.annotation.tailrec
+import scala.math.Numeric.Implicits._
 
 object Day8 {
 

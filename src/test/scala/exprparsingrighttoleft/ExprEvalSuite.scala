@@ -10,8 +10,8 @@ import Models.Factor._
 import Models.Power._
 import Models.Term._
 import Models.Unary.Natural
-import munit.Assertions._
 import munit.{Location, ScalaCheckSuite}
+import munit.Assertions._
 import org.scalacheck.Prop._
 
 class ExprEvalSuite extends ScalaCheckSuite {

@@ -1,10 +1,10 @@
+import ClassicSnake.Snake
+import ClassicSnake.Snake._
+import SnakeLawsSuite._
 import cats.laws.discipline.FunctorTests
 import munit.DisciplineSuite
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
-import ClassicSnake.Snake
-import ClassicSnake.Snake._
-import SnakeLawsSuite._
 
 class SnakeLawsSuite extends DisciplineSuite {
 

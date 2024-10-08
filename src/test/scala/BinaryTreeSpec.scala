@@ -2,7 +2,6 @@ import BinaryTreeUtils.binaryTreeFromList
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{const, listOfN, negNum, oneOf, posNum}
-
 import scala.collection.immutable
 
 final class BinaryTreeSpec extends ScalaCheckSuite {

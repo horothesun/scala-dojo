@@ -3,10 +3,10 @@ package exprparsing
 import ExprEval._
 import ExprGenerators._
 import Models._
-import Models.ExprR._
-import Models.TermR._
-import Models.Factor._
 import Models.EvalError._
+import Models.ExprR._
+import Models.Factor._
+import Models.TermR._
 import TestUtils._
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop._

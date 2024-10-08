@@ -1,7 +1,7 @@
-import cats._
 import Music.Chord._
 import Music.Length._
 import Music.Tone._
+import cats._
 
 object Music {
 
