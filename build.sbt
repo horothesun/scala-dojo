@@ -4,7 +4,7 @@ val kittensVersion = "3.4.0"
 
 val catsParseVersion = "1.0.0"
 
-val catsEffectVersion = "3.5.6"
+val catsEffectVersion = "3.5.7"
 
 val betterMonadicForVersion = "0.3.1"
 
