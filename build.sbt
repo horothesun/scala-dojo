@@ -10,7 +10,7 @@ val betterMonadicForVersion = "0.3.1"
 
 val fs2Version = "3.11.0"
 
-val munitVersion = "1.0.4"
+val munitVersion = "1.1.0"
 
 val munitScalacheckVersion = "1.0.0"
 
