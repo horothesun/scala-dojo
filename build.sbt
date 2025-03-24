@@ -8,7 +8,7 @@ val catsEffectVersion = "3.6.0"
 
 val betterMonadicForVersion = "0.3.1"
 
-val fs2Version = "3.11.0"
+val fs2Version = "3.12.0"
 
 val munitVersion = "1.1.0"
 
