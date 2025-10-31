@@ -92,7 +92,7 @@ object Day9 {
 
     def getNewFollowerPos(leader: Pos): Pos = getProximity(leader) match {
       case Adjacent => this
-      case Distant =>
+      case Distant  =>
         Pos(
           x = if (x < leader.x) x + 1 else if (x > leader.x) x - 1 else x,
           y = if (y < leader.y) y + 1 else if (y > leader.y) y - 1 else y

@@ -77,7 +77,7 @@ class ClassicTetrisSuite extends ScalaCheckSuite {
       s2 = j(Mono).rotatedCW
     ) match {
       case NotIntersecting() | CollidingIntersection(_, _, _) => assert(cond = false, "Not ValidIntersection(...)")
-      case ValidIntersection(bottomLeft, mergedIntersection) =>
+      case ValidIntersection(bottomLeft, mergedIntersection)  =>
         assertEquals(bottomLeft, Coord(x = 1, y = 0))
         assertEquals(mergedIntersection.standardized, hStack(f, f).vRepeated(2).standardized)
     }

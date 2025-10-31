@@ -33,11 +33,11 @@ object Wordle {
     (GuessStatus[A], (GuessHistory[A], Suggester[A], GuessResult))
   ] = (history, suggester, latestGuessResult) =>
     latestGuessResult match {
-      case Solved => None
+      case Solved   => None
       case Unsolved =>
         history.guessStatuses match {
           case gss if gss.length == 6 => None
-          case _ =>
+          case _                      =>
             getNextGuessStatus(dictionary, guesserConfig, solution, suggester).map { gs =>
               val newHistory = GuessHistory(history.guessStatuses :+ gs)
               val newSuggester = suggester.and(Suggester.from(gs))
@@ -62,7 +62,7 @@ object Wordle {
 
   def getGuess[A: Order](guesserConfig: GuesserConfig)(suggestions: Set[Word[A]]): Option[Word[A]] = {
     val filteredGroups = guesserConfig.filter match {
-      case Unfiltered => List(suggestions)
+      case Unfiltered       => List(suggestions)
       case AllDistinctFirst =>
         val (allDistinct, withDuplicates) = suggestions.partition(_.hasAllDistinct)
         List(allDistinct, withDuplicates)

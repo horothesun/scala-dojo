@@ -38,7 +38,7 @@ object Day5 {
 
     def from(filledCrateStacks: List[String]): Option[Stacks] =
       filledCrateStacks.reverse match {
-        case footer :: Nil => Stacks.empty(n = footer.count(_ != ' '))
+        case footer :: Nil                    => Stacks.empty(n = footer.count(_ != ' '))
         case footer :: bottomRow :: otherRows =>
           (bottomRow :: otherRows)
             .traverse(_.split(' ').toList.toNel.flatMap(_.traverse(CrateItem.from)))

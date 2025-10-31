@@ -22,8 +22,8 @@ object TestUtils {
     expected: EvalError,
     delta: Double = 1e-12
   )(implicit loc: Location): Unit = (obtained, expected) match {
-    case (DivisionByZero(nObt), DivisionByZero(nExp)) => assertEqualsDouble(nObt, nExp, delta)
-    case (DivisionUndefined, DivisionUndefined)       => ()
+    case (DivisionByZero(nObt), DivisionByZero(nExp))                           => assertEqualsDouble(nObt, nExp, delta)
+    case (DivisionUndefined, DivisionUndefined)                                 => ()
     case (PowerWithNegativeBase(bObt, eObt), PowerWithNegativeBase(bExp, eExp)) =>
       assertEqualsDouble(bObt, bExp, delta)
       assertEqualsDouble(eObt, eExp, delta)

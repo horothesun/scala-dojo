@@ -121,7 +121,7 @@ object ClassicTetrisNotReified {
     def fromRaster[A](r: Raster[A]): Option[Shape[A]] =
       r match {
         case row :: _ if r.exists(_.length != row.length) => None
-        case _ =>
+        case _                                            =>
           Some(new Shape[A] {
             override lazy val width: Width = r match {
               case Nil    => Width(0)

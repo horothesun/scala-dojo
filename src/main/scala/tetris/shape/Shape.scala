@@ -154,13 +154,13 @@ object Shape {
   }
 
   def rasterized[A]: Shape[A] => Raster[A] = {
-    case Empty()       => Raster(List.empty)
-    case Hole()        => Raster(List(List(None)))
-    case Filled(a)     => Raster(List(List(Some(a))))
-    case HFlipped(s)   => Raster(rasterized(s).value.reverse)
-    case VFlipped(s)   => Raster(rasterized(s).value.map(_.reverse))
-    case Transposed(s) => Raster(transpose(rasterized(s).value))
-    case HStack(ss)    => Foldable[List].foldK(ss.map(rasterized))
+    case Empty()             => Raster(List.empty)
+    case Hole()              => Raster(List(List(None)))
+    case Filled(a)           => Raster(List(List(Some(a))))
+    case HFlipped(s)         => Raster(rasterized(s).value.reverse)
+    case VFlipped(s)         => Raster(rasterized(s).value.map(_.reverse))
+    case Transposed(s)       => Raster(transpose(rasterized(s).value))
+    case HStack(ss)          => Foldable[List].foldK(ss.map(rasterized))
     case Inverted(ifHole, s) =>
       Raster(rasterized(s).value.map(r => r.map(_.fold[Option[A]](ifEmpty = Some(ifHole))(_ => None))))
   }

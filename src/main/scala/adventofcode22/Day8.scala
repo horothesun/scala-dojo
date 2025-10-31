@@ -89,8 +89,8 @@ object Day8 {
       @tailrec
       def aux(acc: NonEmptyList[NonEmptyList[A]], rows: List[List[A]]): NonEmptyList[NonEmptyList[A]] =
         rows match {
-          case Nil      => acc
-          case Nil :: _ => acc
+          case Nil           => acc
+          case Nil :: _      => acc
           case (_ :: _) :: _ =>
             val (newAcc, newRows) =
               rows
@@ -159,7 +159,7 @@ object Day8 {
           if (done) count
           else
             reversedLeftTrees match {
-              case NonEmptyList(_, Nil) => getCount(done = true, Count(1) + count, reversedLeftTrees)
+              case NonEmptyList(_, Nil)       => getCount(done = true, Count(1) + count, reversedLeftTrees)
               case NonEmptyList(t1, t2 :: ts) =>
                 getCount(done = t1.height >= t.height, Count(1) + count, NonEmptyList(t2, ts))
             }
