@@ -10,8 +10,8 @@ object Models {
 
   sealed trait MergedIntersection[A] {
     def show(filled: A => String, hole: => String): String = this match {
-      case NotIntersecting()         => "NotIntersecting"
-      case ValidIntersection(bl, mi) => s"ValidIntersection(\nbottomLeft: $bl\n,\n${mi.show(filled, hole)}\n)"
+      case NotIntersecting()                 => "NotIntersecting"
+      case ValidIntersection(bl, mi)         => s"ValidIntersection(\nbottomLeft: $bl\n,\n${mi.show(filled, hole)}\n)"
       case CollidingIntersection(bl, i1, i2) =>
         s"Colliding(\nbottomLeft: $bl\n,\n${i1.show(filled, hole)}\n,\n${i2.show(filled, hole)}\n)"
     }

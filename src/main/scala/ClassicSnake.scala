@@ -75,7 +75,7 @@ object ClassicSnake {
   }
 
   def enrich[A, B](start: B, next: Snake[A] => B => B): Snake[A] => Snake[(A, B)] = {
-    case s @ Dot(head) => Dot((head, next(s)(start)))
+    case s @ Dot(head)                => Dot((head, next(s)(start)))
     case s @ GrownForward(head, tail) =>
       val tb = enrich(start, next)(tail)
       val b = tb.head._2

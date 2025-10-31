@@ -46,8 +46,8 @@ object Stack {
       }
 
   def min[T: Ordering](s: Stack[T]): Option[T] = s match {
-    case EmptyStack                     => None
-    case NonEmptyStack(top, EmptyStack) => Some(top)
+    case EmptyStack                                      => None
+    case NonEmptyStack(top, EmptyStack)                  => Some(top)
     case NonEmptyStack(top, NonEmptyStack(sndTop, tail)) =>
       val topMin = Ordering[T].min(top, sndTop)
       min(tail).map(Ordering[T].min(topMin, _)).orElse(Some(topMin))
@@ -57,7 +57,7 @@ object Stack {
     @tailrec
     def aux(acc: T, s: Stack[T]): T =
       s match {
-        case EmptyStack => acc
+        case EmptyStack               => acc
         case NonEmptyStack(top, tail) =>
           val newAcc = Ordering[T].min(acc, top)
           aux(newAcc, tail)
@@ -75,7 +75,7 @@ object Stack {
     @tailrec
     def aux(acc: V, s: Stack[T]): V =
       s match {
-        case EmptyStack => acc
+        case EmptyStack               => acc
         case NonEmptyStack(top, tail) =>
           aux(combine(acc, top), tail)
       }

@@ -74,7 +74,7 @@ object ExprCodec {
   def encode(expr: Expr): String = {
     val lEnc = encode(expr.l)
     expr.reminder match {
-      case EEpsilon => lEnc
+      case EEpsilon                                                                              => lEnc
       case Add(Term(FPower(PUnary(_)), TEpsilon), _) | Sub(Term(FPower(PUnary(_)), TEpsilon), _) =>
         s"$lEnc${encode(expr.reminder)}"
       case Add(_, _) | Sub(_, _) => s"$LParen${encode(expr.l)}$RParen${encode(expr.reminder)}"

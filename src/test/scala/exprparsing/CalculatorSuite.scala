@@ -49,7 +49,7 @@ class CalculatorSuite extends ScalaCheckSuite {
       exprP.parse(encode(expr)) match {
         case Left(err)               => fail(s"parsing failed: $err")
         case Right(("", parsedExpr)) => assertEqualsEvalResultDouble(eval(parsedExpr), eval(expr))
-        case Right((s, parsedExpr)) =>
+        case Right((s, parsedExpr))  =>
           fail(s"parser did not consume all input (remaining: \"$s\") and produced: $parsedExpr")
       }
     }
