@@ -12,7 +12,7 @@ val fs2Version = "3.13.0"
 
 val munitVersion = "1.3.5"
 
-val munitScalacheckVersion = "1.3.0"
+val munitScalacheckVersion = "1.3.1"
 
 val munitCatsEffectVersion = "2.2.0"
 
